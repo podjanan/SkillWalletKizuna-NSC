@@ -70,5 +70,8 @@ flutter:
   assets:
     - assets/images/SWK_home.png
     - assets/images/Analysis_img.jpg
+    - assets/images/calculate_easy.png
+    - assets/images/calculate_medium.png
+    - assets/images/calculate_hard.png
     - assets/icons/
     - .env

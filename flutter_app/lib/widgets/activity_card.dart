@@ -7,7 +7,6 @@ import '../routes/app_routes.dart';
 import '../services/draft_service.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/palette.dart';
-import '../utils/math_op_detector.dart';
 import '../utils/youtube_helper.dart';
 
 class ActivityCard extends StatelessWidget {
@@ -281,7 +280,6 @@ class ActivityCard extends StatelessWidget {
     // กำหนดสีและไอคอนตามประเภทกิจกรรม
     final category = activity.category;
 
-    // ด้านคำนวณ = dynamic operator cover
     if (category == 'ด้านคำนวณ') {
       return _buildCalculateCover();
     }
@@ -337,90 +335,25 @@ class ActivityCard extends StatelessWidget {
     );
   }
 
-  /// Builds the calculate-activity cover by scanning segment questions
-  /// for math operators and showing them as seamless coloured blocks.
   Widget _buildCalculateCover() {
-    final ops = MathOpDetector.detect(activity.segments);
-    final display = ops.isEmpty
-        ? [
-            MathOpDetector.plus,
-            MathOpDetector.minus,
-            MathOpDetector.multiply,
-            MathOpDetector.divide,
-          ]
-        : ops.take(4).toList();
-
-    Color opColor(String op) =>
-        Color(MathOpDetector.opColorValue[op] ?? 0xFF0D92F4);
-
-    const symStyle = TextStyle(
-      color: Colors.white,
-      fontWeight: FontWeight.bold,
-      shadows: [Shadow(color: Colors.black26, blurRadius: 6, offset: Offset(1, 2))],
+    return Image.asset(
+      _calculateCoverAsset(activity.difficulty),
+      width: double.infinity,
+      height: double.infinity,
+      fit: BoxFit.cover,
     );
+  }
 
-    Widget symTile(String op, Color color) => Expanded(
-          child: Container(
-            color: color,
-            alignment: Alignment.center,
-            child: Text(op, style: symStyle.copyWith(fontSize: 30)),
-          ),
-        );
-
-    // ── 1 operator: full gradient cover ───────────────
-    if (display.length == 1) {
-      final c = opColor(display[0]);
-      return Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color.lerp(Colors.white, c, 0.55)!,
-              c,
-              Color.lerp(c, Colors.black, 0.20)!,
-            ],
-            stops: const [0.0, 0.5, 1.0],
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          display[0],
-          style: symStyle.copyWith(fontSize: 46),
-        ),
-      );
+  String _calculateCoverAsset(String difficulty) {
+    final normalized = difficulty.trim().toLowerCase();
+    if (normalized == 'ยาก' || normalized == 'hard') {
+      return 'assets/images/calculate_hard.png';
     }
-
-    // ── 2 operators: left / right halves ──────────────
-    if (display.length == 2) {
-      return Row(children: display.map((op) => symTile(op, opColor(op))).toList());
+    if (normalized == 'กลาง' ||
+        normalized == 'ปานกลาง' ||
+        normalized == 'medium') {
+      return 'assets/images/calculate_medium.png';
     }
-
-    // ── 3 operators: top full + bottom split ──────────
-    if (display.length == 3) {
-      return Column(children: [
-        symTile(display[0], opColor(display[0])),
-        Expanded(
-          child: Row(children: [
-            symTile(display[1], opColor(display[1])),
-            symTile(display[2], opColor(display[2])),
-          ]),
-        ),
-      ]);
-    }
-
-    // ── 4 operators: 2×2 seamless grid ────────────────
-    return Column(children: [
-      Expanded(child: Row(children: [
-        symTile(display[0], opColor(display[0])),
-        symTile(display[1], opColor(display[1])),
-      ])),
-      Expanded(child: Row(children: [
-        symTile(display[2], opColor(display[2])),
-        symTile(display[3], opColor(display[3])),
-      ])),
-    ]);
+    return 'assets/images/calculate_easy.png';
   }
 }
