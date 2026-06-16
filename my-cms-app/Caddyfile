@@ -1,0 +1,9 @@
+# Caddyfile — reverse proxy for SWK CMS
+# Usage: sudo cp Caddyfile /etc/caddy/Caddyfile && sudo systemctl reload caddy
+#
+# Replace "your-domain.com" with your actual domain.
+# Caddy handles HTTPS (Let's Encrypt) automatically.
+
+your-domain.com {
+    reverse_proxy localhost:3000
+}

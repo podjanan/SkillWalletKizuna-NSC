@@ -1,0 +1,518 @@
+// lib/screens/record_screen.dart
+
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart'; // 👈 ใช้ kIsWeb
+import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
+import 'package:skill_wallet_kizuna/l10n/app_localizations.dart';
+import 'package:skill_wallet_kizuna/services/activity_service.dart';
+import 'package:skill_wallet_kizuna/theme/app_text_styles.dart';
+import 'package:skill_wallet_kizuna/theme/palette.dart';
+
+class RecordScreen extends StatefulWidget {
+  const RecordScreen({super.key});
+
+  @override
+  State<RecordScreen> createState() => _RecordScreenState();
+}
+
+class _RecordScreenState extends State<RecordScreen> {
+  final AudioRecorder _audioRecorder = AudioRecorder();
+  final ActivityService _activityService = ActivityService();
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  // Web-only recording buffer
+  BytesBuilder? _webBytesBuilder;
+  StreamSubscription<List<int>>? _webAudioSub;
+  Uint8List? _webAudioBytes; // stores WAV bytes after conversion
+
+  bool recording = false;
+  bool _isPlaying = false;
+  bool _hasRecorded = false;
+
+  Duration elapsed = Duration.zero;
+  Timer? _t;
+  String _tempFilePath = '';
+  String _originalText = 'Loading...';
+
+  static const greyCard = Color(0xFFEDEFF3);
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareRecording();
+
+    _audioPlayer.onPlayerComplete.listen((event) {
+      if (mounted) {
+        setState(() => _isPlaying = false);
+      }
+    });
+  }
+
+  Future<void> _prepareRecording() async {
+    // Web no path provider usage. We will stream bytes in-memory.
+    if (kIsWeb) {
+      // Initialize original text from arguments post-frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final args = ModalRoute.of(context)?.settings.arguments
+                as Map<String, dynamic>? ??
+            {};
+        setState(() {
+          _originalText =
+              args['originalText'] as String? ?? 'Error: Text Missing';
+        });
+      });
+    }
+
+    final hasPermission = await _audioRecorder.hasPermission();
+    if (hasPermission) {
+      // 1) เตรียม path ไฟล์ชั่วคราว (เฉพาะ mobile/desktop)
+      final tempDir = await getTemporaryDirectory();
+      _tempFilePath =
+          '${tempDir.path}/recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+      // 2) ดึง originalText จาก arguments
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final args = ModalRoute.of(context)?.settings.arguments
+                as Map<String, dynamic>? ??
+            {};
+        setState(() {
+          _originalText =
+              args['originalText'] as String? ?? 'Error: Text Missing';
+        });
+      });
+    } else {
+      setState(() => _originalText = 'Microphone permission denied.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(AppLocalizations.of(context)!.record_micDenied)),
+        );
+      }
+    }
+  }
+
+  // 🔴 / 🟢 Start / Stop recording
+  Future<void> _toggle() async {
+    // ถ้าเป็น error text / ไม่มีสิทธิ์ / web ไม่รองรับ → ไม่เริ่มอัด
+    if (_originalText.startsWith('Error') ||
+        _originalText.startsWith('Microphone')) {
+      return;
+    }
+
+    if (recording) {
+      // 🟥 STOP
+      _t?.cancel();
+      await _audioRecorder.stop();
+      if (kIsWeb) {
+        // Finalize bytes buffer
+        await _webAudioSub?.cancel();
+        _webAudioSub = null;
+        final pcm = _webBytesBuilder?.toBytes();
+        // Convert raw PCM16 to WAV container (mono, 44.1kHz)
+        if (pcm != null && pcm.isNotEmpty) {
+          _webAudioBytes = _pcm16ToWav(pcm, sampleRate: 44100, channels: 1);
+        } else {
+          _webAudioBytes = null;
+        }
+        _webBytesBuilder = null;
+      }
+      setState(() {
+        recording = false;
+        _hasRecorded = true;
+      });
+    } else {
+      // 🟢 START
+      try {
+        if (kIsWeb) {
+          try {
+            // Start streaming PCM/AAC bytes depending on browser support
+            _webBytesBuilder = BytesBuilder(copy: false);
+            final stream = await _audioRecorder.startStream(
+              const RecordConfig(encoder: AudioEncoder.pcm16bits),
+            );
+            _webAudioSub = stream.listen((chunk) {
+              _webBytesBuilder?.add(chunk);
+            });
+          } catch (e) {
+            debugPrint('Web startStream not supported: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                    content: Text(
+                        'Recording stream not supported in this browser.')),
+              );
+            }
+            setState(() {
+              recording = false;
+              _hasRecorded = false;
+            });
+            return;
+          }
+        } else {
+          if (_tempFilePath.isEmpty) return;
+          await _audioRecorder.start(
+            const RecordConfig(encoder: AudioEncoder.aacLc),
+            path: _tempFilePath, // ✅ mobile/desktop เท่านั้น
+          );
+        }
+
+        setState(() {
+          recording = true;
+          _hasRecorded = false;
+          elapsed = Duration.zero;
+        });
+
+        _t = Timer.periodic(const Duration(seconds: 1), (_) {
+          setState(() => elapsed += const Duration(seconds: 1));
+        });
+      } catch (e) {
+        debugPrint('Recording Start Error: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                    Text(AppLocalizations.of(context)!.record_recordingFailed)),
+          );
+        }
+        setState(() => recording = false);
+      }
+    }
+  }
+
+  // ▶️ Playback
+  void _playRecording() async {
+    if (!_hasRecorded || recording) return;
+    if (!kIsWeb && _tempFilePath.isEmpty) return;
+
+    if (_isPlaying) {
+      await _audioPlayer.pause();
+      setState(() => _isPlaying = false);
+      return;
+    }
+
+    try {
+      if (kIsWeb) {
+        if (_webAudioBytes == null || _webAudioBytes!.isEmpty) return;
+        await _audioPlayer.play(BytesSource(_webAudioBytes!));
+      } else {
+        await _audioPlayer.play(DeviceFileSource(_tempFilePath));
+      }
+      setState(() => _isPlaying = true);
+    } catch (e) {
+      debugPrint('Playback Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text(AppLocalizations.of(context)!.record_playbackFailed)),
+        );
+      }
+      setState(() => _isPlaying = false);
+    }
+  }
+
+  // ✅ FINISH → ส่งไฟล์ให้ AI (เฉพาะ mobile/desktop)
+  Future<void> _finish() async {
+    // Stop recording if active
+
+    if (recording) {
+      await _toggle();
+    }
+
+    if (kIsWeb) {
+      // Validate web bytes
+      if (_webAudioBytes == null || _webAudioBytes!.lengthInBytes < 1000) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                    Text(AppLocalizations.of(context)!.record_noValidAudio)),
+          );
+        }
+        return;
+      }
+    } else {
+      final audioFile = File(_tempFilePath);
+      if (!await audioFile.exists() || await audioFile.length() < 1000) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                    Text(AppLocalizations.of(context)!.record_noValidAudio)),
+          );
+        }
+        return;
+      }
+    }
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(AppLocalizations.of(context)!.common_processing),
+              const SizedBox(height: 10),
+              const Center(child: CircularProgressIndicator()),
+            ],
+          ),
+        ),
+      );
+    }
+
+    try {
+      if (kIsWeb) {
+        // Evaluate using bytes on web
+        final result = await _activityService.evaluateAudioBytes(
+          audioBytes: _webAudioBytes!,
+          originalText: _originalText,
+          filename: 'recording.wav',
+        );
+
+        if (mounted) Navigator.pop(context);
+        if (mounted) {
+          Navigator.pop(context, {
+            'score': result['score'] as int? ?? 0,
+            'recognizedText': result['text'] as String? ?? 'Evaluation Error',
+            'audioUrl': '',
+          });
+        }
+      } else {
+        final audioFile = File(_tempFilePath);
+        final result = await _activityService.evaluateAudio(
+          audioFile: audioFile,
+          originalText: _originalText,
+        );
+
+        if (mounted) Navigator.pop(context); // ปิด dialog
+
+        if (mounted) {
+          Navigator.pop(context, {
+            'score': result['score'] as int? ?? 0,
+            'recognizedText': result['text'] as String? ?? 'Evaluation Error',
+            'audioUrl': _tempFilePath,
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // ปิด dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  AppLocalizations.of(context)!.record_aiError(e.toString()))),
+        );
+        Navigator.pop(context, {
+          'score': 0,
+          'recognizedText': 'API Error',
+          'audioUrl': '',
+        });
+      }
+    }
+  }
+
+  // Build simple WAV (RIFF) header for PCM16 LE
+  Uint8List _pcm16ToWav(Uint8List pcmData,
+      {required int sampleRate, required int channels}) {
+    final int byteRate = sampleRate * channels * 2; // 16-bit
+    final int blockAlign = channels * 2;
+    final int subchunk2Size = pcmData.lengthInBytes;
+    final int chunkSize = 36 + subchunk2Size;
+
+    final bytes = BytesBuilder();
+    // RIFF header
+    bytes.add(_ascii('RIFF'));
+    bytes.add(_le32(chunkSize));
+    bytes.add(_ascii('WAVE'));
+    // fmt chunk
+    bytes.add(_ascii('fmt '));
+    bytes.add(_le32(16)); // PCM
+    bytes.add(_le16(1)); // audio format PCM
+    bytes.add(_le16(channels));
+    bytes.add(_le32(sampleRate));
+    bytes.add(_le32(byteRate));
+    bytes.add(_le16(blockAlign));
+    bytes.add(_le16(16)); // bits per sample
+    // data chunk
+    bytes.add(_ascii('data'));
+    bytes.add(_le32(subchunk2Size));
+    bytes.add(pcmData);
+
+    return bytes.toBytes();
+  }
+
+  Uint8List _ascii(String s) => Uint8List.fromList(s.codeUnits);
+  Uint8List _le16(int value) =>
+      Uint8List.fromList([value & 0xFF, (value >> 8) & 0xFF]);
+  Uint8List _le32(int value) => Uint8List.fromList([
+        value & 0xFF,
+        (value >> 8) & 0xFF,
+        (value >> 16) & 0xFF,
+        (value >> 24) & 0xFF,
+      ]);
+
+  @override
+  void dispose() {
+    _t?.cancel();
+    _webAudioSub?.cancel();
+    _audioRecorder.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    final mm = two(elapsed.inMinutes % 60);
+    final ss = two(elapsed.inSeconds % 60);
+
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>? ??
+            {};
+
+    // On web, show provided original text (recording supported via stream)
+    final displayOriginalText =
+        args['originalText'] as String? ?? _originalText;
+
+    final bool isReadyToPlay = _hasRecorded && !_isPlaying;
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        leading: const BackButton(color: Colors.black87),
+        elevation: 0,
+        title: Text(
+          AppLocalizations.of(context)!.record_title,
+          style: AppTextStyles.heading(22, color: Colors.black87),
+        ),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            // ข้อความที่ต้องพูด / หรือ error บน web
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: greyCard,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                displayOriginalText,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body(18, weight: FontWeight.bold),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+            Text(
+              '$mm:$ss',
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 12),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 🎙 Record / Stop
+                GestureDetector(
+                  onTap: (displayOriginalText.startsWith('Error') ||
+                          displayOriginalText.startsWith('Microphone'))
+                      ? null
+                      : _toggle,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: recording ? Palette.errorStrong : Palette.sky,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: (recording ? Palette.errorStrong : Palette.sky)
+                              .withValues(alpha: 0.4),
+                          blurRadius: recording ? 16 : 8,
+                          spreadRadius: recording ? 2 : 0,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: recording
+                            ? Container(
+                                key: const ValueKey('stop'),
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.mic_rounded,
+                                key: ValueKey('mic'),
+                                color: Colors.white,
+                                size: 36,
+                              ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 32),
+                // ▶ Playback (เฉพาะเมื่อมีไฟล์)
+                GestureDetector(
+                  onTap: isReadyToPlay || _isPlaying ? _playRecording : null,
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: isReadyToPlay || _isPlaying
+                          ? Palette.sky
+                          : Colors.grey.shade300,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: isReadyToPlay || _isPlaying
+                          ? Colors.white
+                          : Colors.grey,
+                      size: 36,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const Spacer(),
+
+            // ✅ FINISH (ปิดบน web ด้วย เพราะ onPressed จะโชว์ snackBar)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style:
+                    ElevatedButton.styleFrom(backgroundColor: Palette.success),
+                onPressed: (recording || !_hasRecorded) ? null : _finish,
+                child: Text(
+                  AppLocalizations.of(context)!.common_finish,
+                  style: AppTextStyles.heading(18, color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

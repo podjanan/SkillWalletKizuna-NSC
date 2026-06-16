@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Skill Wallet Kizuna</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>skill_wallet_kizuna</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<!-- Facebook Sign-in Section -->
+	<key>FacebookAppID</key>
+	<string>1330680655538831</string>
+	<key>FacebookClientToken</key>
+	<string>f3903000c3975124750e24989b4d453f</string>
+	<key>FacebookDisplayName</key>
+	<string>Skill-Wallet-Kizuna</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs access to the microphone to record audio during activities.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to the photo library to allow users to select and upload photos.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to the camera to allow users to take photos and record videos.</string>
+	<!-- Google Sign-in Section -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fb1330680655538831</string>
+				<!-- Google Sign-in reversed client ID -->
+				<string>com.googleusercontent.apps.765972336394-sbuakvc3n35ttq4milr37ddqeafhrjkh</string>
+				<!-- Deep link scheme for OAuth callback (Facebook, etc.) -->
+				<string>skillwalletkizuna</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

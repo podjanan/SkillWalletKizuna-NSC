@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// Better Auth tables (model names follow Better Auth convention,
+// @@map prefixes actual table names with ba_ to avoid conflicts)
+// ============================================================
+
+model user {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          String    @default("user")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      session[]
+  accounts      account[]
+  parent        parent?
+
+  @@map("ba_user")
+}
+
+model session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ba_session")
+}
+
+model account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ba_account")
+}
+
+model verification {
+  id         String    @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@map("ba_verification")
+}
+
+// ============================================================
+// App tables
+// ============================================================
+
+model activity {
+  activity_id          String            @id(map: "Activity_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at           DateTime          @default(now()) @db.Timestamptz(6)
+  name_activity        String
+  description_activity String
+  level_activity       String
+  parent_id            String?           @db.Uuid
+  category             String
+  content              String
+  maxscore             Decimal           @db.Decimal
+  videourl             String?
+  segments             Json?
+  thumbnailurl         String?
+  tiktokhtmlcontent    String?
+  update_at            DateTime          @db.Timestamptz(6)
+  play_count           Decimal?          @db.Decimal
+  is_public            Boolean?          @default(true)
+  parent               parent?           @relation(fields: [parent_id], references: [parent_id], onDelete: NoAction, onUpdate: NoAction)
+  activity_record      activity_record[]
+}
+
+model activity_record {
+  ActivityRecord_id String    @id(map: "Activity Record_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  parent_id         String?   @db.Uuid
+  child_id          String?   @db.Uuid
+  medals_id         String?   @db.Uuid
+  point             Decimal?  @db.Decimal
+  time_spent        Decimal?  @db.Decimal
+  date              DateTime? @db.Timestamptz(6)
+  activity_id       String?   @db.Uuid
+  segment_results   Json?
+  evidence          Json?
+  child             child?    @relation(fields: [child_id], references: [child_id], onDelete: NoAction, onUpdate: NoAction, map: "Activity Record_Child_id_fkey")
+  medals            medals?   @relation(fields: [medals_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Activity Record_Medals_id_fkey")
+  parent            parent?   @relation(fields: [parent_id], references: [parent_id], onDelete: Cascade, map: "Activity Record_Parent_id_fkey")
+  activity          activity? @relation(fields: [activity_id], references: [activity_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([activity_id])
+  @@index([evidence], type: Gin)
+  @@index([segment_results], type: Gin)
+}
+
+model child {
+  child_id         String             @id(map: "Child_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_date     DateTime           @default(now()) @db.Timestamptz(6)
+  name_surname     String?
+  birthday         DateTime?          @db.Timestamptz(6)
+  update_wallet    Decimal?           @db.Decimal
+  wallet           Decimal?           @db.Decimal
+  photo_url        String?
+  activity_record  activity_record[]
+  parent_and_child parent_and_child[]
+  redemption       redemption[]
+}
+
+model medals {
+  id                String              @id(map: "Medals_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  name_medals       String?
+  point_medals      Decimal?            @db.Decimal
+  activity_record   activity_record[]
+  parent_and_medals parent_and_medals[]
+  redemption        redemption[]
+}
+
+model parent {
+  parent_id         String              @id(map: "Parent_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_date      DateTime            @default(now()) @db.Timestamptz(6)
+  name_surname      String?
+  email             String              @unique(map: "Parent_Email_key")
+  user_id           String?             @unique(map: "parent_user_id_unique")
+  ba_user           user?               @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  activity          activity[]
+  activity_record   activity_record[]
+  parent_and_child  parent_and_child[]
+  parent_and_medals parent_and_medals[]
+  redemption        redemption[]
+}
+
+model parent_and_child {
+  parent_child_id String   @id(map: "Parent and Child_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  parent_id       String?  @db.Uuid
+  child_id        String?  @db.Uuid
+  relationship    String?
+  parent          parent?  @relation(fields: [parent_id], references: [parent_id], onDelete: Cascade, map: "Parent and Child_Parent_id_fkey")
+  child           child?   @relation(fields: [child_id], references: [child_id], onDelete: Cascade)
+}
+
+model parent_and_medals {
+  parent_medals_id String   @id(map: "Parent and Medals_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+  parent_id        String?  @db.Uuid
+  medals_id        String?  @db.Uuid
+  medals           medals?  @relation(fields: [medals_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Parent and Medals_Medals_id_fkey")
+  parent           parent?  @relation(fields: [parent_id], references: [parent_id], onDelete: Cascade, map: "Parent and Medals_Parent_id_fkey")
+}
+
+model redemption {
+  redemption_id    String    @id(map: "Redemption_pkey") @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  date_redemption  DateTime? @db.Timestamptz(6)
+  point_for_reward Decimal?  @db.Decimal
+  child_id         String?   @db.Uuid
+  medals_id        String?   @db.Uuid
+  parent_id        String?   @db.Uuid
+  child            child?    @relation(fields: [child_id], references: [child_id], onDelete: NoAction, onUpdate: NoAction, map: "Redemption_Child_id_fkey")
+  medals           medals?   @relation(fields: [medals_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Redemption_Medals_id_fkey")
+  parent           parent?   @relation(fields: [parent_id], references: [parent_id], onDelete: Cascade, map: "Redemption_Parent_id_fkey")
+}

@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment and local secrets
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Flutter / Dart
+.dart_tool/
+**/.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+**/build/
+
+# Next.js
+.next/
+**/.next/
+out/
+**/out/
+
+# Native/mobile generated files
+Pods/
+**/Pods/
+DerivedData/
+**/DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+android/.gradle/
+**/android/.gradle/
+
+# IDE / OS local files
+.claude/
+.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local reports, dumps, and scratch artifacts
+*.log
+*.tmp
+*.bak
+*.pdf
+*.sql
+ACTIVITY_EVIDENCE_GUIDE.md
+FIXES_AUTHENTICATION.md
+IMPLEMENTATION_TIME_TRACKING.md
+SETUP_ACTIVITY_RECORD.md
+
+# Temporary Claude workspace directories (auto-generated, do not commit)
+tmpclaude-*/
+*/tmpclaude-*/
+**/tmpclaude-*/

@@ -1,0 +1,780 @@
+{
+  "welcome_playBtn": "PLAY",
+  "welcome_signUpBtn": "SIGN-UP",
+  "welcome_signInBtn": "LOG IN",
+
+  "home_categoryBtn": "CATEGORY",
+  "home_physicalBtn": "PHYSICAL",
+  "home_languageBtn": "LANGUAGE",
+  "home_calculationBtn": "CALCULATION",
+  "home_cannotBtn": "Cannot load popular activities",
+  "home_nonewBtn": "No new activities available",
+  "home_noChildrenMsg": "No children added yet.\nPlease add a child to start viewing activities.",
+  "home_switchChild": "Switch Child",
+  "draft_bannerTitle": "Activity in progress",
+  "draft_bannerResume": "Continue",
+  "draft_bannerDiscard": "Discard",
+  "draft_discardTitle": "Discard progress?",
+  "draft_discardMsg": "Your saved progress for this activity will be deleted.",
+  "draft_leaveTitle": "Leave activity?",
+  "draft_leaveMsg": "Your progress will be saved. You can continue later from the home screen.",
+  "draft_leaveBtn": "Save & Leave",
+  "draft_conflictTitle": "Active saved progress",
+  "draft_conflictMsg": "You have saved progress for \"{name}\". Starting a new activity will discard it, or you can cancel and resume.",
+  "@draft_conflictMsg": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "draft_conflictPlay": "Start New",
+  "common_discardChanges": "Discard changes?",
+  "common_discardMsg": "Your unsaved changes will be lost.",
+  "common_discard": "Discard",
+  "common_keepEditing": "Keep Editing",
+  "home_popularactivityBtn": "POPULAR ACTIVITIES",
+  "home_newactivityBtn": "NEW ACTIVITIES",
+  "home_viewallBtn": "View All",
+  "home_searchBtn": "SEARCH",
+  "home_bannerLanguage": "LANGUAGE TRAINING",
+  "home_bannerCalculate": "CALCULATE",
+  "home_bannerProblems": "PROBLEMS SOLVE",
+  "home_filterTitle": "FILTER ACTIVITIES",
+  "home_filterCategory": "CATEGORY",
+  "home_filterLevel": "LEVEL",
+  "home_filterAll": "ALL",
+  "home_filterEasy": "EASY",
+  "home_filterMedium": "MEDIUM",
+  "home_filterHard": "HARD",
+  "home_suggested": "SUGGESTED",
+
+  "parentprofile_postBtn": "POST",
+
+  "register_backBtn": "BACK",
+  "register_signuptoBtn": "SIGN-UP TO",
+  "register_facebookBtn": "CONTINUE WITH FACEBOOK",
+  "register_googleBtn": "CONTINUE WITH GOOGLE",
+  "register_nextBtn": "NEXT",
+  "register_registerBtn": "REGISTER",
+  "register_additionalBtn": "ADDITIONAL INFORMATION",
+  "register_namesurnamechildBtn": "NAME & SURNAME (CHILDREN) {index}",
+  "register_birthdayBtn": "BIRTHDAY : DD/MM/YYYY",
+  "register_okBtn": "OK",
+  "register_pls":"Please fill in all the information in the list. ",
+  "register_finish":"Successfully registered!",
+  "register_relation": "RELATION",
+  "register_pickbirthday": "Choose birthday",
+  "register_Anerroroccurredplstry" :"An error occurred. Please try again.",
+  "register_Anerroroccurred" : "An error occurred: {index}",
+  "register_sus":"Registration successful! Added {index} child.",
+  "register_submitterror":"Submit error: {index}",
+  "register_requiredinformation" : "Please fill in all the required information (name, date of birth, relationship) in the list. {index}",
+
+  "login_backBtn": "BACK",
+  "login_facebookBtn": "CONTINUE WITH FACEBOOK",
+  "login_googleBtn": "CONTINUE WITH GOOGLE",
+  "login_loading": "Signing in...",
+  "login_noAccount": "No account found. Please register first.",
+  "login_goToRegister": "GO TO REGISTER",
+
+  "register_loading": "Registering...",
+  "register_alreadyExists": "This account is already registered. Please login instead.",
+  "register_goToLogin": "GO TO LOGIN",
+
+  "auth_termsAgree": "I have read and agree to the",
+  "auth_termsOfService": "Terms of Service",
+  "auth_privacyPolicy": "Privacy Policy",
+  "auth_and": "and",
+  "auth_pleaseAgreeTerms": "Please agree to the Terms of Service and Privacy Policy first.",
+  "auth_loading": "Signing in...",
+  "auth_tosDialogMsg": "To ensure things are in your best interests, please review the Terms of Service and then choose to enter.",
+  "auth_readTos": "Read TOS",
+  "auth_enter": "Enter",
+
+  "setting_backBtn": "BACK",
+  "setting_settingBtn": "SETTING",
+  "setting_personalBtn":"PERSONAL INFORMATION",
+  "setting_generalBtn":"GENERAL",
+  "setting_profileBtn": "PROFILE",
+  "setting_childBtn": "CHILD",
+  "setting_notificationBtn": "NOTIFICATIONS",
+  "setting_thaiBtn": "THAI",
+  "setting_englishBtn": "ENGLISH",
+  "setting_logoutBtn": "LOG OUT",
+  "setting_logoutTitle": "Log Out?",
+  "setting_logoutMsg": "Are you sure you want to log out?",
+  "setting_logoutConfirm": "LOG OUT",
+  "setting_deleteAccountBtn": "DELETE ACCOUNT",
+  "setting_deleteTitle": "Delete Account?",
+  "setting_deleteMsg": "This will permanently delete your account and all children data. Your data will be removed within 30 days. This action cannot be undone.",
+  "setting_deleteConfirm": "DELETE",
+  "setting_deleteSuccess": "Account deleted successfully.",
+  "setting_deleteError": "Failed to delete account. Please try again.",
+
+  "namesetting_changenameBtn": "CHANGE NAME",
+  "namesetting_enternewnameBtn": "ENTER NEW NAME",
+  "namesetting_hint": "Type your name...",
+  "namesetting_saveBtn": "SAVE",
+
+  "profilesetting_nameBtn": "NAME",
+  "profilesetting_deleteaccoutBtn": "DELETE ACCOUNT",
+  "profileSet_deleteDialogTitle": "DELETE ACCOUNT?",
+  "profilesetting_areusureBtn": "Are you sure you want to delete your account? This action cannot be undone.",
+  "profilesetting_cancelBtn": "CANCEL",
+  "profilesetting_deleteBtn": "DELETE",
+
+  "childprofile_mathGame": "MATH GAME",
+  "childprofile_workoutGame": "WORK OUT GAME",
+
+  "childsetting_childsettingBtn": "CHILD SETTING",
+  "childsetting_scoreBtn": "SCORE",
+  "childsetting_viewprofileBtn": "VIEW PROFILE",
+  "childsetting_manageBtn": "MANAGE",
+
+  "childgallery_title": "MY GALLERY",
+  "childgallery_empty": "NO POSTS YET",
+
+  "history_timesSuffix": "TIMES",
+  "result_title": "PLAYING RESULT",
+  "result_timeUsedTitle": "TIME USED",
+
+  "redemption_playBtn": "PLAY",
+  "redemption_rewardIceCream": "ICE CREAM",
+  "redemption_rewardPlaytime": "1 HR PLAYTIME",
+  "redemption_rewardToy": "NEW TOY",
+  "redemption_rewardStickers": "STICKERS",
+  "redemption_historyPlayedDefault": "Played Ping Pong",
+  "redemption_historyRedeemedDefault": "Redeemed Ice Cream",
+
+  "dialog_deleteTitle": "Delete Profile?",
+  "dialog_deleteContent": "Are you sure you want to delete this profile? This action cannot be undone.",
+  "dialog_confirmDelete": "DELETE",
+  "dialog_cancel": "CANCEL",
+  "dialog_saveSuccess": "Saved successfully!",
+
+  "notificationsetting_notificationBtn": "NOTIFICATIONS",
+  "notificationsetting_allnotificationBtn": "ALL NOTIFICATIONS",
+  "notificationsetting_postBtn": "POST",
+  "notificationsetting_likeBtn": "LIKE",
+  "notificationsetting_commentBtn": "COMMENT",
+
+  "videodetail_activitynameBtn": "ACTIVITY NAME",
+  "videodetail_nameBtn": "name",
+  "videodetail_DescriptionBtn": "DESCRIPTION",
+  "videodetail_descriptionBtn": "description",
+  "videodetail_howtoplayBtn": "HOW TO PLAY / INSTRUCTIONS:",
+  "videodetail_contentBtn": "content",
+  "videodetail_startBtn": "START",
+  "videodetail_addBtn": "ADD",
+  "videodetail_videoNotAvailable": "Video Not Available (HTML Content Missing)",
+  "videodetail_activityNameLabel": "ACTIVITY NAME:",
+  "videodetail_descriptionLabel": "DESCRIPTION:",
+  "videodetail_howToPlayLabel": "HOW TO PLAY / INSTRUCTIONS:",
+  "videodetail_categoryPrefix": "Category: ",
+  "videodetail_difficultyPrefix": "Difficulty: ",
+  "videodetail_maxScorePrefix": "Max Score: ",
+
+  "addchild_namesurnameBtn": "NAME & SURNAME (CHILDREN)",
+  "addchild_errorName": "Please enter a name",
+  "addchild_birthdayBtn": "BIRTHDAY : DD/MM/YYYY",
+  "addchild_okBtn": "OK",
+  "addchild_logoutTitle": "Log out?",
+  "addchild_logoutMsg": "Please add at least one child to use the app. Are you sure you want to log out?",
+  "addchild_errorRequiredFields": "Please fill in all required fields (name, birthday, relationship).",
+
+  "childnamesetting_editnameBtn": "EDIT NAME",
+  "childnamesetting_saveBtn": "SAVE",
+
+  "managechild_manageprofileBtn": "MANAGE PROFILE",
+  "managechild_nameBtn": "NAME",
+  "managechild_medalsandredemptionBtn": "MEDALS & REDEMPTION",
+  "managechild_deleteprofileBtn": "DELETE PROFILE",
+
+  "dairyactivity_playhistoryBtn": "PLAYING HISTORY",
+  "dairyactivity_timeBtn": "time",
+  "dairyactivity_medalsBtn": "medals",
+
+  "medalredemption_addrewardBtn": "ADD AGREEMENT",
+  "medalredemption_rewardnameBtn": "Agreement Name",
+  "medalredemption_costBtn": "Cost (Points)",
+  "medalredemption_cancelBtn": "CANCEL",
+  "medalredemption_addBtn": "ADD",
+  "medalredemption_redemptionBtn": "AGREEMENTS",
+  "medalredemption_activitiesBtn": "ACTIVITIES",
+  "medalredemption_currentscoreBtn": "CURRENT SCORE",
+  "medalredemption_rewardshopBtn": "AGREEMENTS",
+  "medalredemption_successfullyBtn": "Successfully Redeemed",
+
+  "agreement_typeTime": "Time",
+  "agreement_typeItem": "Item",
+  "agreement_typePrivilege": "Privilege",
+  "agreement_typeFamily": "Family",
+  "agreement_selectType": "Select Agreement Type",
+  "agreement_confirmTitle": "Confirm Agreement",
+  "agreement_confirmMsg": "Use {cost} points to redeem \"{name}\"?",
+  "@agreement_confirmMsg": {
+    "placeholders": {
+      "cost": { "type": "int" },
+      "name": { "type": "String" }
+    }
+  },
+  "agreement_confirmBtn": "CONFIRM",
+  "agreement_sessionActive": "Session Active",
+  "agreement_timeRemaining": "Time Remaining",
+  "agreement_startTimer": "START",
+  "agreement_stopTimer": "STOP",
+  "agreement_endSession": "END SESSION",
+  "agreement_sessionComplete": "Session Complete!",
+  "agreement_behaviorTitle": "How was the behavior?",
+  "agreement_behaviorGood": "Good",
+  "agreement_behaviorOk": "OK",
+  "agreement_behaviorBad": "Needs Improvement",
+  "agreement_bonusMsg": "Bonus: +{points} points",
+  "@agreement_bonusMsg": {
+    "placeholders": {
+      "points": { "type": "int" }
+    }
+  },
+  "agreement_deductMsg": "Deduction: -{points} points",
+  "@agreement_deductMsg": {
+    "placeholders": {
+      "points": { "type": "int" }
+    }
+  },
+  "agreement_noChange": "No point change",
+  "agreement_notEnoughPoints": "Not enough points! Need {needed} more.",
+  "@agreement_notEnoughPoints": {
+    "placeholders": {
+      "needed": { "type": "int" }
+    }
+  },
+  "agreement_durationLabel": "Duration (minutes)",
+  "agreement_emptyList": "No agreements yet",
+  "agreement_emptyHint": "Tap + to create a new agreement",
+
+  "physical_snackNoEvidence": "Please attach video or image evidence.",
+  "physical_snackInvalidScore": "Please set a valid score (1 to {maxScore}).",
+  "@physical_snackInvalidScore": {
+    "placeholders": {
+      "maxScore": { "type": "int" }
+    }
+  },
+  "physical_dialogSubmitTitle": "Submission Complete!",
+  "physical_dialogSubmitContent": "Your evidence has been submitted for approval.",
+  "physical_dialogOkBtn": "OK",
+  "physical_snackSubmitError": "Submission Error: {error}",
+  "@physical_snackSubmitError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "physical_dialogEnterScoreTitle": "Enter Score",
+  "physical_dialogEnterScoreHint": "Enter score (1-{maxScore})",
+  "@physical_dialogEnterScoreHint": {
+    "placeholders": {
+      "maxScore": { "type": "int" }
+    }
+  },
+  "physical_dialogCancelBtn": "Cancel",
+  "physical_snackInvalidInput": "Please enter a valid score (0-{maxScore})",
+  "@physical_snackInvalidInput": {
+    "placeholders": {
+      "maxScore": { "type": "int" }
+    }
+  },
+  "physical_stopBtn": "STOP",
+  "physical_startBtn": "START",
+  "physical_takePhotoBtn": "TAKE PHOTO",
+  "physical_medalsScoreLabel": "MEDALS / SCORE",
+  "physical_diaryLabel": "DIARY",
+  "physical_diaryHint": "Enter notes here...",
+  "physical_imageEvidenceLabel": "IMAGE EVIDENCE",
+  "physical_videoEvidenceLabel": "VIDEO EVIDENCE",
+  "physical_timeLabel": "TIME",
+  "physical_submittingBtn": "Submitting...",
+  "physical_finishBtn": "FINISH",
+  "physical_addChildren": "Add Children",
+  "physical_addChildrenDesc": "Select children to play together",
+  "physical_childrenAdded": "+{count} children",
+  "@physical_childrenAdded": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "physical_currentChild": "Currently playing",
+  "physical_confirm": "Confirm",
+
+  "languagedetail_titlePrefix": "LANGUAGE: ",
+  "languagedetail_categoryPrefix": "CATEGORY: ",
+  "languagedetail_activityTitleLabel": "ACTIVITY TITLE",
+  "languagedetail_descriptionLabel": "DESCRIPTION",
+  "languagedetail_difficultyPrefix": "Difficulty: ",
+  "languagedetail_maxScorePrefix": "Max Score: ",
+  "languagedetail_startBtn": "START",
+  "languagedetail_openInYoutube": "Open in YouTube (TV)",
+
+  "itemintro_recordToEnable": "Record to enable playback",
+  "itemintro_listenExampleBtn": "LISTEN TO EXAMPLE",
+  "itemintro_practiceNowBtn": "PRACTICE NOW",
+  "itemintro_submitBtn": "SUBMIT",
+  "itemintro_playsection":"PLAY SECTION",
+  "itemintro_record":"RECORD",
+  "itemintro_casttotv":"CAST TO TV",
+  "itemintro_airplay":"AIRPLAY",
+  "itemintro_previous":"< PREVIOUS",
+  "itemintro_next":"NEXT >",
+  "itemintro_finish":"FINISH >",
+  "itemintro_Videonotavailable":"Video not available",
+
+  "record_loading": "Loading...",
+  "record_finishBtn": "FINISH",
+  "record_errorMic": "Microphone error or permission denied",
+  "record_statusRecording": "Recording...",
+  "record_statusIdle": "Press mic to record",
+
+  "result_activityCompletedDefault": "ACTIVITY COMPLETED",
+  "result_greatJobTitle": "GREAT JOB!",
+  "result_totalScoreLabel": "Total Score",
+  "result_timeSpentLabel": "Time Spent",
+  "result_retryBtn": "RETRY",
+  "result_backToActivitiesBtn": "BACK TO ACTIVITIES",
+  "result_returnHomeBtn": "RETURN HOME",
+  "result_timeFormat": "{minutes} min {seconds} sec",
+  "@result_timeFormat": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "seconds": { "type": "int" }
+    }
+  },
+
+  "calculate_title": "CALCULATE",
+  "calculate_plusBtn": "PLUS +",
+  "calculate_minusBtn": "MINUS -",
+  "calculate_multiplyBtn": "MULTIPLY *",
+  "calculate_divideBtn": "DEVIDE /",
+  "calculate_mixBtn": "MIX + - * /",
+
+  "languagehub_searchHint": "search...",
+  "languagehub_trainingTitle": "LANGUAGE TRAINING",
+  "languagehub_listeningSpeakingTitle": "LISTENING AND SPEAKING",
+  "languagehub_easyBtn": "EASY",
+  "languagehub_mediumBtn": "MEDIUM",
+  "languagehub_difficultBtn": "DIFFICULT",
+
+  "plus_castToTvBtn": "CAST TO TV",
+  "plus_answerBtn": "ANSWER",
+
+
+  "createpost_sharesus":"Post shared successfully!",
+  "createpost_error":"An error occurred:",
+  "createpost_newpost":"New post",
+  "createpost_share":"Share",
+  "createpost_picksomepicture":"Tap to select a picture",
+  "createpost_changepic":"Change picture",
+  "createpost_writecaption":"Write a caption...",
+
+  "languagelist_snackNotConnected": "This flow is not connected to activities yet.",
+
+  "common_categoryLabel": "Category",
+  "common_difficultyLabel": "Difficulty",
+  "common_maxScoreLabel": "Max Score",
+  "common_categoryLanguage": "Language",
+  "common_categoryPhysical": "Physical",
+  "common_categoryCalculate": "Calculate",
+  "common_activityLanguage": "Language Activity",
+  "common_activityPhysical": "Physical Activity",
+  "common_activityCalculate": "Calculation Activity",
+  "common_difficultyEasy": "Easy",
+  "common_difficultyMedium": "Medium",
+  "common_difficultyHard": "Hard",
+
+  "createActivity_title": "CREATE ACTIVITY",
+  "createActivity_selectCategory": "Select Category",
+  "createActivity_physical": "Physical",
+  "createActivity_calculate": "Calculate",
+  "createActivity_name": "Activity Name",
+  "createActivity_description": "Description",
+  "createActivity_content": "How to Play / Instructions",
+  "createActivity_difficulty": "Difficulty",
+  "createActivity_maxScore": "Max Score",
+  "createActivity_videoUrl": "Video URL (TikTok)",
+  "createActivity_addQuestion": "Add Question",
+  "createActivity_question": "Question",
+  "createActivity_answer": "Answer",
+  "createActivity_solution": "Solution / Explanation",
+  "createActivity_score": "Score",
+  "createActivity_submit": "CREATE",
+  "createActivity_success": "Activity created successfully!",
+  "createActivity_error": "Failed to create activity",
+  "createActivity_nameRequired": "Please enter an activity name",
+  "createActivity_contentRequired": "Please enter instructions",
+  "createActivity_needQuestions": "Please add at least one question",
+  "createActivity_questionNo": "Question {index}",
+  "@createActivity_questionNo": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "createActivity_removeQuestion": "Remove",
+  "createActivity_creating": "Creating...",
+
+  "profile_myActivities": "MY ACTIVITIES",
+  "profile_noActivities": "No activities yet",
+  "profile_editActivity": "Edit Activity",
+  "profile_deleteActivity": "Delete Activity",
+  "profile_deleteConfirm": "Are you sure you want to delete \"{name}\"?",
+  "@profile_deleteConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "profile_deleteSuccess": "Activity deleted",
+  "profile_updateSuccess": "Activity updated",
+  "profile_save": "SAVE",
+  "profile_manage": "MANAGE",
+
+  "share_title": "SHARE RESULT",
+  "share_asImage": "Image",
+  "share_asText": "Text",
+  "share_greatJob": "GREAT JOB!",
+  "share_keepTrying": "KEEP TRYING!",
+  "share_textTemplate": "I scored {score}/{maxScore} on \"{activityName}\" in Skill Wallet Kizuna!",
+  "@share_textTemplate": {
+    "placeholders": {
+      "activityName": { "type": "String" },
+      "score": { "type": "int" },
+      "maxScore": { "type": "int" }
+    }
+  },
+
+  "common_loginFailed": "Login failed. Please try again.",
+  "common_errorGeneric": "Error: {msg}",
+  "@common_errorGeneric": {
+    "placeholders": {
+      "msg": { "type": "String" }
+    }
+  },
+  "common_error": "Error",
+  "common_processing": "Processing...",
+  "common_retry": "Retry",
+  "common_cancel": "Cancel",
+  "common_close": "Close",
+  "common_noServer": "Cannot connect to server",
+  "audio_tooShort": "Audio data too short — try again",
+  "audio_notFound": "Audio file not found — try again",
+  "audio_analyseFailed": "Analysis failed — try again",
+
+  "calculate_restartTitle": "Restart?",
+  "calculate_restartMsg": "Time and answers will be reset",
+  "calculate_restartBtn": "Restart",
+  "calculate_solutionTitle": "Answer #{index}",
+  "@calculate_solutionTitle": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "calculate_questionLabel": "Question:",
+  "calculate_answerLabel": "Answer:",
+  "calculate_pressStart": "Press START button to begin timing",
+  "calculate_questionsAfterTimer": "Questions will appear after timing completes",
+  "calculate_failedPickFile": "Failed to pick file: {error}",
+  "@calculate_failedPickFile": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "calculate_childIdNotFound": "Child ID not found. Please login again.",
+  "calculate_errorCompleting": "Error completing activity: {error}",
+  "@calculate_errorCompleting": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "itemintro_videoLoading": "Please wait. Video is loading...",
+  "itemintro_timingIncomplete": "Timing data for this sentence is incomplete",
+  "itemintro_videoPlayError": "Cannot play video: {error}",
+  "@itemintro_videoPlayError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "itemintro_micPermission": "Please allow microphone access",
+  "itemintro_recordStartError": "Cannot start recording: {error}",
+  "@itemintro_recordStartError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "itemintro_recordTooShort": "Recording too short. Please try again",
+  "itemintro_evalResult": "Evaluation result: {score}% - \"{text}\"",
+  "@itemintro_evalResult": {
+    "placeholders": {
+      "score": { "type": "int" },
+      "text": { "type": "String" }
+    }
+  },
+  "itemintro_questError": "Error completing quest: {error}",
+  "@itemintro_questError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "itemintro_playbackFailed": "Failed to play back recording.",
+
+  "record_micDenied": "Microphone permission denied.",
+  "record_recordingFailed": "Recording failed.",
+  "record_playbackFailed": "Failed to play audio.",
+  "record_noValidAudio": "Error: No valid audio recorded.",
+  "record_aiError": "AI Error: {error}",
+  "@record_aiError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "medals_noActivityHistory": "No activity history",
+  "medals_noHistory": "No history",
+
+  "post_noComments": "No comments yet. Be the first!",
+
+  "namesetting_saveFailed": "Cannot save name. Please try again.",
+
+  "activityCard_selectChild": "Please select a child",
+  "activityCard_selectChildMsg": "You must select a child before playing activities",
+  "activityCard_goSelect": "Go select child",
+
+  "childsetting_addSuccess": "Child added successfully",
+  "childsetting_deleteSuccess": "Child deleted successfully",
+  "childsetting_selectSuccess": "Child selected successfully",
+  "childsetting_noChildren": "No children in system",
+  "childsetting_addChild": "Add child",
+  "childsetting_active": "ACTIVE",
+  "childsetting_select": "SELECT",
+
+  "common_selectSource": "Select Source",
+  "common_camera": "Camera",
+  "common_gallery": "Gallery",
+  "common_pickFromGallery": "Pick from gallery",
+  "common_useGooglePhoto": "Use Google profile photo",
+  "common_useFacebookPhoto": "Use Facebook profile photo",
+  "common_useOriginalPhoto": "Use previous profile photo",
+  "common_uploadPhotoFailed": "Photo upload failed",
+  "common_photoNotFound": "No profile photo found from {provider}",
+  "@common_photoNotFound": {
+    "placeholders": {
+      "provider": { "type": "String" }
+    }
+  },
+  "common_ok": "OK",
+  "common_submit": "SUBMIT",
+  "common_addImage": "Add Image",
+  "common_addVideo": "Add Video",
+  "common_videoAdded": "Video Added",
+  "common_image": "IMAGE",
+  "common_video": "VIDEO",
+  "common_howToPlay": "HOW TO PLAY",
+  "common_questions": "QUESTIONS",
+  "common_evidence": "EVIDENCE",
+  "common_finish": "FINISH",
+  "common_start": "START",
+  "common_restart": "RESTART",
+  "common_done": "done",
+  "common_submitting": "Submitting...",
+  "common_score": "Score",
+
+  "calculate_noAnswer": "No answer available",
+  "calculate_answer": "ANSWER",
+  "calculate_answerAgain": "ANSWER AGAIN",
+  "calculate_stopBeforeAnswer": "Stop timer before answering",
+  "calculate_yourAnswer": "Your answer: {answer}",
+  "@calculate_yourAnswer": {
+    "placeholders": {
+      "answer": { "type": "String" }
+    }
+  },
+  "calculate_typeAnswer": "Type your answer...",
+  "calculate_diaryNotes": "DIARY / NOTES",
+  "calculate_writeNotes": "Write your notes here...",
+  "calculate_noQuestions": "No questions available",
+  "calculate_confirmFinishTitle": "Finish?",
+  "calculate_confirmFinishMsg": "Are you sure you want to finish? You cannot restart the timer.",
+  "calculate_descriptionLabel": "DESCRIPTION",
+  "calculate_solutionLabel": "Solution:",
+  "calculate_correct": "CORRECT",
+  "calculate_incorrect": "INCORRECT",
+
+  "record_title": "RECORD",
+
+  "itemintro_segmentOf": "Segment {current} of {total}",
+  "@itemintro_segmentOf": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "itemintro_speak": "SPEAK",
+  "itemintro_point": "POINT",
+  "itemintro_completed": "COMPLETED",
+  "itemintro_pausePlayback": "PAUSE PLAYBACK...",
+  "itemintro_listenRecording": "LISTEN TO YOUR RECORDING",
+  "itemintro_recordToPlayback": "Record to enable playback",
+
+  "videodetail_previewNotAvailable": "Video Preview Not Available",
+  "videodetail_openInBrowser": "Open in Browser to Watch",
+  "videodetail_openTiktok": "OPEN TIKTOK",
+  "videodetail_openInTiktokTV": "Open in TikTok (TV)",
+  "videodetail_noVideoUrl": "No video URL available",
+  "calculate_tvMode": "TV Mode",
+  "calculate_tvModeHint": "Swipe to see next problem",
+  "calculate_questionsCount": "questions",
+  "calculate_tvModeBannerTitle": "Share to TV",
+  "calculate_tvModeBannerSub": "Show problems on big screen",
+
+  "languagehub_appTitle": "KRATON",
+  "languagehub_fillInBlanksTitle": "FILL IN THE BLANKS",
+
+
+  "result_resultTitle": "RESULT",
+  "result_totalScoreTitle": "TOTAL SCORE",
+  "result_keepTryingTitle": "KEEP TRYING!",
+  "result_timeSpentPrefix": "TIME SPENT: ",
+  "result_playAgainBtn": "PLAY AGAIN",
+
+  "plus_title": "PLUS +",
+  "plus_questionTitle": "QUESTION",
+  "plus_startBtn": "START",
+
+  "answerplus_title": "ANSWER PLUS +",
+  "answerplus_questionLabel": "QUESTION",
+  "answerplus_answerLabel": "ANSWER",
+
+  "email_loginTitle": "Login with Email",
+  "email_registerTitle": "Register",
+  "email_emailHint": "Email",
+  "email_passwordHint": "Password",
+  "email_nameHint": "Full Name",
+  "email_loginBtn": "LOGIN",
+  "email_registerBtn": "REGISTER",
+  "email_forgotPassword": "Forgot Password?",
+  "email_noAccount": "Don't have an account? Register",
+  "email_hasAccount": "Already have an account? Login",
+  "email_resetSent": "Password reset email sent. Please check your inbox.",
+  "email_passwordTooShort": "Password must be at least 6 characters",
+  "email_enterEmail": "Please enter your email",
+  "email_enterPassword": "Please enter your password",
+  "email_enterName": "Please enter your name",
+  "email_forgotTitle": "Reset Password",
+  "email_forgotMsg": "Enter your email to receive a password reset link.",
+  "email_sendReset": "SEND",
+  "email_loginWithEmail": "LOGIN WITH EMAIL",
+  "email_confirmSent": "Confirmation email sent. Please check your inbox and click the link to verify, then log in.",
+  "email_confirmPasswordHint": "Confirm Password",
+  "email_passwordsDoNotMatch": "Passwords do not match",
+
+  "register_childNameHint": "First - Last Name",
+  "register_birthdayHint": "DD/MM/YYYY",
+
+  "relation_label": "RELATIONSHIP",
+  "relation_hint": "Select relationship",
+  "relation_parent": "Father/Mother",
+  "relation_grandparentPaternal": "Grandfather/Grandmother (Father's side)",
+  "relation_grandparentMaternal": "Grandfather/Grandmother (Mother's side)",
+  "relation_auntUncle": "Aunt/Uncle",
+  "relation_caregiver": "Caregiver",
+  "relation_nanny": "Nanny/Babysitter",
+
+  "activityhistory_selectDate": "Select date",
+  "activityhistory_times": "{count} times",
+  "@activityhistory_times": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "activityhistory_noHistory": "No activity history",
+  "activityhistory_inCategory": "In {category}",
+  "@activityhistory_inCategory": {
+    "placeholders": {
+      "category": { "type": "String" }
+    }
+  },
+
+  "dailyactivity_playingHistory": "Playing history",
+  "dailyactivity_noData": "No data",
+  "dailyactivity_activity": "Activity",
+
+  "childprofile_language": "Language",
+  "childprofile_physical": "Physical",
+  "childprofile_calculation": "Calculation",
+  "childprofile_unknownName": "Unknown",
+  "childprofile_noHistory": "No activity history",
+  "childprofile_startPlaying": "Start playing activities to see stats here",
+  "childprofile_totalActivities": "Total activities",
+  "childprofile_times": "times",
+
+  "medalredemption_activity": "Activity",
+  "medalredemption_done": "DONE",
+  "medalredemption_points": "points",
+
+  "playingresult_activity": "Activity",
+  "playingresult_title": "Playing result",
+  "playingresult_session": "Session {number}",
+  "@playingresult_session": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "playingresult_scoreObtained": "Score obtained",
+  "playingresult_diary": "Diary",
+  "playingresult_noNotes": "No notes",
+  "playingresult_image": "Image",
+  "playingresult_video": "Video",
+  "playingresult_videoAttached": "Video attached",
+  "playingresult_timeSpent": "Time spent",
+  "playingresult_noImage": "No image",
+  "playingresult_sentencesSpoken": "Sentences spoken",
+  "playingresult_sentence": "Sentence {number}",
+  "@playingresult_sentence": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "playingresult_sentenceToSpeak": "Sentence to speak:",
+  "playingresult_whatWasSpoken": "What was spoken:",
+  "playingresult_noData": "(No data)",
+  "playingresult_noSpeechData": "No speech data",
+  "playingresult_answerResults": "Answer results",
+  "playingresult_questionLabel": "Q.{number}",
+  "@playingresult_questionLabel": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "playingresult_questionFallback": "Question {number}",
+  "@playingresult_questionFallback": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+
+  "summary_title": "Review Your Recording",
+  "summary_completeActivity": "Complete Activity",
+  "summary_segmentLabel": "Segment {n}",
+  "@summary_segmentLabel": {
+    "placeholders": { "n": { "type": "int" } }
+  },
+  "summary_pendingAnalysis": "{n} segment(s) still analyzing…",
+  "@summary_pendingAnalysis": {
+    "placeholders": { "n": { "type": "int" } }
+  },
+  "summary_reRecord": "Re-record",
+  "summary_notRecorded": "Not recorded yet",
+  "summary_notRecordedShort": "—",
+  "summary_analyzing": "Analyzing…",
+  "summary_analysisFailed": "Analysis failed — tap Re-record to retry",
+  "summary_youSaid": "You said",
+  "summary_error": "Error",
+  "summary_reviewShort": "Review",
+  "summary_stopRecord": "Stop",
+
+  "profile_gallery" : "Select an image from your gallery",
+  "profile_google" : "Use a Google profile picture",
+  "profile_facebook" : "Use a Facebook profile picture"
+}

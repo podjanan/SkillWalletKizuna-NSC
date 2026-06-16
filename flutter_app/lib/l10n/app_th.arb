@@ -1,0 +1,778 @@
+{
+  "welcome_playBtn": "เริ่มเล่น",
+  "welcome_signUpBtn": "สมาชิกใหม่?",
+  "welcome_signInBtn": "เข้าสู่ระบบ",
+
+  "home_categoryBtn": "เลือกหมวดหมู่",
+  "home_physicalBtn": "ด้านร่างกาย",
+  "home_languageBtn": "ด้านภาษา",
+  "home_calculationBtn": "ด้านการคำนวณ",
+  "home_cannotBtn": "ไม่สามารถโหลดกิจกรรมยอดนิยมได้",
+  "home_nonewBtn": "ไม่มีกิจกรรมใหม่เกิดขึ้น",
+  "home_noChildrenMsg": "ยังไม่ได้เพิ่มลูก\nกรุณาเพิ่มลูกเพื่อเริ่มดูกิจกรรม",
+  "home_switchChild": "เปลี่ยนลูก",
+  "draft_bannerTitle": "กิจกรรมค้างอยู่",
+  "draft_bannerResume": "ทำต่อ",
+  "draft_bannerDiscard": "ลบทิ้ง",
+  "draft_discardTitle": "ลบ progress ทิ้ง?",
+  "draft_discardMsg": "ความคืบหน้าของกิจกรรมนี้จะถูกลบ",
+  "draft_leaveTitle": "ออกจากกิจกรรม?",
+  "draft_leaveMsg": "ความคืบหน้าจะถูกบันทึกไว้ คุณสามารถกลับมาทำต่อได้จากหน้าหลัก",
+  "draft_leaveBtn": "บันทึกและออก",
+  "draft_conflictTitle": "มีการบันทึกค้างอยู่",
+  "draft_conflictMsg": "คุณมี progress ที่บันทึกไว้ของ \"{name}\" อยู่ หากเริ่มกิจกรรมใหม่จะลบ progress นั้น",
+  "@draft_conflictMsg": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "draft_conflictPlay": "เริ่มใหม่",
+  "common_discardChanges": "ยกเลิกการเปลี่ยนแปลง?",
+  "common_discardMsg": "การเปลี่ยนแปลงที่ยังไม่ได้บันทึกจะหายไป",
+  "common_discard": "ยกเลิก",
+  "common_keepEditing": "แก้ไขต่อ",
+  "home_popularactivityBtn": "กิจกรรมยอดนิยม",
+  "home_newactivityBtn": "กิจกรรมใหม่",
+  "home_viewallBtn": "ดูทั้งหมด",
+  "home_searchBtn": "ค้นหา...",
+  "home_bannerLanguage": "ฝึกภาษา",
+  "home_bannerCalculate": "คิดเลข",
+  "home_bannerProblems": "แก้ปัญหา",
+  "home_filterTitle": "กรองกิจกรรม",
+  "home_filterCategory": "หมวดหมู่",
+  "home_filterLevel": "ระดับ",
+  "home_filterAll": "ทั้งหมด",
+  "home_filterEasy": "ง่าย",
+  "home_filterMedium": "กลาง",
+  "home_filterHard": "ยาก",
+  "home_suggested": "แนะนำ",
+
+  "parentprofile_postBtn": "โพสต์",
+
+  "register_backBtn": "ย้อนกลับ",
+  "register_signuptoBtn": "ลงทะเบียนเข้าสู่",
+  "register_facebookBtn": "ดำเนินการต่อด้วย FACEBOOK",
+  "register_googleBtn": "ดำเนินการต่อด้วย GOOGLE",
+  "register_nextBtn": "ต่อไป",
+  "register_registerBtn": "ลงทะเบียน",
+  "register_additionalBtn": "ข้อมูลเพิ่มเติม",
+  "register_namesurnamechildBtn": "ชื่อและนามสกุลคนที่ {index}",
+  "register_birthdayBtn": "วันเกิด : วว/ดด/ปปปป",
+  "register_okBtn": "เสร็จสิ้น",
+  "register_pls":"กรอกข้อมูลให้ครบในรายการที่ ",
+  "register_finish":"ลงทะเบียนสำเร็จ!",
+  "register_relation": "ความสัมพันธ์",
+  "register_pickbirthday": "เลือกวันเกิด",
+  "register_Anerroroccurredplstry" :"เกิดข้อผิดพลาด กรุณาลองอีกครั้ง",
+  "register_Anerroroccurred" : "เกิดข้อผิดพลาด: {index}",
+  "register_sus":"ลงทะเบียนสำเร็จ! เพิ่มลูก {index} คน",
+  "register_submitterror":"ส่งผิดพลาด: {index}",
+  "register_requiredinformation" : "กรอกข้อมูลให้ครบ (ชื่อ, วันเกิด, ความสัมพันธ์) ในรายการที่ {index}",
+
+  "login_backBtn": "ย้อนกลับ",
+  "login_facebookBtn": "ดำเนินการต่อด้วย FACEBOOK",
+  "login_googleBtn": "ดำเนินการต่อด้วย GOOGLE",
+  "login_loading": "กำลังเข้าสู่ระบบ...",
+  "login_noAccount": "ไม่พบบัญชีผู้ใช้ กรุณาลงทะเบียนก่อน",
+  "login_goToRegister": "ไปลงทะเบียน",
+
+  "register_loading": "กำลังลงทะเบียน...",
+  "register_alreadyExists": "บัญชีนี้ลงทะเบียนแล้ว กรุณาเข้าสู่ระบบแทน",
+  "register_goToLogin": "ไปเข้าสู่ระบบ",
+
+  "auth_termsAgree": "ฉันได้อ่านและยอมรับ",
+  "auth_termsOfService": "ข้อตกลงการใช้บริการ",
+  "auth_privacyPolicy": "นโยบายความเป็นส่วนตัว",
+  "auth_and": "และ",
+  "auth_pleaseAgreeTerms": "กรุณายอมรับข้อตกลงการใช้บริการและนโยบายความเป็นส่วนตัวก่อน",
+  "auth_loading": "กำลังเข้าสู่ระบบ...",
+  "auth_tosDialogMsg": "เพื่อให้มั่นใจว่าสิ่งต่างๆ เป็นไปเพื่อประโยชน์ของคุณ กรุณาอ่านข้อตกลงการใช้บริการก่อนเลือกเข้าใช้งาน",
+  "auth_readTos": "อ่านข้อตกลง",
+  "auth_enter": "เข้าใช้งาน",
+
+  "setting_backBtn": "ย้อนกลับ",
+  "setting_settingBtn": "การตั้งค่า",
+  "setting_personalBtn": "ข้อมูลส่วนตัว",
+  "setting_generalBtn": "ทั่วไป",
+  "setting_profileBtn": "โปรไฟล์",
+  "setting_childBtn": "เด็ก",
+  "setting_notificationBtn": "การแจ้งเตือน",
+  "setting_thaiBtn": "ภาษาไทย",
+  "setting_englishBtn": "ภาษาอังกฤษ",
+  "setting_logoutBtn": "ลงชื่อออก",
+  "setting_logoutTitle": "ออกจากระบบ?",
+  "setting_logoutMsg": "คุณต้องการออกจากระบบใช่ไหม?",
+  "setting_logoutConfirm": "ออกจากระบบ",
+  "setting_deleteAccountBtn": "ลบบัญชี",
+  "setting_deleteTitle": "ลบบัญชีหรือไม่?",
+  "setting_deleteMsg": "การดำเนินการนี้จะลบบัญชีและข้อมูลลูกทั้งหมดอย่างถาวร ข้อมูลจะถูกลบภายใน 30 วัน และไม่สามารถกู้คืนได้",
+  "setting_deleteConfirm": "ลบบัญชี",
+  "setting_deleteSuccess": "ลบบัญชีสำเร็จแล้ว",
+  "setting_deleteError": "ไม่สามารถลบบัญชีได้ กรุณาลองใหม่อีกครั้ง",
+
+  "namesetting_changenameBtn": "เปลี่ยนชื่อ",
+  "namesetting_enternewnameBtn": "กรุณากรอกชื่อใหม่",
+  "namesetting_hint": "พิมพ์ชื่อของคุณ...",
+  "namesetting_saveBtn": "บันทึก",
+
+  "profilesetting_nameBtn": "ชื่อ",
+  "profilesetting_deleteaccoutBtn": "ลบบัญชี",
+  "profileSet_deleteDialogTitle": "ยืนยันการลบบัญชี",
+  "profilesetting_areusureBtn": "คุณแน่ใจหรือไม่ว่าต้องการลบบัญชีของคุณ? การกระทำนี้ไม่สามารถย้อนกลับได้",
+  "profilesetting_cancelBtn": "ยกเลิก",
+  "profilesetting_deleteBtn": "ลบบัญชี",
+
+  "childprofile_mathGame": "เกมคณิตศาสตร์",
+  "childprofile_workoutGame": "เกมออกกำลังกาย",
+
+  "childsetting_childsettingBtn": "การตั้งค่าเด็ก",
+  "childsetting_scoreBtn": "คะแนน",
+  "childsetting_viewprofileBtn": "ดูโปรไฟล์",
+  "childsetting_manageBtn": "จัดการ",
+
+  "childgallery_title": "แกลเลอรีของฉัน",
+  "childgallery_empty": "ยังไม่มีรูปภาพ",
+
+  "history_timesSuffix": "ครั้ง",
+  "result_title": "ผลการเล่น",
+  "result_timeUsedTitle": "เวลาที่ใช้",
+
+  "redemption_playBtn": "เล่น",
+  "redemption_rewardIceCream": "ไอศกรีม",
+  "redemption_rewardPlaytime": "เล่นเกม 1 ชม.",
+  "redemption_rewardToy": "ของเล่นใหม่",
+  "redemption_rewardStickers": "สติ๊กเกอร์",
+  "redemption_historyPlayedDefault": "เล่นปิงปอง",
+  "redemption_historyRedeemedDefault": "แลกไอศกรีม",
+
+  "dialog_deleteTitle": "ลบโปรไฟล์?",
+  "dialog_deleteContent": "คุณแน่ใจหรือไม่ที่จะลบโปรไฟล์นี้? การกระทำนี้ไม่สามารถย้อนกลับได้",
+  "dialog_confirmDelete": "ลบ",
+  "dialog_cancel": "ยกเลิก",
+  "dialog_saveSuccess": "บันทึกสำเร็จ!",
+
+  "notificationsetting_notificationBtn": "การแจ้งเตือน",
+  "notificationsetting_allnotificationBtn": "การแจ้งเตือนทั้งหมด",
+  "notificationsetting_postBtn": "โพสต์",
+  "notificationsetting_likeBtn": "การถูกใจ",
+  "notificationsetting_commentBtn": "การแสดงความคิดเห็น",
+
+  "videodetail_activitynameBtn": "ชื่อกิจกรรม",
+  "videodetail_nameBtn": "ชื่อ",
+  "videodetail_DescriptionBtn": "คำอธิบาย",
+  "videodetail_descriptionBtn": "คำอธิบาย",
+  "videodetail_howtoplayBtn": "วิธีเล่น / คำแนะนำ:",
+  "videodetail_contentBtn": "เนื้อหา",
+  "videodetail_startBtn": "เริ่ม",
+  "videodetail_addBtn": "เพิ่ม",
+
+  "addchild_namesurnameBtn": "ชื่อและนามสกุล (เด็ก)",
+  "addchild_errorName": "กรุณาระบุชื่อ",
+  "addchild_birthdayBtn": "วันเกิด : วว/ดด/ปปปป",
+  "addchild_okBtn": "OK",
+  "addchild_logoutTitle": "ออกจากระบบ?",
+  "addchild_logoutMsg": "กรุณาเพิ่มลูกอย่างน้อย 1 คนก่อนใช้งานแอป คุณต้องการออกจากระบบหรือไม่?",
+  "addchild_errorRequiredFields": "กรุณากรอกข้อมูลให้ครบทุกช่อง (ชื่อ, วันเกิด, ความสัมพันธ์)",
+
+  "childnamesetting_editnameBtn": "แก้ไขชื่อ",
+  "childnamesetting_saveBtn": "บันทึก",
+
+  "managechild_manageprofileBtn": "จัดการโปรไฟล์",
+  "managechild_nameBtn": "ชื่อ",
+  "managechild_medalsandredemptionBtn": "รางวัลและการแลกรางวัล",
+  "managechild_deleteprofileBtn": "ลบโปรไฟล์",
+
+  "dairyactivity_playhistoryBtn": "ประวัติการเล่น",
+  "dairyactivity_timeBtn": "เวลา",
+  "dairyactivity_medalsBtn": "รางวัล",
+
+  "medalredemption_addrewardBtn": "เพิ่มข้อตกลง",
+  "medalredemption_rewardnameBtn": "ชื่อข้อตกลง",
+  "medalredemption_costBtn": "คะแนน",
+  "medalredemption_cancelBtn": "ยกเลิก",
+  "medalredemption_addBtn": "เพิ่ม",
+  "medalredemption_redemptionBtn": "ข้อตกลง",
+  "medalredemption_activitiesBtn": "กิจกรรม",
+  "medalredemption_currentscoreBtn": "คะแนนปัจจุบัน",
+  "medalredemption_rewardshopBtn": "ข้อตกลง",
+  "medalredemption_successfullyBtn": "แลกรางวัลสำเร็จ",
+
+  "agreement_typeTime": "เวลา",
+  "agreement_typeItem": "สิ่งของ",
+  "agreement_typePrivilege": "สิทธิพิเศษ",
+  "agreement_typeFamily": "กิจกรรมครอบครัว",
+  "agreement_selectType": "เลือกประเภทข้อตกลง",
+  "agreement_confirmTitle": "ยืนยันข้อตกลง",
+  "agreement_confirmMsg": "ใช้ {cost} คะแนนเพื่อแลก \"{name}\"?",
+  "agreement_confirmBtn": "ยืนยัน",
+  "agreement_sessionActive": "กำลังใช้งาน",
+  "agreement_timeRemaining": "เวลาที่เหลือ",
+  "agreement_startTimer": "เริ่ม",
+  "agreement_stopTimer": "หยุด",
+  "agreement_endSession": "สิ้นสุดการใช้งาน",
+  "agreement_sessionComplete": "เสร็จสิ้น!",
+  "agreement_behaviorTitle": "พฤติกรรมเป็นอย่างไร?",
+  "agreement_behaviorGood": "ดี",
+  "agreement_behaviorOk": "ปกติ",
+  "agreement_behaviorBad": "ต้องปรับปรุง",
+  "agreement_bonusMsg": "โบนัส: +{points} คะแนน",
+  "@agreement_bonusMsg": {
+    "placeholders": {
+      "points": { "type": "int" }
+    }
+  },
+  "agreement_confirmMsg": "ใช้ {cost} คะแนนเพื่อแลก \"{name}\"?",
+  "@agreement_confirmMsg": {
+    "placeholders": {
+      "cost": { "type": "int" },
+      "name": { "type": "String" }
+    }
+  },
+  "agreement_deductMsg": "หัก: -{points} คะแนน",
+  "@agreement_deductMsg": {
+    "placeholders": {
+      "points": { "type": "int" }
+    }
+  },
+  "agreement_noChange": "ไม่มีการเปลี่ยนแปลงคะแนน",
+  "agreement_notEnoughPoints": "คะแนนไม่เพียงพอ! ต้องการอีก {needed} คะแนน",
+  "@agreement_notEnoughPoints": {
+    "placeholders": {
+      "needed": { "type": "int" }
+    }
+  },
+  "agreement_durationLabel": "ระยะเวลา (นาที)",
+  "agreement_emptyList": "ยังไม่มีข้อตกลง",
+  "agreement_emptyHint": "กด + เพื่อสร้างข้อตกลงใหม่",
+
+  "videodetail_videoNotAvailable": "ไม่สามารถเล่นวิดีโอได้ (ไม่มีเนื้อหา HTML)",
+  "videodetail_activityNameLabel": "ชื่อกิจกรรม:",
+  "videodetail_descriptionLabel": "รายละเอียด:",
+  "videodetail_howToPlayLabel": "วิธีการเล่น / คำแนะนำ:",
+  "videodetail_categoryPrefix": "หมวดหมู่: ",
+  "videodetail_difficultyPrefix": "ความยาก: ",
+  "videodetail_maxScorePrefix": "คะแนนสูงสุด: ",
+  
+  "physical_snackNoEvidence": "กรุณาแนบวิดีโอหรือรูปภาพหลักฐาน",
+  "physical_snackInvalidScore": "กรุณาระบุคะแนนให้ถูกต้อง (1 ถึง {maxScore})",
+  "@physical_snackInvalidScore": {
+    "placeholders": {
+      "maxScore": { "type": "int" }
+    }
+  },
+  "physical_dialogSubmitTitle": "ส่งข้อมูลเรียบร้อย!",
+  "physical_dialogSubmitContent": "หลักฐานของคุณถูกส่งเพื่อรอการอนุมัติแล้ว",
+  "physical_dialogOkBtn": "ตกลง",
+  "physical_snackSubmitError": "เกิดข้อผิดพลาดในการส่ง: {error}",
+  "@physical_snackSubmitError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "physical_dialogEnterScoreTitle": "ระบุคะแนน",
+  "physical_dialogEnterScoreHint": "ใส่คะแนน (1-{maxScore})",
+  "@physical_dialogEnterScoreHint": {
+    "placeholders": {
+      "maxScore": { "type": "int" }
+    }
+  },
+  "physical_dialogCancelBtn": "ยกเลิก",
+  "physical_snackInvalidInput": "กรุณาใส่คะแนนให้ถูกต้อง (0-{maxScore})",
+  "@physical_snackInvalidInput": {
+    "placeholders": {
+      "maxScore": { "type": "int" }
+    }
+  },
+  "physical_stopBtn": "หยุด",
+  "physical_startBtn": "เริ่ม",
+  "physical_takePhotoBtn": "ถ่ายรูป",
+  "physical_medalsScoreLabel": "เหรียญรางวัล / คะแนน",
+  "physical_diaryLabel": "บันทึกประจำวัน",
+  "physical_diaryHint": "เขียนบันทึกที่นี่...",
+  "physical_imageEvidenceLabel": "หลักฐานรูปภาพ",
+  "physical_videoEvidenceLabel": "หลักฐานวิดีโอ",
+  "physical_timeLabel": "เวลา",
+  "physical_submittingBtn": "กำลังส่งข้อมูล...",
+  "physical_finishBtn": "เสร็จสิ้น",
+  "physical_addChildren": "เพิ่มเด็ก",
+  "physical_addChildrenDesc": "เลือกเด็กที่จะเล่นด้วยกัน",
+  "physical_childrenAdded": "+{count} คน",
+  "@physical_childrenAdded": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "physical_currentChild": "กำลังเล่นอยู่",
+  "physical_confirm": "ยืนยัน",
+
+  "languagedetail_titlePrefix": "ภาษา: ",
+  "languagedetail_categoryPrefix": "หมวดหมู่: ",
+  "languagedetail_activityTitleLabel": "หัวข้อกิจกรรม",
+  "languagedetail_descriptionLabel": "รายละเอียด",
+  "languagedetail_difficultyPrefix": "ความยาก: ",
+  "languagedetail_maxScorePrefix": "คะแนนสูงสุด: ",
+  "languagedetail_startBtn": "เริ่ม",
+  "languagedetail_openInYoutube": "เปิดใน YouTube (ทีวี)",
+
+  "itemintro_recordToEnable": "กดบันทึกเสียงเพื่อฟังเสียงของคุณ",
+  "itemintro_listenExampleBtn": "ฟังตัวอย่าง",
+  "itemintro_practiceNowBtn": "เริ่มฝึกทันที",
+  "itemintro_submitBtn": "ส่งผลงาน",
+  "itemintro_playsection":"เล่นข้อความ",
+  "itemintro_record":"บันทึก",
+  "itemintro_casttotv":"ส่งไปยังทีวี",
+  "itemintro_airplay":"เล่นทางอากาศ",
+  "itemintro_previous":"< ก่อนหน้า",
+  "itemintro_next":"ถัดไป >",
+  "itemintro_finish":"เสร็จสิ้น >",
+  "itemintro_Videonotavailable":"ไม่มีวิดีโอ",
+
+  "record_loading": "กำลังโหลด...",
+  "record_finishBtn": "เสร็จสิ้น",
+  "record_errorMic": "เกิดข้อผิดพลาดหรือไมโครโฟนไม่ได้รับอนุญาต",
+  "record_statusRecording": "กำลังบันทึกเสียง...",
+  "record_statusIdle": "กดไมค์เพื่อเริ่มอัดเสียง",
+
+  "result_activityCompletedDefault": "กิจกรรมเสร็จสมบูรณ์",
+  "result_greatJobTitle": "ยอดเยี่ยมมาก!",
+  "result_totalScoreLabel": "คะแนนรวม",
+  "result_timeSpentLabel": "เวลาที่ใช้",
+  "result_retryBtn": "ลองใหม่",
+  "result_backToActivitiesBtn": "กลับไปหน้ากิจกรรม",
+  "result_returnHomeBtn": "กลับหน้าหลัก",
+  "result_timeFormat": "{minutes} นาที {seconds} วินาที",
+  "@result_timeFormat": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "seconds": { "type": "int" }
+    }
+  },
+
+  "calculate_title": "คำนวณ",
+  "calculate_plusBtn": "บวก +",
+  "calculate_minusBtn": "ลบ -",
+  "calculate_multiplyBtn": "คูณ *",
+  "calculate_divideBtn": "หาร /",
+  "calculate_mixBtn": "ผสม + - * /",
+
+
+  "languagehub_searchHint": "ค้นหา...",
+  "languagehub_trainingTitle": "ฝึกฝนภาษา",
+  "languagehub_listeningSpeakingTitle": "การฟังและการพูด",
+  "languagehub_easyBtn": "ง่าย",
+  "languagehub_mediumBtn": "ปานกลาง",
+  "languagehub_difficultBtn": "ยาก",
+
+  "plus_castToTvBtn": "ขึ้นจอทีวี",
+  "plus_answerBtn": "ดูเฉลย",
+
+
+  "createpost_sharesus":"แชร์โพสต์เรียบร้อย!",
+  "createpost_error":"เกิดข้อผิดพลาด:",
+  "createpost_newpost":"โพสต์ใหม่",
+  "createpost_share":"แชร์",
+  "createpost_picksomepicture":"แตะเพื่อเลือกรูป",
+  "createpost_changepic":"เปลี่ยนรูป",
+  "createpost_writecaption":"เขียนคำบรรยาย...",
+
+  "languagelist_snackNotConnected": "ส่วนนี้ยังไม่ได้เชื่อมต่อกับกิจกรรมจริง",
+
+  "common_categoryLabel": "หมวดหมู่",
+  "common_difficultyLabel": "ความยาก",
+  "common_maxScoreLabel": "คะแนนสูงสุด",
+  "common_categoryLanguage": "ด้านภาษา",
+  "common_categoryPhysical": "ด้านร่างกาย",
+  "common_categoryCalculate": "ด้านคำนวณ",
+  "common_activityLanguage": "กิจกรรมภาษา",
+  "common_activityPhysical": "กิจกรรมร่างกาย",
+  "common_activityCalculate": "กิจกรรมคำนวณ",
+  "common_difficultyEasy": "ง่าย",
+  "common_difficultyMedium": "ปานกลาง",
+  "common_difficultyHard": "ยาก",
+
+  "createActivity_title": "สร้างกิจกรรม",
+  "createActivity_selectCategory": "เลือกหมวดหมู่",
+  "createActivity_physical": "ด้านร่างกาย",
+  "createActivity_calculate": "ด้านคำนวณ",
+  "createActivity_name": "ชื่อกิจกรรม",
+  "createActivity_description": "คำอธิบาย",
+  "createActivity_content": "วิธีเล่น / คำแนะนำ",
+  "createActivity_difficulty": "ระดับความยาก",
+  "createActivity_maxScore": "คะแนนสูงสุด",
+  "createActivity_videoUrl": "URL วิดีโอ (TikTok)",
+  "createActivity_addQuestion": "เพิ่มโจทย์",
+  "createActivity_question": "คำถาม",
+  "createActivity_answer": "คำตอบ",
+  "createActivity_solution": "วิธีทำ / อธิบาย",
+  "createActivity_score": "คะแนน",
+  "createActivity_submit": "สร้าง",
+  "createActivity_success": "สร้างกิจกรรมสำเร็จ!",
+  "createActivity_error": "ไม่สามารถสร้างกิจกรรมได้",
+  "createActivity_nameRequired": "กรุณาระบุชื่อกิจกรรม",
+  "createActivity_contentRequired": "กรุณาระบุวิธีเล่น",
+  "createActivity_needQuestions": "กรุณาเพิ่มโจทย์อย่างน้อย 1 ข้อ",
+  "createActivity_questionNo": "โจทย์ที่ {index}",
+  "@createActivity_questionNo": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "createActivity_removeQuestion": "ลบ",
+  "createActivity_creating": "กำลังสร้าง...",
+
+  "profile_myActivities": "กิจกรรมของฉัน",
+  "profile_noActivities": "ยังไม่มีกิจกรรม",
+  "profile_editActivity": "แก้ไขกิจกรรม",
+  "profile_deleteActivity": "ลบกิจกรรม",
+  "profile_deleteConfirm": "คุณแน่ใจหรือไม่ว่าต้องการลบ \"{name}\"?",
+  "@profile_deleteConfirm": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "profile_deleteSuccess": "ลบกิจกรรมแล้ว",
+  "profile_updateSuccess": "อัปเดตกิจกรรมแล้ว",
+  "profile_save": "บันทึก",
+  "profile_manage": "จัดการ",
+
+  "share_title": "แชร์ผลลัพธ์",
+  "share_asImage": "รูปภาพ",
+  "share_asText": "ข้อความ",
+  "share_greatJob": "ยอดเยี่ยม!",
+  "share_keepTrying": "สู้ต่อไป!",
+  "share_textTemplate": "ฉันได้ {score}/{maxScore} คะแนนจากกิจกรรม \"{activityName}\" ใน Skill Wallet Kizuna!",
+  "@share_textTemplate": {
+    "placeholders": {
+      "activityName": { "type": "String" },
+      "score": { "type": "int" },
+      "maxScore": { "type": "int" }
+    }
+  },
+
+  "common_loginFailed": "เข้าสู่ระบบไม่สำเร็จ กรุณาลองอีกครั้ง",
+  "common_errorGeneric": "ข้อผิดพลาด: {msg}",
+  "@common_errorGeneric": {
+    "placeholders": {
+      "msg": { "type": "String" }
+    }
+  },
+  "common_error": "ข้อผิดพลาด",
+  "common_processing": "กำลังดำเนินการ...",
+  "common_retry": "ลองอีกครั้ง",
+  "common_cancel": "ยกเลิก",
+  "common_close": "ปิด",
+  "common_noServer": "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์",
+  "audio_tooShort": "ข้อมูลเสียงสั้นเกินไป — ลองอีกครั้ง",
+  "audio_notFound": "ไม่พบไฟล์เสียง — ลองอีกครั้ง",
+  "audio_analyseFailed": "วิเคราะห์ไม่สำเร็จ — ลองอีกครั้ง",
+
+  "calculate_restartTitle": "เริ่มใหม่?",
+  "calculate_restartMsg": "เวลาและคำตอบจะถูกรีเซ็ต",
+  "calculate_restartBtn": "เริ่มใหม่",
+  "calculate_solutionTitle": "ข้อที่ #{index}",
+  "@calculate_solutionTitle": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "calculate_questionLabel": "โจทย์:",
+  "calculate_answerLabel": "คำตอบ:",
+  "calculate_pressStart": "กดปุ่มเริ่มเพื่อจับเวลา",
+  "calculate_questionsAfterTimer": "โจทย์จะแสดงหลังจากจับเวลาเสร็จ",
+  "calculate_failedPickFile": "เลือกไฟล์ไม่สำเร็จ: {error}",
+  "@calculate_failedPickFile": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "calculate_childIdNotFound": "ไม่พบรหัสเด็ก กรุณาเข้าสู่ระบบอีกครั้ง",
+  "calculate_errorCompleting": "เกิดข้อผิดพลาดในการทำกิจกรรม: {error}",
+  "@calculate_errorCompleting": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "itemintro_videoLoading": "กรุณารอสักครู่ กำลังโหลดวิดีโอ...",
+  "itemintro_timingIncomplete": "ข้อมูลเวลาสำหรับประโยคนี้ไม่สมบูรณ์",
+  "itemintro_videoPlayError": "ไม่สามารถเล่นวิดีโอได้: {error}",
+  "@itemintro_videoPlayError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "itemintro_micPermission": "กรุณาอนุญาตการเข้าถึงไมโครโฟน",
+  "itemintro_recordStartError": "ไม่สามารถเริ่มบันทึกเสียงได้: {error}",
+  "@itemintro_recordStartError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "itemintro_recordTooShort": "บันทึกเสียงสั้นเกินไป กรุณาลองอีกครั้ง",
+  "itemintro_evalResult": "ผลการประเมิน: {score}% - \"{text}\"",
+  "@itemintro_evalResult": {
+    "placeholders": {
+      "score": { "type": "int" },
+      "text": { "type": "String" }
+    }
+  },
+  "itemintro_questError": "เกิดข้อผิดพลาดในการทำกิจกรรม: {error}",
+  "@itemintro_questError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "itemintro_playbackFailed": "ไม่สามารถเล่นเสียงที่บันทึกได้",
+
+  "record_micDenied": "ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน",
+  "record_recordingFailed": "การบันทึกเสียงล้มเหลว",
+  "record_playbackFailed": "ไม่สามารถเล่นเสียงได้",
+  "record_noValidAudio": "ข้อผิดพลาด: ไม่มีเสียงที่บันทึกไว้",
+  "record_aiError": "ข้อผิดพลาด AI: {error}",
+  "@record_aiError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+
+  "medals_noActivityHistory": "ไม่มีประวัติกิจกรรม",
+  "medals_noHistory": "ไม่มีประวัติ",
+
+  "post_noComments": "ยังไม่มีความคิดเห็น เป็นคนแรกเลย!",
+
+  "namesetting_saveFailed": "ไม่สามารถบันทึกชื่อได้ กรุณาลองอีกครั้ง",
+
+  "activityCard_selectChild": "กรุณาเลือกเด็ก",
+  "activityCard_selectChildMsg": "คุณต้องเลือกเด็กก่อนจึงจะสามารถเล่นกิจกรรมได้",
+  "activityCard_goSelect": "ไปเลือกเด็ก",
+
+  "childsetting_addSuccess": "เพิ่มเด็กสำเร็จ",
+  "childsetting_deleteSuccess": "ลบเด็กสำเร็จ",
+  "childsetting_selectSuccess": "เลือกเด็กสำเร็จ",
+  "childsetting_noChildren": "ยังไม่มีเด็กในระบบ",
+  "childsetting_addChild": "เพิ่มเด็ก",
+  "childsetting_active": "กำลังใช้งาน",
+  "childsetting_select": "เลือก",
+
+  "common_selectSource": "เลือกแหล่ง",
+  "common_camera": "กล้อง",
+  "common_gallery": "แกลเลอรี",
+  "common_pickFromGallery": "เลือกรูปจากแกลเลอรี",
+  "common_useGooglePhoto": "ใช้รูปโปรไฟล์ Google",
+  "common_useFacebookPhoto": "ใช้รูปโปรไฟล์ Facebook",
+  "common_useOriginalPhoto": "ใช้รูปโปรไฟล์เดิม",
+  "common_uploadPhotoFailed": "อัปโหลดรูปไม่สำเร็จ",
+  "common_photoNotFound": "ไม่พบรูปโปรไฟล์จาก {provider}",
+  "@common_photoNotFound": {
+    "placeholders": {
+      "provider": { "type": "String" }
+    }
+  },
+  "common_ok": "ตกลง",
+  "common_submit": "ส่ง",
+  "common_addImage": "เพิ่มรูป",
+  "common_addVideo": "เพิ่มวิดีโอ",
+  "common_videoAdded": "เพิ่มวิดีโอแล้ว",
+  "common_image": "รูปภาพ",
+  "common_video": "วิดีโอ",
+  "common_howToPlay": "วิธีเล่น",
+  "common_questions": "คำถาม",
+  "common_evidence": "หลักฐาน",
+  "common_finish": "เสร็จสิ้น",
+  "common_start": "เริ่ม",
+  "common_restart": "เริ่มใหม่",
+  "common_done": "เสร็จ",
+  "common_submitting": "กำลังส่งข้อมูล...",
+  "common_score": "คะแนน",
+
+  "calculate_noAnswer": "ไม่มีเฉลย",
+  "calculate_answer": "ตอบ",
+  "calculate_answerAgain": "ตอบอีกครั้ง",
+  "calculate_stopBeforeAnswer": "หยุดเวลาก่อนตอบ",
+  "calculate_yourAnswer": "คำตอบของคุณ: {answer}",
+  "calculate_typeAnswer": "พิมพ์คำตอบ...",
+  "calculate_diaryNotes": "บันทึก / โน้ต",
+  "calculate_writeNotes": "เขียนบันทึกที่นี่...",
+  "calculate_noQuestions": "ไม่มีคำถาม",
+  "calculate_confirmFinishTitle": "หยุดจับเวลา?",
+  "calculate_confirmFinishMsg": "คุณแน่ใจหรือไม่ว่าต้องการหยุด? ไม่สามารถเริ่มจับเวลาใหม่ได้",
+  "calculate_descriptionLabel": "คำอธิบาย",
+  "calculate_solutionLabel": "วิธีทำ:",
+  "calculate_correct": "ถูก",
+  "calculate_incorrect": "ผิด",
+
+  "record_title": "บันทึกเสียง",
+
+  "itemintro_segmentOf": "ข้อ {current} จาก {total}",
+  "@itemintro_segmentOf": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "itemintro_speak": "พูด",
+  "itemintro_point": "คะแนน",
+  "itemintro_completed": "เสร็จแล้ว",
+  "itemintro_pausePlayback": "หยุดเล่น...",
+  "itemintro_listenRecording": "ฟังเสียงที่บันทึก",
+  "itemintro_recordToPlayback": "กดบันทึกเสียงเพื่อฟังเสียงของคุณ",
+
+  "videodetail_previewNotAvailable": "ไม่สามารถแสดงตัวอย่างวิดีโอได้",
+  "videodetail_openInBrowser": "เปิดในเบราว์เซอร์เพื่อรับชม",
+  "videodetail_openTiktok": "เปิด TIKTOK",
+  "videodetail_openInTiktokTV": "เปิดใน TikTok (ทีวี)",
+  "videodetail_noVideoUrl": "ไม่มีลิงก์วิดีโอ",
+  "calculate_tvMode": "โหมดทีวี",
+  "calculate_tvModeHint": "เลื่อนเพื่อดูข้อถัดไป",
+  "calculate_questionsCount": "ข้อ",
+  "calculate_tvModeBannerTitle": "แชร์ไปทีวี",
+  "calculate_tvModeBannerSub": "แสดงโจทย์บนหน้าจอใหญ่",
+
+  "languagehub_appTitle": "กระท่อน",
+  "languagehub_fillInBlanksTitle": "เติมคำในช่องว่าง",
+
+
+  "result_resultTitle": "ผลลัพธ์",
+  "result_totalScoreTitle": "คะแนนรวม",
+  "result_keepTryingTitle": "สู้ต่อไป!",
+  "result_timeSpentPrefix": "เวลาที่ใช้: ",
+  "result_playAgainBtn": "เล่นอีกครั้ง",
+
+  "plus_title": "บวก +",
+  "plus_questionTitle": "โจทย์",
+  "plus_startBtn": "เริ่ม",
+
+  "answerplus_title": "เฉลย บวก +",
+  "answerplus_questionLabel": "โจทย์",
+  "answerplus_answerLabel": "เฉลย",
+
+  "email_loginTitle": "เข้าสู่ระบบด้วยอีเมล",
+  "email_registerTitle": "สมัครสมาชิก",
+  "email_emailHint": "อีเมล",
+  "email_passwordHint": "รหัสผ่าน",
+  "email_nameHint": "ชื่อ-นามสกุล",
+  "email_loginBtn": "เข้าสู่ระบบ",
+  "email_registerBtn": "สมัครสมาชิก",
+  "email_forgotPassword": "ลืมรหัสผ่าน?",
+  "email_noAccount": "ยังไม่มีบัญชี? สมัครสมาชิก",
+  "email_hasAccount": "มีบัญชีอยู่แล้ว? เข้าสู่ระบบ",
+  "email_resetSent": "ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว กรุณาตรวจสอบกล่องจดหมาย",
+  "email_passwordTooShort": "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+  "email_enterEmail": "กรุณากรอกอีเมล",
+  "email_enterPassword": "กรุณากรอกรหัสผ่าน",
+  "email_enterName": "กรุณากรอกชื่อ",
+  "email_forgotTitle": "รีเซ็ตรหัสผ่าน",
+  "email_forgotMsg": "กรอกอีเมลของคุณเพื่อรับลิงก์รีเซ็ตรหัสผ่าน",
+  "email_sendReset": "ส่ง",
+  "email_loginWithEmail": "เข้าสู่ระบบด้วยอีเมล",
+  "email_confirmSent": "ส่งอีเมลยืนยันบัญชีแล้ว กรุณาตรวจสอบกล่องจดหมายและคลิกลิงก์เพื่อยืนยัน จากนั้นกลับมาเข้าสู่ระบบ",
+  "email_confirmPasswordHint": "ยืนยันรหัสผ่าน",
+  "email_passwordsDoNotMatch": "รหัสผ่านไม่ตรงกัน",
+
+  "register_childNameHint": "ชื่อ-นามสกุล",
+  "register_birthdayHint": "วว/ดด/ปปปป",
+
+  "relation_label": "ความสัมพันธ์",
+  "relation_hint": "เลือกความสัมพันธ์",
+  "relation_parent": "พ่อ/แม่",
+  "relation_grandparentPaternal": "ปู่/ย่า (ฝ่ายพ่อ)",
+  "relation_grandparentMaternal": "ตา/ยาย (ฝ่ายแม่)",
+  "relation_auntUncle": "ลุง/ป้า/น้า/อา",
+  "relation_caregiver": "คนดูแล",
+  "relation_nanny": "พี่เลี้ยง",
+
+  "activityhistory_selectDate": "เลือกวันที่",
+  "activityhistory_times": "{count} ครั้ง",
+  "@activityhistory_times": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "activityhistory_noHistory": "ยังไม่มีประวัติกิจกรรม",
+  "activityhistory_inCategory": "ในหมวด {category}",
+  "@activityhistory_inCategory": {
+    "placeholders": {
+      "category": { "type": "String" }
+    }
+  },
+
+  "dailyactivity_playingHistory": "ประวัติการเล่น",
+  "dailyactivity_noData": "ไม่มีข้อมูล",
+  "dailyactivity_activity": "กิจกรรม",
+
+  "childprofile_language": "ด้านภาษา",
+  "childprofile_physical": "ด้านร่างกาย",
+  "childprofile_calculation": "ด้านคำนวณ",
+  "childprofile_unknownName": "ไม่ระบุชื่อ",
+  "childprofile_noHistory": "ยังไม่มีประวัติกิจกรรม",
+  "childprofile_startPlaying": "เริ่มเล่นกิจกรรมเพื่อดูสถิติที่นี่",
+  "childprofile_totalActivities": "กิจกรรมทั้งหมด",
+  "childprofile_times": "ครั้ง",
+
+  "medalredemption_activity": "กิจกรรม",
+  "medalredemption_done": "เสร็จสิ้น",
+  "medalredemption_points": "คะแนน",
+
+  "playingresult_activity": "กิจกรรม",
+  "playingresult_title": "ผลการเล่น",
+  "playingresult_session": "ครั้งที่ {number}",
+  "@playingresult_session": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "playingresult_scoreObtained": "คะแนนที่ได้",
+  "playingresult_diary": "บันทึก",
+  "playingresult_noNotes": "ไม่มีบันทึก",
+  "playingresult_image": "รูปภาพ",
+  "playingresult_video": "วิดีโอ",
+  "playingresult_videoAttached": "มีวิดีโอแนบ",
+  "playingresult_timeSpent": "เวลาที่ใช้",
+  "playingresult_noImage": "ไม่มีรูปภาพ",
+  "playingresult_sentencesSpoken": "ประโยคที่พูด",
+  "playingresult_sentence": "ประโยค {number}",
+  "@playingresult_sentence": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "playingresult_sentenceToSpeak": "ประโยคที่ต้องพูด:",
+  "playingresult_whatWasSpoken": "สิ่งที่พูด:",
+  "playingresult_noData": "(ไม่มีข้อมูล)",
+  "playingresult_noSpeechData": "ไม่มีข้อมูลการพูด",
+  "playingresult_answerResults": "ผลการตอบคำถาม",
+  "playingresult_questionLabel": "ข้อ {number}",
+  "@playingresult_questionLabel": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "playingresult_questionFallback": "คำถามข้อ {number}",
+  "@playingresult_questionFallback": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+
+  "summary_title": "ตรวจสอบการบันทึกเสียง",
+  "summary_completeActivity": "เสร็จสิ้นกิจกรรม",
+  "summary_segmentLabel": "ประโยคที่ {n}",
+  "@summary_segmentLabel": {
+    "placeholders": { "n": { "type": "int" } }
+  },
+  "summary_pendingAnalysis": "กำลังวิเคราะห์อีก {n} ประโยค…",
+  "@summary_pendingAnalysis": {
+    "placeholders": { "n": { "type": "int" } }
+  },
+  "summary_reRecord": "อัดเสียงใหม่",
+  "summary_notRecorded": "ยังไม่ได้บันทึกเสียง",
+  "summary_notRecordedShort": "—",
+  "summary_analyzing": "กำลังวิเคราะห์…",
+  "summary_analysisFailed": "วิเคราะห์ไม่สำเร็จ — กดอัดเสียงใหม่เพื่อลองอีกครั้ง",
+  "summary_youSaid": "คุณพูดว่า",
+  "summary_error": "ข้อผิดพลาด",
+  "summary_reviewShort": "ตรวจสอบ",
+  "summary_stopRecord": "หยุด",
+
+  "profile_gallery" : "เลือกรูปจากคลัง / Gallery",
+  "profile_google" : "ใช้รูปโปรไฟล์ Google",
+  "profile_facebook" : "ใช้รูปโปลไฟล์ Facebook"
+}

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- ✅ สำหรับ Development: อนุญาต cleartext traffic -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- localhost สำหรับ emulator -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- localhost สำหรับ physical device (ถ้าใช้ ngrok หรือ IP เครื่อง) -->
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+
+    <!-- ✅ Base configuration สำหรับ HTTPS ปกติ -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

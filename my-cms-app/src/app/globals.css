@@ -1,0 +1,396 @@
+/* src/app/globals.css */
+@import "tailwindcss";
+
+/* =======================================================
+   1. ROOT VARIABLES (LIGHT MODE DEFAULT)
+   ======================================================= */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --color-primary: #6B4AE2;
+  --color-secondary: #AA94FD;
+  --color-primary--text: #585469;
+  --color-secondary--text: #938FA2;
+  --color-stroke: #010104;
+  --color-purple: #6B4AE2;
+  --color-purple--dark: #412D89;
+  --color-purple--dark3: #724DFB;
+  --color-purple--light2: #B19CFC;
+  --color-purple--light3: #CABDFD;
+  --color-purple--light4: #E5DFFF;
+  --color-purple--light5: #F0EDFC;
+  --color-purple--light6: #D5CAFE;
+  --color-dark: #1F1E24;
+  --color-dark2: #3C3B42;
+  --color-dark--gray: #2C2B33;
+  --color-yellow--light: #FCD34D;
+  --color-yellow--light2: #FDE68A;
+  --color-yellow--light3: #FEF3C7;
+  --color-gray2: #F5F5F8;
+  --color-gray3: #F0F0F4;
+  --color-gray4: #EBEBF0;
+  --color-gray6: #D8D8E1;
+  --color-gray7: #CED4DA;
+  --color-gray--light1: #F9FAFB;
+  --color-cyan--light3: #E2F4FF;
+  --color-red: #F23030;
+  --color-red--dark: #E10E0E;
+  --color-red--light6: #FEF3F3;
+  --color-green: #22AD5C;
+  --color-green--dark: #1A8245;
+  --color-green--light6: #DAF8E6;
+}
+
+/* =======================================================
+   2. DARK MODE OVERRIDE (ถ้าต้องการรองรับ Dark Mode)
+      *ถ้าไม่ต้องการให้เว็บรองรับ Dark Mode เลย ให้ลบส่วนนี้ออก
+   ======================================================= */
+
+/* @media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+} */
+
+/* =======================================================
+   3. TAILWIND @theme (สำหรับ Next.js/Tailwind Config)
+   ======================================================= */
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-primary--text: var(--color-primary--text);
+  --color-secondary--text: var(--color-secondary--text);
+  --color-stroke: var(--color-stroke);
+  --color-purple: var(--color-purple);
+  --color-purple--dark: var(--color-purple--dark);
+  --color-purple--dark3: var(--color-purple--dark3);
+  --color-purple--light2: var(--color-purple--light2);
+  --color-purple--light3: var(--color-purple--light3);
+  --color-purple--light4: var(--color-purple--light4);
+  --color-purple--light5: var(--color-purple--light5);
+  --color-purple--light6: var(--color-purple--light6);
+  --color-dark: var(--color-dark);
+  --color-dark2: var(--color-dark2);
+  --color-dark--gray: var(--color-dark--gray);
+  --color-yellow--light: var(--color-yellow--light);
+  --color-yellow--light2: var(--color-yellow--light2);
+  --color-yellow--light3: var(--color-yellow--light3);
+  --color-gray2: var(--color-gray2);
+  --color-gray3: var(--color-gray3);
+  --color-gray4: var(--color-gray4);
+  --color-gray6: var(--color-gray6);
+  --color-gray7: var(--color-gray7);
+  --color-gray--light1: var(--color-gray--light1);
+  --color-cyan--light3: var(--color-cyan--light3);
+  --color-red: var(--color-red);
+  --color-red--dark: var(--color-red--dark);
+  --color-red--light6: var(--color-red--light6);
+  --color-green: var(--color-green);
+  --color-green--dark: var(--color-green--dark);
+  --color-green--light6: var(--color-green--light6);
+}
+
+/* =======================================================
+   4. BASE STYLES AND FIX FOR DARK MODE ISSUE
+   ======================================================= */
+
+/* การแก้ไข: บังคับให้ HTML และ BODY ใช้สีขาว และกำหนดสีข้อความเริ่มต้น */
+/* การใช้ :root, html, body จะให้ Specificity สูงสุดเพื่อแก้ไขปัญหาพื้นหลังดำ */
+:root,
+html,
+body {
+  /* ใช้สีขาวตามตัวแปร แต่เพิ่ม !important ในส่วนของการแก้ไขปัญหาพื้นหลังดำชั่วคราว */
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+  font-family: Arial, Helvetica, sans-serif;
+  /* กำหนดสีข้อความพื้นฐานสำหรับองค์ประกอบอื่น ๆ */
+}
+
+/* เนื่องจาก :root, html, body ถูกกำหนดแล้ว สามารถลบ body {} ออกไปได้ */
+/* body {
+  background: var(--background);
+  color: var(--color-primary--text);
+  font-family: Arial, Helvetica, sans-serif;
+} */
+
+
+/* =======================================================
+   5. UTILITY CLASSES & COMPONENTS (เช่น btn-primary, heading-h1, .input)
+   ======================================================= */
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+  border: var(--color-stroke) solid 1px;
+  cursor: pointer;
+}
+
+.btn-primary2 {
+  background-color: var(--color-primary);
+  color: white;
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-border {
+  border-color: var(--color-primary);
+}
+.btn-primary:hover {
+  background-color: var(--color-purple--dark3);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  color: white;
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #9A84F0;
+}
+
+.btn-white {
+  background-color: white;
+  color: var(--color-dark);
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+  border: var(--color-stroke) solid 1px;
+  cursor: pointer;
+}
+
+.btn-white:hover {
+  background-color: var(--color-gray--light1);
+}
+
+/* --- Special Headings --- */
+.heading-h1 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 42px;
+}
+@media (min-width: 768px) {
+  .heading-h1 {
+    font-size: 60px;
+    line-height: 72px;
+  }
+}
+
+.heading-h2 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 38px;
+}
+@media (min-width: 768px) {
+  .heading-h2 {
+    font-size: 48px;
+    line-height: 58px;
+  }
+}
+
+.heading-h3 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 32px;
+}
+@media (min-width: 768px) {
+  .heading-h3 {
+    font-size: 40px;
+    line-height: 48px;
+  }
+}
+
+.heading-h4 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 28px;
+}
+@media (min-width: 768px) {
+  .heading-h4 {
+    font-size: 30px;
+    line-height: 38px;
+  }
+}
+
+.heading-h5 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 24px;
+}
+@media (min-width: 768px) {
+  .heading-h5 {
+    font-size: 28px;
+    line-height: 40px;
+  }
+}
+
+.heading-h6 {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 24px;
+}
+@media (min-width: 768px) {
+  .heading-h6 {
+    font-size: 24px;
+    line-height: 30px;
+  }
+}
+
+/* --- Body Large Text --- */
+.body-large-regular {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+}
+@media (min-width: 768px) {
+  .body-large-regular {
+    font-size: 18px;
+    line-height: 26px;
+  }
+}
+
+.body-large-medium {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+}
+@media (min-width: 768px) {
+  .body-large-medium {
+    font-size: 18px;
+    line-height: 26px;
+  }
+}
+
+.body-large-semibold {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+}
+@media (min-width: 768px) {
+  .body-large-semibold {
+    font-size: 18px;
+    line-height: 26px;
+  }
+}
+
+.body-large-bold {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 24px;
+}
+@media (min-width: 768px) {
+  .body-large-bold {
+    font-size: 18px;
+    line-height: 26px;
+  }
+}
+
+/* --- Body Medium Text --- */
+.body-medium-regular,
+.body-medium-medium,
+.body-medium-semibold,
+.body-medium-bold {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.body-medium-regular {
+  font-weight: 400;
+}
+.body-medium-medium {
+  font-weight: 500;
+}
+.body-medium-semibold {
+  font-weight: 600;
+}
+.body-medium-bold {
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .body-medium-regular,
+  .body-medium-medium,
+  .body-medium-semibold,
+  .body-medium-bold {
+    font-size: 16px;
+    line-height: 24px;
+  }
+}
+
+/* --- Body Small Text --- */
+.body-small-regular,
+.body-small-medium,
+.body-small-bold {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.body-small-regular {
+  font-weight: 400;
+}
+.body-small-medium {
+  font-weight: 500;
+}
+.body-small-bold {
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .body-small-regular,
+  .body-small-medium,
+  .body-small-bold {
+    font-size: 14px;
+    line-height: 22px;
+  }
+}
+
+/* --- Body Extra Small Text --- */
+.body-xs-regular,
+.body-xs-medium,
+.body-xs-bold {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.body-xs-regular {
+  font-weight: 400;
+}
+.body-xs-medium {
+  font-weight: 500;
+}
+.body-xs-bold {
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .body-xs-regular,
+  .body-xs-medium,
+  .body-xs-bold {
+    font-size: 12px;
+    line-height: 20px;
+  }
+}
