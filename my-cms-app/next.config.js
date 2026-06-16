@@ -2,6 +2,7 @@
 const nextConfig = {
   // Suppress workspace root warning
   outputFileTracingRoot: require('path').join(__dirname),
+  allowedDevOrigins: ['finisher-sandal-petted.ngrok-free.dev'],
 
   // Production optimization
   experimental: {

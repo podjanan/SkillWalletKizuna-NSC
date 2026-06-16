@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const CMS_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
 const CMS_EVALUATION_PATH = '/ai-evaluation'; 
-const CMS_EVAL_URL = `${CMS_API_BASE || 'http://localhost:8080/api'}${CMS_EVALUATION_PATH}`;
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*', 
@@ -214,9 +213,13 @@ export async function POST(request: NextRequest) {
     try {
         // 1. รับ FormData จาก Flutter App
         const formData = await request.formData();
+
+        const cmsApiBase =
+            CMS_API_BASE || `${request.nextUrl.origin.replace(/\/$/, '')}/api`;
+        const cmsEvalUrl = `${cmsApiBase.replace(/\/$/, '')}${CMS_EVALUATION_PATH}`;
         
         // 2. ส่งต่อ Request Payload ไปยัง Backend CMS
-        const cmsResponse = await fetch(CMS_EVAL_URL, {
+        const cmsResponse = await fetch(cmsEvalUrl, {
             method: 'POST',
             body: formData,
             headers: {

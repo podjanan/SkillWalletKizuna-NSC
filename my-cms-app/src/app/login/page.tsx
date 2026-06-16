@@ -35,20 +35,13 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      const { data, error: signInError } = await authClient.signIn.email({
+      const { error: signInError } = await authClient.signIn.email({
         email,
         password,
       })
 
       if (signInError) {
         setError(signInError.message || 'เข้าสู่ระบบไม่สำเร็จ')
-        return
-      }
-
-      const role = (data?.user as any)?.role
-      if (role !== 'admin') {
-        await authClient.signOut()
-        setError('คุณไม่มีสิทธิ์เข้าถึงระบบนี้ เฉพาะผู้ดูแลระบบเท่านั้น')
         return
       }
 

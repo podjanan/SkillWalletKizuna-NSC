@@ -29,11 +29,16 @@ function withCors(req: NextRequest, res: NextResponse) {
 }
 
 async function getSession(req: NextRequest): Promise<Session | null> {
-  // Use BETTER_AUTH_URL (localhost) for internal fetch to avoid going through public network
-  const baseURL = process.env.BETTER_AUTH_URL || req.nextUrl.origin
+  const baseURL =
+    process.env.INTERNAL_AUTH_URL ||
+    process.env.BETTER_AUTH_INTERNAL_URL ||
+    req.nextUrl.origin
   try {
     const res = await fetch(`${baseURL}/api/auth/get-session`, {
-      headers: { cookie: req.headers.get('cookie') || '' },
+      headers: {
+        cookie: req.headers.get('cookie') || '',
+        'ngrok-skip-browser-warning': 'true',
+      },
     })
     if (!res.ok) return null
     return await res.json()
