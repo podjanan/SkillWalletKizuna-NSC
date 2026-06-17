@@ -15,6 +15,7 @@ import '../screens/activities/listing/language_list_screen.dart';
 import '../screens/activities/gameplay/item_intro_screen.dart';
 import '../screens/activities/gameplay/record_screen.dart';
 import '../screens/activities/gameplay/result_screen.dart';
+import '../screens/activities/gameplay/dynamic_vocabulary_game_screen.dart';
 import '../models/activity.dart';
 import '../screens/activities/detail/physical_video_screen.dart';
 import '../screens/activities/detail/language_detail_screen.dart';
@@ -41,6 +42,7 @@ class AppRoutes {
   static const String itemIntro = '/item-intro';
   static const String record = '/record';
   static const String result = '/result';
+  static const String dynamicVocabularyGame = '/dynamic-vocabulary-game';
   static const String videoDetail = '/video-detail';
   static const String languageDetail = '/language-detail';
   static const String physicalActivity = '/physical-activity';
@@ -65,6 +67,7 @@ class AppRoutes {
         // Activities
         languageHub: (_) => const LanguageHubScreen(),
         languageList: (_) => const LanguageListScreen(),
+        dynamicVocabularyGame: (_) => const DynamicVocabularyGameScreen(),
 
         // Item Intro
         itemIntro: (context) {

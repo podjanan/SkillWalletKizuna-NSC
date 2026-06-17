@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { shouldInjectAiWordActivity } from '@/lib/ai-word-game';
 
 // Helper function to safely serialize JSON fields
 function safeJsonSerialize(value: any) {
@@ -164,14 +165,19 @@ export async function GET(request: Request) {
       }
     });
 
+    const virtualAiWordActivity = await shouldInjectAiWordActivity(category, ownedBy);
+    const data = virtualAiWordActivity
+      ? [virtualAiWordActivity, ...activitiesResponse]
+      : activitiesResponse;
+
     // Return with proper structure (match frontend expectations)
     const response = {
       success: true,  // ✅ เพิ่ม success flag
-      data: activitiesResponse,  // ✅ ใช้ data แทน activities
+      data,
       pagination: {
         currentPage: page,
         totalPages,
-        total: totalCount,  // ✅ ใช้ total แทน totalCount
+        total: totalCount + (virtualAiWordActivity ? 1 : 0),
         limit
       }
     };

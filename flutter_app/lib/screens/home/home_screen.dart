@@ -566,6 +566,11 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       onTap: () {
         // ✅ ตรวจสอบว่าเลือกเด็กแล้วหรือยัง
+        if (activity.isAiWordGame) {
+          Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame);
+          return;
+        }
+
         final userProvider = context.read<UserProvider>();
         if (userProvider.currentChildId == null) {
           _showSelectChildDialog();
@@ -592,7 +597,15 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (thumbnailUrl != null && hasYouTubeVideo)
+            if (activity.isAiWordGame ||
+                (activity.thumbnailUrl?.startsWith('asset:') ?? false))
+              Image.asset(
+                (activity.thumbnailUrl ??
+                        'asset:assets/images/voice_quest_cover.png')
+                    .replaceFirst('asset:', ''),
+                fit: BoxFit.cover,
+              )
+            else if (thumbnailUrl != null && hasYouTubeVideo)
               // YouTube thumbnail 4:3 มีแถบดำ → ขยาย 1.3x ตัดแถบดำ
               Transform.scale(
                 scale: 1.3,

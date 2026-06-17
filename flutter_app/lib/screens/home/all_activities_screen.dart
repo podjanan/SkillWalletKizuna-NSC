@@ -192,6 +192,11 @@ class _ActivityGridCard extends StatelessWidget {
     }
 
     void navigate() {
+      if (activity.isAiWordGame) {
+        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame);
+        return;
+      }
+
       final userProvider = context.read<UserProvider>();
       if (userProvider.currentChildId == null) {
         showSelectChildDialog();
@@ -268,6 +273,17 @@ class _ActivityGridCard extends StatelessWidget {
   Widget _buildThumbnail(
       {required bool hasTikTok, String? youtubeThumbnailUrl}) {
     final category = activity.category;
+
+    if (activity.isAiWordGame ||
+        (activity.thumbnailUrl?.startsWith('asset:') ?? false)) {
+      return Image.asset(
+        (activity.thumbnailUrl ?? 'asset:assets/images/voice_quest_cover.png')
+            .replaceFirst('asset:', ''),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
 
     if (hasTikTok && activity.thumbnailUrl != null) {
       return Image.network(activity.thumbnailUrl!,

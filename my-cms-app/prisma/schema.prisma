@@ -188,3 +188,78 @@ model redemption {
   medals           medals?   @relation(fields: [medals_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "Redemption_Medals_id_fkey")
   parent           parent?   @relation(fields: [parent_id], references: [parent_id], onDelete: Cascade, map: "Redemption_Parent_id_fkey")
 }
+
+model ai_word_game_settings {
+  id                   String   @id @default("default")
+  enabled              Boolean  @default(true)
+  show_in_app          Boolean  @default(true)
+  title                String   @default("Voice Quest")
+  description          String   @default("สุ่มคำศัพท์และรูปภาพ แล้วฝึกออกเสียง")
+  cover_image_url      String   @default("asset:assets/images/voice_quest_cover.png")
+  max_score            Int      @default(100)
+  use_gemini           Boolean  @default(true)
+  use_pixabay          Boolean  @default(true)
+  use_pexels           Boolean  @default(true)
+  image_provider_order String   @default("pixabay,pexels")
+  gemini_model         String   @default("gemini-2.0-flash")
+  prompt_template      String   @default("You are creating an English vocabulary game for children ages 4-9. Pick exactly one simple English word from this category: {{category}}. Return only JSON with keys: word, category, thaiMeaning, phonetic. Use a concrete noun that is easy to illustrate and pronounce. Do not include markdown or explanation.")
+  image_query_suffix   String   @default("cartoon illustration for kids")
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model ai_word_category {
+  id          String                  @id @default(cuid())
+  slug        String                  @unique
+  label       String
+  thai_label  String?
+  icon        String?
+  color       String?
+  active      Boolean                 @default(true)
+  sort_order  Int                     @default(0)
+  created_at  DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime                @updatedAt @db.Timestamptz(6)
+  words       ai_word_fallback_word[]
+  logs        ai_word_generation_log[]
+}
+
+model ai_word_fallback_word {
+  id           String           @id @default(cuid())
+  category_id  String
+  word         String
+  thai_meaning String?
+  phonetic     String?
+  active       Boolean          @default(true)
+  created_at   DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime         @updatedAt @db.Timestamptz(6)
+  category     ai_word_category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@index([category_id])
+}
+
+model ai_word_blocked_term {
+  id         String   @id @default(cuid())
+  term       String   @unique
+  active     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model ai_word_generation_log {
+  id            String            @id @default(cuid())
+  category_id   String?
+  category_slug String
+  word          String?
+  thai_meaning  String?
+  phonetic      String?
+  query         String?
+  image_url     String?
+  image_source  String?
+  word_source   String?
+  status        String
+  error         String?
+  created_at    DateTime          @default(now()) @db.Timestamptz(6)
+  category      ai_word_category? @relation(fields: [category_id], references: [id], onDelete: SetNull)
+
+  @@index([category_slug])
+  @@index([created_at])
+}

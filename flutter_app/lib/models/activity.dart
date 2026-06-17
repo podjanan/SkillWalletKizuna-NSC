@@ -18,6 +18,7 @@ class Activity {
 
   final String? thumbnailUrl;
   final String? tiktokHtmlContent;
+  final bool isAiWordGame;
 
   // 🆕 เพิ่ม fields สำหรับเรียงกิจกรรม
   final DateTime? createdAt;
@@ -39,6 +40,7 @@ class Activity {
     this.segments,
     this.thumbnailUrl,
     this.tiktokHtmlContent,
+    this.isAiWordGame = false,
     this.createdAt, // 🆕
     this.updatedAt, // 🆕
   });
@@ -82,6 +84,9 @@ class Activity {
       segments: segmentsData,
       thumbnailUrl: pick<String>('thumbnailurl', 'thumbnailUrl'),
       tiktokHtmlContent: pick<String>('tiktokhtmlcontent', 'tiktokHtmlContent'),
+      isAiWordGame: json['isAiWordGame'] == true ||
+          (json['activity_id'] ?? json['activityId'] ?? json['id']) ==
+              'ai-word-game',
       createdAt: _tryParseDate(json['created_at'] ?? json['createdAt']),
       updatedAt: _tryParseDate(json['update_at'] ?? json['updatedAt']),
     );

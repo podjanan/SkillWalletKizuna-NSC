@@ -100,6 +100,11 @@ class ActivityCard extends StatelessWidget {
     }
 
     Future<void> navigate() async {
+      if (activity.isAiWordGame) {
+        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame);
+        return;
+      }
+
       final userProvider = context.read<UserProvider>();
       if (userProvider.currentChildId == null) {
         showSelectChildDialog();
@@ -240,6 +245,17 @@ class ActivityCard extends StatelessWidget {
     required bool hasYouTubeVideo,
     String? youtubeThumbnailUrl,
   }) {
+    if (activity.isAiWordGame ||
+        (activity.thumbnailUrl?.startsWith('asset:') ?? false)) {
+      return Image.asset(
+        (activity.thumbnailUrl ?? 'asset:assets/images/voice_quest_cover.png')
+            .replaceFirst('asset:', ''),
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+      );
+    }
+
     if (hasTikTokOEmbedData && activity.thumbnailUrl != null) {
       return SizedBox(
         width: double.infinity,
