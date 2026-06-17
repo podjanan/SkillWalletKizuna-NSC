@@ -375,8 +375,12 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
   }
 
   // 🔊 Playback เสียงที่บันทึกเอง
-  void _playOwnRecording(String? audioPath) async {
-    if (audioPath == null || audioPath.isEmpty) return;
+  void _playOwnRecording(SegmentResult result) async {
+    final audioPath = result.audioUrl;
+    final audioBytes = result.audioBytes;
+    final hasAudioPath = audioPath != null && audioPath.isNotEmpty;
+    final hasAudioBytes = audioBytes != null && audioBytes.isNotEmpty;
+    if (!hasAudioPath && !hasAudioBytes) return;
 
     if (_isPlaybackPlaying) {
       await _playbackPlayer.pause();
@@ -385,7 +389,11 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
     }
 
     try {
-      await _playbackPlayer.play(ap.DeviceFileSource(audioPath));
+      if (hasAudioBytes) {
+        await _playbackPlayer.play(ap.BytesSource(audioBytes!));
+      } else {
+        await _playbackPlayer.play(ap.DeviceFileSource(audioPath!));
+      }
       setState(() => _isPlaybackPlaying = true);
     } catch (e) {
       debugPrint('Self-Playback Error: $e');
@@ -434,7 +442,13 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
         // Web: ใช้ stream
         _webBytesBuilder = BytesBuilder(copy: false);
         final stream = await _audioRecorder.startStream(
-          const RecordConfig(encoder: AudioEncoder.pcm16bits),
+          const RecordConfig(
+            encoder: AudioEncoder.pcm16bits,
+            sampleRate: 16000,
+            numChannels: 1,
+            echoCancel: true,
+            noiseSuppress: true,
+          ),
         );
         _webAudioSub = stream.listen((chunk) {
           _webBytesBuilder?.add(chunk);
@@ -515,7 +529,7 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
         }
         return;
       }
-      webBytes = _pcm16ToWav(pcm, sampleRate: 44100, channels: 1);
+      webBytes = _pcm16ToWav(pcm, sampleRate: 16000, channels: 1);
     } else {
       mobilePath = _recordedFilePath;
       final f = File(mobilePath);
@@ -538,6 +552,7 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
       _segmentResults[segIdx] = _segmentResults[segIdx].copyWith(
         status: SegmentStatus.processing,
         audioUrl: kIsWeb ? '' : mobilePath,
+        audioBytes: kIsWeb ? webBytes : null,
       );
       _resultsNotifier.value = List.from(_segmentResults);
       state = 'processing'; // แสดง inline indicator บน segment ปัจจุบัน
@@ -569,6 +584,7 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
           status: SegmentStatus.done,
           recognizedText: recognized,
           audioUrl: kIsWeb ? '' : mobilePath,
+          audioBytes: kIsWeb ? webBytes : null,
         );
         _resultsNotifier.value = List.from(_segmentResults);
         // อัปเดต UI ของ segment ปัจจุบันถ้ายังอยู่หน้าเดิม
@@ -1240,7 +1256,8 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
     final bool isProcessing = state == 'processing';
     final bool isReviewed = state == 'reviewed';
     final bool isRecordingAvailable =
-        result.audioUrl != null && result.audioUrl!.isNotEmpty;
+        (result.audioUrl != null && result.audioUrl!.isNotEmpty) ||
+        (result.audioBytes != null && result.audioBytes!.isNotEmpty);
 
     Color statusColor;
     IconData statusIcon;
@@ -1313,7 +1330,7 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
           // Playback button
           GestureDetector(
             onTap: isRecordingAvailable
-                ? () => _playOwnRecording(result.audioUrl)
+                ? () => _playOwnRecording(result)
                 : null,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),

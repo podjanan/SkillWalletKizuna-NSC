@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form
+from typing import Optional
 import whisper
 import tempfile
 import subprocess
@@ -18,7 +19,8 @@ def clean_text(text):
 @app.post("/evaluate")
 async def evaluate(
     file: UploadFile = File(...),
-    text: str = Form(...)
+    text: str = Form(...),
+    language: Optional[str] = Form(None)
 ):
     tmp_audio_path = None
     normalized_path = None
@@ -48,11 +50,10 @@ async def evaluate(
         )
 
         # Transcribe
-        result = model.transcribe(
-            normalized_path,
-            language="en",
-            fp16=False
-        )
+        transcribe_options = {"fp16": False}
+        if language:
+            transcribe_options["language"] = language
+        result = model.transcribe(normalized_path, **transcribe_options)
 
         recognized_text_raw = result["text"]
 

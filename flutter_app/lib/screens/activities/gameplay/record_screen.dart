@@ -113,9 +113,9 @@ class _RecordScreenState extends State<RecordScreen> {
         await _webAudioSub?.cancel();
         _webAudioSub = null;
         final pcm = _webBytesBuilder?.toBytes();
-        // Convert raw PCM16 to WAV container (mono, 44.1kHz)
+        // Convert raw PCM16 to WAV container.
         if (pcm != null && pcm.isNotEmpty) {
-          _webAudioBytes = _pcm16ToWav(pcm, sampleRate: 44100, channels: 1);
+          _webAudioBytes = _pcm16ToWav(pcm, sampleRate: 16000, channels: 1);
         } else {
           _webAudioBytes = null;
         }
@@ -133,7 +133,13 @@ class _RecordScreenState extends State<RecordScreen> {
             // Start streaming PCM/AAC bytes depending on browser support
             _webBytesBuilder = BytesBuilder(copy: false);
             final stream = await _audioRecorder.startStream(
-              const RecordConfig(encoder: AudioEncoder.pcm16bits),
+              const RecordConfig(
+                encoder: AudioEncoder.pcm16bits,
+                sampleRate: 16000,
+                numChannels: 1,
+                echoCancel: true,
+                noiseSuppress: true,
+              ),
             );
             _webAudioSub = stream.listen((chunk) {
               _webBytesBuilder?.add(chunk);

@@ -54,26 +54,36 @@ class _ActivitySummaryScreenState extends State<ActivitySummaryScreen> {
   String _recordedFilePath = '';
   BytesBuilder? _webBytesBuilder;
   StreamSubscription<List<int>>? _webAudioSub;
-  String? _playingAudioPath;
+  String? _playingAudioKey;
 
   @override
   void initState() {
     super.initState();
     _playbackPlayer.onPlayerComplete.listen((_) {
-      if (mounted) setState(() => _playingAudioPath = null);
+      if (mounted) setState(() => _playingAudioKey = null);
     });
   }
 
-  Future<void> _playAudio(String? path) async {
-    if (path == null || path.isEmpty) return;
-    if (_playingAudioPath == path) {
+  Future<void> _playAudio(SegmentResult result, int index) async {
+    final path = result.audioUrl;
+    final bytes = result.audioBytes;
+    final hasPath = path != null && path.isNotEmpty;
+    final hasBytes = bytes != null && bytes.isNotEmpty;
+    if (!hasPath && !hasBytes) return;
+
+    final key = hasBytes ? 'web-$index' : path!;
+    if (_playingAudioKey == key) {
       await _playbackPlayer.pause();
-      setState(() => _playingAudioPath = null);
+      setState(() => _playingAudioKey = null);
       return;
     }
     try {
-      await _playbackPlayer.play(ap.DeviceFileSource(path));
-      setState(() => _playingAudioPath = path);
+      if (hasBytes) {
+        await _playbackPlayer.play(ap.BytesSource(bytes!));
+      } else {
+        await _playbackPlayer.play(ap.DeviceFileSource(path!));
+      }
+      setState(() => _playingAudioKey = key);
     } catch (e) {
       debugPrint('Playback error: $e');
     }
@@ -120,7 +130,13 @@ class _ActivitySummaryScreenState extends State<ActivitySummaryScreen> {
       if (kIsWeb) {
         _webBytesBuilder = BytesBuilder(copy: false);
         final stream = await _audioRecorder.startStream(
-          const RecordConfig(encoder: AudioEncoder.pcm16bits),
+          const RecordConfig(
+            encoder: AudioEncoder.pcm16bits,
+            sampleRate: 16000,
+            numChannels: 1,
+            echoCancel: true,
+            noiseSuppress: true,
+          ),
         );
         _webAudioSub = stream.listen((chunk) => _webBytesBuilder?.add(chunk));
       } else {
@@ -183,7 +199,7 @@ class _ActivitySummaryScreenState extends State<ActivitySummaryScreen> {
         }
         return;
       }
-      webBytes = _pcm16ToWav(pcm, sampleRate: 44100, channels: 1);
+      webBytes = _pcm16ToWav(pcm, sampleRate: 16000, channels: 1);
     } else {
       mobilePath = _recordedFilePath;
       final f = File(mobilePath);
@@ -206,6 +222,7 @@ class _ActivitySummaryScreenState extends State<ActivitySummaryScreen> {
     processing[index] = processing[index].copyWith(
       status: SegmentStatus.processing,
       audioUrl: kIsWeb ? '' : mobilePath,
+      audioBytes: kIsWeb ? webBytes : null,
     );
     widget.resultsNotifier.value = processing;
 
@@ -234,6 +251,7 @@ class _ActivitySummaryScreenState extends State<ActivitySummaryScreen> {
         status: SegmentStatus.done,
         recognizedText: recognized,
         audioUrl: kIsWeb ? '' : mobilePath,
+        audioBytes: kIsWeb ? webBytes : null,
       );
       widget.resultsNotifier.value = updated;
     }).catchError((e) {
@@ -317,18 +335,24 @@ class _ActivitySummaryScreenState extends State<ActivitySummaryScreen> {
                   itemBuilder: (context, i) {
                     final thisRecording = _isRecording && _recordingIndex == i;
                     final otherRecording = _isRecording && _recordingIndex != i;
-                    final audioPath = results[i].audioUrl;
-                    final hasAudio = audioPath != null && audioPath.isNotEmpty;
+                    final result = results[i];
+                    final audioPath = result.audioUrl;
+                    final hasPath = audioPath != null && audioPath.isNotEmpty;
+                    final hasBytes =
+                        result.audioBytes != null && result.audioBytes!.isNotEmpty;
+                    final audioKey = hasBytes ? 'web-$i' : audioPath;
                     return _SegmentCard(
                       index: i,
-                      result: results[i],
+                      result: result,
                       isRecording: thisRecording,
                       recordingDuration: _recordingDuration,
                       onToggleRecord: otherRecording ? null : () => _handleRecord(i),
                       onPlaySection: _isRecording ? null : () =>
                           Navigator.pop(context, {'playSection': i}),
-                      onPlayAudio: hasAudio ? () => _playAudio(audioPath) : null,
-                      isPlayingAudio: _playingAudioPath == audioPath && audioPath != null,
+                      onPlayAudio: (hasPath || hasBytes)
+                          ? () => _playAudio(result, i)
+                          : null,
+                      isPlayingAudio: _playingAudioKey == audioKey && audioKey != null,
                     );
                   },
                 );

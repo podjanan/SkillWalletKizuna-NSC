@@ -62,6 +62,12 @@ function calculateAccuracy(recognized: string, expected: string): number {
     return Math.min(Math.floor((matchCount / expectedWords.length) * 100), 100);
 }
 
+function detectWhisperLanguage(text: string): string | null {
+    if (/[\u0E00-\u0E7F]/.test(text)) return "th";
+    if (/[a-zA-Z]/.test(text)) return "en";
+    return null;
+}
+
 /**
  * @swagger
  * /api/ai-evaluation:
@@ -272,6 +278,7 @@ export async function POST(request: NextRequest) {
 
         // 🔀 เลือก mode: "local" = FastAPI Whisper บนเครื่อง, "groq" = Groq Cloud API
         const whisperMode = process.env.WHISPER_MODE || "groq";
+        const whisperLanguage = detectWhisperLanguage(originalText);
 
         let recognizedText: string;
         let score: number;
@@ -285,6 +292,7 @@ export async function POST(request: NextRequest) {
             const localForm = new FormData();
             localForm.append("file", file, file.name || "audio.m4a");
             localForm.append("text", originalText);
+            if (whisperLanguage) localForm.append("language", whisperLanguage);
 
             await acquireLocalSlot();
             let localResult: any;
@@ -330,7 +338,7 @@ export async function POST(request: NextRequest) {
             const groqForm = new FormData();
             groqForm.append("file", file, file.name || "audio.m4a");
             groqForm.append("model", "whisper-large-v3");
-            groqForm.append("language", "en");
+            if (whisperLanguage) groqForm.append("language", whisperLanguage);
             groqForm.append("response_format", "json");
 
             const groqResponse = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {

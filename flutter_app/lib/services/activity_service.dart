@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
@@ -21,6 +22,7 @@ class SegmentResult {
   final SegmentStatus status;
   final String? recognizedText;
   final String? audioUrl; // local path only, never sent to backend
+  final Uint8List? audioBytes; // web-only playback bytes, never sent to backend
 
   const SegmentResult({
     required this.id,
@@ -29,6 +31,7 @@ class SegmentResult {
     this.status = SegmentStatus.idle,
     this.recognizedText,
     this.audioUrl,
+    this.audioBytes,
   });
 
   SegmentResult copyWith({
@@ -36,6 +39,7 @@ class SegmentResult {
     SegmentStatus? status,
     String? recognizedText,
     String? audioUrl,
+    Uint8List? audioBytes,
   }) =>
       SegmentResult(
         id: id,
@@ -44,6 +48,7 @@ class SegmentResult {
         status: status ?? this.status,
         recognizedText: recognizedText ?? this.recognizedText,
         audioUrl: audioUrl ?? this.audioUrl,
+        audioBytes: audioBytes ?? this.audioBytes,
       );
 
   // 🔒 Privacy-first: audioUrl ไม่ถูกส่งไป Backend
@@ -301,7 +306,7 @@ class ActivityService {
           'file',
           audioBytes,
           filename: filename,
-          contentType: MediaType('audio', 'mpeg'),
+          contentType: MediaType('audio', 'wav'),
         ),
       );
       request.fields['text'] = originalText;
