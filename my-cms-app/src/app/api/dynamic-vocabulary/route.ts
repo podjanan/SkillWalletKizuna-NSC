@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   AiWordCategory,
-  AiWordFallbackWord,
   getAiWordCategories,
   getAiWordFallbackWords,
-  getAiWordFallbackWordsByDifficulty,
   getAiWordSettings,
   isBlockedWord,
 } from '@/lib/ai-word-game';
@@ -74,48 +72,35 @@ function getSessionCount(
   return settings.wordsPerSessionEasy;
 }
 
-function shuffle<T>(items: T[]) {
-  return [...items].sort(() => Math.random() - 0.5);
-}
+async function getGeminiErrorMessage(response: Response) {
+  const errorText = await response.text().catch(() => '');
+  console.error('Gemini API error:', response.status, errorText);
 
-function pickFallback(
-  category: AiWordCategory,
-  words: AiWordFallbackWord[],
-  difficulty: 'easy' | 'medium' | 'hard',
-) {
-  if (words.length === 0) {
-    return {
-      word: 'Octopus',
-      category: category.slug,
-      thaiMeaning: 'ปลาหมึกยักษ์',
-      phonetic: 'OK-tuh-pus',
-      imageUrl: undefined,
-      wordSource: 'fallback' as const,
-      difficulty,
-    };
+  if (response.status === 429) {
+    if (errorText.includes('PerDay') || errorText.includes('daily requests') || errorText.includes('quota exceeded')) {
+      return 'Gemini quota exhausted (\u0e42\u0e04\u0e27\u0e15\u0e49\u0e32\u0e2b\u0e21\u0e14). Please wait for quota reset or check API billing.';
+    }
+    return 'Gemini rate limit or temporary quota reached (\u0e42\u0e04\u0e27\u0e15\u0e49\u0e32\u0e2b\u0e21\u0e14). Please try again later.';
   }
-  const item = words[Math.floor(Math.random() * words.length)];
-  return {
-    word: item.word,
-    category: category.slug,
-    thaiMeaning: item.thaiMeaning ?? undefined,
-    phonetic: item.phonetic ?? undefined,
-    imageUrl: item.imageUrl ?? undefined,
-    wordSource: 'fallback' as const,
-    difficulty,
-  };
-}
 
+  if (response.status === 403) return 'GEMINI_API_KEY is not allowed to use this model.';
+  if (response.status === 400) return 'Gemini request is invalid. Please check the model or prompt.';
+  return `Gemini request failed (HTTP ${response.status})`;
+}
 async function generateWord(
   category: AiWordCategory,
-  fallbackWords: AiWordFallbackWord[],
   difficulty: 'easy' | 'medium' | 'hard',
 ) {
   const settings = await getAiWordSettings();
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (!settings.useGemini || !apiKey) return pickFallback(category, fallbackWords, difficulty);
+  const geminiModel = process.env.GEMINI_MODEL || settings.geminiModel;
+  if (!settings.useGemini) {
+    throw new Error('Gemini vocabulary generation is disabled in AI Word Game settings.');
+  }
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is missing from env.');
+  }
 
-  // Fetch existing words to exclude them from dynamic suggestions
   const existingWords = await getAiWordFallbackWords(category.id);
   const excludeList = existingWords.map((w) => w.word.trim()).join(', ');
 
@@ -127,7 +112,7 @@ async function generateWord(
     .replaceAll('{{excludeList}}', excludeList || 'none');
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${settings.geminiModel}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -143,15 +128,17 @@ async function generateWord(
   );
 
   if (!response.ok) {
-    console.error('Gemini vocabulary error:', response.status, await response.text());
-    return pickFallback(category, fallbackWords, difficulty);
+    const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
 
   const data = (await response.json()) as GeminiResponse;
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
   const parsed = extractJson(text);
   const word = parsed?.word ? String(parsed.word).trim() : '';
-  if (!word || await isBlockedWord(word)) return pickFallback(category, fallbackWords, difficulty);
+  if (!word) throw new Error('Gemini did not return a vocabulary word.');
+  if (await isBlockedWord(word)) throw new Error(`Gemini returned a blocked word: ${word}`);
 
   return {
     word,
@@ -163,7 +150,6 @@ async function generateWord(
     difficulty,
   };
 }
-
 async function getDuckDuckGoImages(query: string) {
   try {
     const searchPageResponse = await fetch(
@@ -317,39 +303,7 @@ export async function POST(request: NextRequest) {
     const requestedCount = Number(body?.count ?? 0);
     const count = Math.max(1, Math.min(20, requestedCount || getSessionCount(settings, difficulty)));
     const sessionMode = Boolean(body?.session || body?.count || body?.difficulty);
-    const approvedWords = await getAiWordFallbackWordsByDifficulty(category.id, difficulty, true);
-
-    if (sessionMode && approvedWords.length > 0) {
-      const selectedWords = shuffle(approvedWords).slice(0, count);
-      const items = selectedWords.map((word) => ({
-        word: word.word,
-        category: category?.slug ?? '',
-        thaiMeaning: word.thaiMeaning ?? undefined,
-        phonetic: word.phonetic ?? undefined,
-        imageUrl: word.imageUrl ?? undefined,
-        imageSource: word.imageUrl ? 'admin' : undefined,
-        query: `${word.word} ${settings.imageQuerySuffix}`.trim(),
-        wordSource: 'fallback' as const,
-        difficulty,
-      }));
-
-      await Promise.all(items.map((item) => writeLog({ category: category!, item, status: 'success' })));
-      return NextResponse.json(
-        {
-          items,
-          category,
-          settings: {
-            title: settings.title,
-            maxScore: settings.maxScore,
-            wordsPerSession: count,
-          },
-        },
-        { status: 200, headers: corsHeaders },
-      );
-    }
-
-    const fallbackWords = await getAiWordFallbackWords(category.id, true);
-    const generated = await generateWord(category, fallbackWords, difficulty);
+    const generated = await generateWord(category, difficulty);
     const query = `${generated.word} ${settings.imageQuerySuffix}`.trim();
     const image = generated.imageUrl
       ? { imageUrl: undefined, imageSource: undefined }
@@ -383,12 +337,13 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error
       ? error.message
       : 'Cannot generate vocabulary item.';
+    const status = error instanceof Error && 'status' in error && error.status === 429 ? 429 : 500;
     if (category) {
       await writeLog({ category, status: 'error', error: message });
     }
     return NextResponse.json(
       { error: message },
-      { status: 500, headers: corsHeaders },
+      { status, headers: corsHeaders },
     );
   }
 }

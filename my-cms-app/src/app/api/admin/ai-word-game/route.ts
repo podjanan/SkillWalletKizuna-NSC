@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   AiWordCategory,
-  AiWordFallbackWord,
   ensureAiWordGameDefaults,
   getAiWordCategories,
   getAiWordFallbackWords,
@@ -50,12 +49,6 @@ function extractJson(text: string): Record<string, unknown> | null {
       return null;
     }
   }
-}
-
-function pickFallbackWord(words: AiWordFallbackWord[], difficulty: 'easy' | 'medium' | 'hard') {
-  const pool = words.filter((word) => word.difficulty === difficulty);
-  const item = (pool.length ? pool : words)[Math.floor(Math.random() * (pool.length ? pool.length : words.length))];
-  return item?.word ?? '';
 }
 
 const fallbackMetadata: Record<string, { thaiMeaning: string; phonetic: string }> = {
@@ -162,55 +155,42 @@ async function getCategoryById(categoryId: string) {
   return categories.find((category) => category.id === categoryId) ?? categories[0];
 }
 
-const kidsDictionary: Record<string, string[]> = {
-  animals: [
-    'lion', 'tiger', 'elephant', 'giraffe', 'zebra', 'monkey', 'rabbit', 'turtle', 'dolphin', 'penguin',
-    'bear', 'fox', 'sheep', 'goat', 'pig', 'horse', 'cow', 'duck', 'chicken', 'frog', 'bee', 'butterfly',
-    'crab', 'octopus', 'whale', 'shark', 'owl'
-  ],
-  food: [
-    'apple', 'banana', 'orange', 'grape', 'strawberry', 'watermelon', 'peach', 'cherry', 'pineapple', 'mango',
-    'carrot', 'potato', 'tomato', 'corn', 'bread', 'cheese', 'milk', 'egg', 'rice', 'pasta', 'pizza',
-    'cookie', 'cake', 'ice cream', 'honey', 'juice'
-  ],
-  vehicles: [
-    'car', 'bus', 'truck', 'train', 'bicycle', 'motorcycle', 'airplane', 'helicopter', 'boat', 'ship',
-    'submarine', 'rocket', 'tractor', 'ambulance', 'fire truck', 'police car', 'taxi', 'scooter', 'skateboard'
-  ],
-  nature: [
-    'tree', 'flower', 'grass', 'leaf', 'plant', 'sun', 'moon', 'star', 'sky', 'cloud',
-    'rain', 'snow', 'wind', 'rainbow', 'mountain', 'river', 'lake', 'ocean', 'sea', 'beach',
-    'forest', 'desert', 'rock', 'stone', 'sand'
-  ],
-  bedroom: [
-    'bed', 'pillow', 'blanket', 'lamp', 'clock', 'toy'
-  ],
-  school: [
-    'book', 'pencil', 'ruler', 'desk', 'chair', 'bag', 'eraser'
-  ]
-};
+async function getGeminiErrorMessage(response: Response) {
+  const errorText = await response.text().catch(() => '');
+  console.error('Gemini API error:', response.status, errorText);
 
+  if (response.status === 429) {
+    if (errorText.includes('PerDay') || errorText.includes('daily requests') || errorText.includes('quota exceeded')) {
+      return 'Gemini quota exhausted (\u0e42\u0e04\u0e27\u0e15\u0e49\u0e32\u0e2b\u0e21\u0e14). Please wait for quota reset or check API billing.';
+    }
+    return 'Gemini rate limit or temporary quota reached (\u0e42\u0e04\u0e27\u0e15\u0e49\u0e32\u0e2b\u0e21\u0e14). Please try again later.';
+  }
+
+  if (response.status === 403) return 'GEMINI_API_KEY is not allowed to use this model.';
+  if (response.status === 400) return 'Gemini request is invalid. Please check the model or prompt.';
+  return `Gemini request failed (HTTP ${response.status})`;
+}
 async function generateSuggestion(category: AiWordCategory, difficulty: 'easy' | 'medium' | 'hard') {
   const settings = await getAiWordSettings();
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const fallbackWords = await getAiWordFallbackWords(category.id, true);
+  const geminiModel = process.env.GEMINI_MODEL || settings.geminiModel;
+  if (!settings.useGemini) {
+    throw new Error('Gemini suggestion is disabled in AI Word Game settings.');
+  }
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is missing from env.');
+  }
 
   // Fetch existing words to exclude them from suggestions
   const existingWords = await getAiWordFallbackWords(category.id);
   const existingWordSet = new Set(existingWords.map((w) => w.word.trim().toLowerCase()));
 
-  // 1. Try Gemini first if enabled and configured
-  if (settings.useGemini && apiKey) {
-    let suggestedWord = '';
-    let suggestedThai = '';
-    let suggestedPhonetic = '';
-    let source = 'fallback';
-    let attempts = 0;
+  let lastError = '';
 
-    while (attempts < 3) {
-      attempts++;
-      const excludeList = Array.from(existingWordSet).join(', ');
-      const prompt = `You are an expert children's English vocabulary teacher. Generate exactly one simple English vocabulary word for kids ages 4-9 that belongs STRICTLY and directly to the category: ${category.label} (Thai concept: ${category.thaiLabel || ''}).
+  for (let attempts = 0; attempts < 3; attempts++) {
+    const excludeList = Array.from(existingWordSet).join(', ');
+    const prompt = `You are an expert children's English vocabulary teacher. Generate exactly one simple English vocabulary word for kids ages 4-9 that belongs STRICTLY and directly to the category: ${category.label} (Thai concept: ${category.thaiLabel || ''}).
+Selected difficulty: ${difficulty}.
 
 Category Guidelines:
 - Animals (สัตว์): Must be a direct animal species (e.g., cat, dog, elephant, rabbit, turtle, dolphin, bee). Do NOT suggest food, vehicles, or places.
@@ -236,76 +216,78 @@ Return the result in JSON format ONLY:
   "phonetic": "คำสะกดเสียงพจนานุกรม เช่น AP-pul หรือ ZEE-bruh"
 }`;
 
-      try {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${settings.geminiModel}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: prompt }] }],
-              generationConfig: { responseMimeType: 'application/json', temperature: 0.9, maxOutputTokens: 140 },
-            }),
-          },
-        );
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.7,
+              maxOutputTokens: 1024,
+              thinkingConfig: { thinkingBudget: 0 },
+            },
+          }),
+        },
+      );
 
-        if (!response.ok) continue;
-        const data = await response.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-        const parsed = extractJson(text);
-        const word = parsed?.word ? String(parsed.word).trim() : '';
-        const thaiMeaning = parsed?.thaiMeaning ? String(parsed.thaiMeaning).trim() : '';
-        const phonetic = parsed?.phonetic ? String(parsed.phonetic).trim() : '';
-
-        if (word && !existingWordSet.has(word.toLowerCase()) && !(await isBlockedWord(word))) {
-          suggestedWord = word;
-          suggestedThai = thaiMeaning;
-          suggestedPhonetic = phonetic;
-          source = 'gemini';
-          break;
-        }
-      } catch (e) {
-        console.error('Gemini suggest error:', e);
+      if (!response.ok) {
+        const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
+        error.status = response.status;
+        throw error;
       }
-    }
 
-    if (suggestedWord) {
+      const data = await response.json();
+      const candidate = data?.candidates?.[0];
+      const text = candidate?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join('') ?? '';
+      const parsed = extractJson(text);
+      const word = parsed?.word ? String(parsed.word).trim() : '';
+      const thaiMeaning = parsed?.thaiMeaning ? String(parsed.thaiMeaning).trim() : '';
+      const phonetic = parsed?.phonetic ? String(parsed.phonetic).trim() : '';
+
+      if (!word) {
+        lastError = candidate?.finishReason === 'MAX_TOKENS'
+          ? 'Gemini response was truncated before it returned a vocabulary word.'
+          : 'Gemini did not return a vocabulary word.';
+        continue;
+      }
+      if (existingWordSet.has(word.toLowerCase())) {
+        lastError = `Gemini returned a duplicate word: ${word}`;
+        continue;
+      }
+      if (await isBlockedWord(word)) {
+        lastError = `Gemini returned a blocked word: ${word}`;
+        continue;
+      }
+
       return {
-        word: suggestedWord,
-        thaiMeaning: suggestedThai || getFallbackMetadata(suggestedWord).thaiMeaning,
-        phonetic: suggestedPhonetic || getFallbackMetadata(suggestedWord).phonetic,
-        source,
+        word,
+        thaiMeaning: thaiMeaning || getFallbackMetadata(word).thaiMeaning,
+        phonetic: phonetic || getFallbackMetadata(word).phonetic,
+        source: 'gemini',
       };
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : 'Gemini suggestion failed.';
+      console.error('Gemini suggest exception:', e);
     }
   }
 
-  // 2. Fallback to Kids Dictionary (guaranteed to be unique from DB)
-  const catKey = category.slug.toLowerCase().trim();
-  const dictPool = kidsDictionary[catKey] ?? ['star', 'rocket', 'sun', 'moon', 'tree', 'flower', 'apple', 'banana', 'cat', 'dog'];
-  const unusedList = dictPool.filter((word) => !existingWordSet.has(word.toLowerCase()));
-
-  if (unusedList.length > 0) {
-    const word = unusedList[Math.floor(Math.random() * unusedList.length)];
-    const capitalizedWord = word.charAt(0).toUpperCase() + word.slice(1);
-    const meta = getFallbackMetadata(capitalizedWord);
-    return { word: capitalizedWord, thaiMeaning: meta.thaiMeaning, phonetic: meta.phonetic, source: 'fallback' };
-  }
-
-  // 3. Fallback to local DB pool (as last resort, filtering duplicate words if possible)
-  const pool = fallbackWords.filter((w) => w.difficulty === difficulty && !existingWordSet.has(w.word.trim().toLowerCase()));
-  const finalPool = pool.length ? pool : fallbackWords;
-  const item = finalPool[Math.floor(Math.random() * finalPool.length)];
-  const word = item?.word ?? 'Lion';
-  const meta = getFallbackMetadata(word);
-  return { word, thaiMeaning: item?.thaiMeaning ?? meta.thaiMeaning, phonetic: item?.phonetic ?? meta.phonetic, source: 'fallback' };
+  throw new Error(lastError || 'Gemini could not generate a vocabulary word.');
 }
 
 async function enrichWord(word: string, category: AiWordCategory, difficulty: 'easy' | 'medium' | 'hard') {
   const settings = await getAiWordSettings();
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  const geminiModel = process.env.GEMINI_MODEL || settings.geminiModel;
   const fallback = getFallbackMetadata(word);
-  if (!settings.useGemini || !apiKey) {
-    return { word, thaiMeaning: fallback.thaiMeaning, phonetic: fallback.phonetic, source: 'fallback' };
+  if (!settings.useGemini) {
+    throw new Error('Gemini metadata generation is disabled in AI Word Game settings.');
+  }
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is missing from env.');
   }
 
   const prompt = [
@@ -318,20 +300,29 @@ async function enrichWord(word: string, category: AiWordCategory, difficulty: 'e
   ].join('\n');
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${settings.geminiModel}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.4, maxOutputTokens: 140 },
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.4,
+          maxOutputTokens: 1024,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     },
   );
 
-  if (!response.ok) return { word, thaiMeaning: fallback.thaiMeaning, phonetic: fallback.phonetic, source: 'fallback' };
+  if (!response.ok) {
+    const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
+    error.status = response.status;
+    throw error;
+  }
   const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  const text = data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join('') ?? '';
   const parsed = extractJson(text);
   return {
     word: parsed?.word ? String(parsed.word).trim() : word,
@@ -588,32 +579,44 @@ export async function POST(request: NextRequest) {
     const category = await getCategoryById(String(body.categoryId ?? ''));
     if (!category) return NextResponse.json({ error: 'Category is required' }, { status: 400 });
     const difficulty = toDifficulty(body.difficulty);
-    const suggestion = await generateSuggestion(category, difficulty);
-    const imageInfo = await fetchPreviewImage(suggestion.word);
-    return NextResponse.json({
-      word: suggestion.word,
-      thaiMeaning: suggestion.thaiMeaning,
-      phonetic: suggestion.phonetic,
-      imageUrl: imageInfo.imageUrl,
-      imageSource: imageInfo.imageSource,
-      query: imageInfo.query,
-      imageError: imageInfo.error,
-      source: suggestion.source,
-    });
+    try {
+      const suggestion = await generateSuggestion(category, difficulty);
+      const imageInfo = await fetchPreviewImage(suggestion.word);
+      return NextResponse.json({
+        word: suggestion.word,
+        thaiMeaning: suggestion.thaiMeaning,
+        phonetic: suggestion.phonetic,
+        imageUrl: imageInfo.imageUrl,
+        imageSource: imageInfo.imageSource,
+        query: imageInfo.query,
+        imageError: imageInfo.error,
+        source: suggestion.source,
+      });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Gemini suggestion failed.';
+      const status = e instanceof Error && 'status' in e && e.status === 429 ? 429 : 502;
+      return NextResponse.json({ error: message, source: 'gemini' }, { status });
+    }
   } else if (action === 'previewWord') {
     const category = await getCategoryById(String(body.categoryId ?? ''));
     const word = String(body.word ?? '').trim();
     if (!category || !word) return NextResponse.json({ error: 'Category and word are required' }, { status: 400 });
-    const [metadata, image] = await Promise.all([
-      enrichWord(word, category, toDifficulty(body.difficulty)),
-      fetchPreviewImage(word),
-    ]);
-    return NextResponse.json({
-      ...metadata,
-      ...image,
-      imageError: image.error,
-      difficulty: toDifficulty(body.difficulty),
-    });
+    try {
+      const [metadata, image] = await Promise.all([
+        enrichWord(word, category, toDifficulty(body.difficulty)),
+        fetchPreviewImage(word),
+      ]);
+      return NextResponse.json({
+        ...metadata,
+        ...image,
+        imageError: image.error,
+        difficulty: toDifficulty(body.difficulty),
+      });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Gemini metadata generation failed.';
+      const status = e instanceof Error && 'status' in e && e.status === 429 ? 429 : 502;
+      return NextResponse.json({ error: message, source: 'gemini' }, { status });
+    }
   } else if (action === 'refreshImage') {
     const word = String(body.word ?? '').trim();
     if (!word) return NextResponse.json({ error: 'Word is required' }, { status: 400 });

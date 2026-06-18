@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Ban,
   ImageIcon,
   Plus,
   RefreshCcw,
@@ -12,9 +11,7 @@ import {
   Trash2,
   BookOpen,
   Sliders,
-  Layers,
   Check,
-  TrendingUp,
   Image as ImageIconLucide,
   HelpCircle
 } from 'lucide-react';
@@ -222,12 +219,16 @@ export default function AiWordGamePage() {
   }
 
   async function suggestWord() {
-    setCreatorStatus('Brainstorming word & finding image...');
+    setCreatorStatus('Asking Gemini for a word...');
     setPreview(null);
     const result = await runAction(
       { action: 'suggestWord', categoryId: creator.categoryId, difficulty: creator.difficulty },
       false,
     );
+    if (result.error) {
+      setCreatorStatus(`Gemini failed: ${String(result.error)}`);
+      return;
+    }
     const word = String(result.word ?? '');
     const thaiMeaning = String(result.thaiMeaning ?? '');
     const phonetic = String(result.phonetic ?? '');
@@ -251,7 +252,7 @@ export default function AiWordGamePage() {
       imageError: result.imageError ? String(result.imageError) : undefined,
       difficulty: creator.difficulty,
     });
-    setCreatorStatus(result.imageError ? `AI ready (image lookup failed: ${result.imageError})` : (result.source === 'gemini' ? 'AI suggestion and image ready.' : 'Fallback suggestion ready.'));
+    setCreatorStatus(result.imageError ? `Gemini word ready (image lookup failed: ${result.imageError})` : 'Gemini suggestion and image ready.');
   }
 
   async function previewWord() {
@@ -266,6 +267,10 @@ export default function AiWordGamePage() {
       },
       false,
     );
+    if (result.error) {
+      setCreatorStatus(`Gemini failed: ${String(result.error)}`);
+      return;
+    }
     const nextPreview: PreviewWord = {
       word: String(result.word ?? creator.word),
       thaiMeaning: String(result.thaiMeaning ?? ''),
