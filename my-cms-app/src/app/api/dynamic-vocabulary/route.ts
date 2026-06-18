@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   AiWordCategory,
+  AiWordFallbackWord,
   getAiWordCategories,
   getAiWordFallbackWords,
+  getAiWordFallbackWordsByDifficulty,
   getAiWordSettings,
   isBlockedWord,
 } from '@/lib/ai-word-game';
@@ -303,24 +305,81 @@ export async function POST(request: NextRequest) {
     const requestedCount = Number(body?.count ?? 0);
     const count = Math.max(1, Math.min(20, requestedCount || getSessionCount(settings, difficulty)));
     const sessionMode = Boolean(body?.session || body?.count || body?.difficulty);
-    const generated = await generateWord(category, difficulty);
-    const query = `${generated.word} ${settings.imageQuerySuffix}`.trim();
-    const image = generated.imageUrl
-      ? { imageUrl: undefined, imageSource: undefined }
-      : await fetchImage(generated.word);
 
-    const payload: VocabularyPayload = {
-      ...generated,
-      query,
-      imageUrl: generated.imageUrl ?? image.imageUrl,
-      imageSource: generated.imageUrl ? 'admin' : image.imageSource,
-    };
+    // --- Strict difficulty-aware session building ---
+    // 1. Always load DB fallback words filtered by category + difficulty
+    const dbWords = await getAiWordFallbackWordsByDifficulty(category.id, difficulty);
 
-    await writeLog({ category, item: payload, status: 'success' });
+    // 2. Try Gemini if enabled — wrap in try/catch so a failure just skips Gemini
+    let geminiPayload: VocabularyPayload | null = null;
+    if (settings.useGemini) {
+      try {
+        const generated = await generateWord(category, difficulty);
+        const query = `${generated.word} ${settings.imageQuerySuffix}`.trim();
+        const image = generated.imageUrl
+          ? { imageUrl: undefined, imageSource: undefined }
+          : await fetchImage(generated.word);
+        geminiPayload = {
+          ...generated,
+          query,
+          imageUrl: generated.imageUrl ?? image.imageUrl,
+          imageSource: generated.imageUrl ? 'admin' : image.imageSource,
+        };
+      } catch (geminiErr) {
+        console.warn('Gemini word generation failed, using DB fallback only:', geminiErr);
+      }
+    }
+
+    // 3. Build the session item pool: Gemini word first (if any), then shuffled DB words
+    const dbPayloads: VocabularyPayload[] = dbWords.map((w: AiWordFallbackWord) => ({
+      word: w.word,
+      category: category!.slug,
+      thaiMeaning: w.thaiMeaning ?? undefined,
+      phonetic: w.phonetic ?? undefined,
+      imageUrl: w.imageUrl ?? undefined,
+      imageSource: w.imageUrl ? 'admin' : undefined,
+      query: `${w.word} ${settings.imageQuerySuffix}`.trim(),
+      wordSource: 'fallback' as const,
+      difficulty,
+    }));
+
+    // Shuffle DB pool
+    for (let i = dbPayloads.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [dbPayloads[i], dbPayloads[j]] = [dbPayloads[j], dbPayloads[i]];
+    }
+
+    // Combine: Gemini word + DB words, deduplicate by word (case-insensitive)
+    const seen = new Set<string>();
+    const allPayloads: VocabularyPayload[] = [];
+    for (const p of geminiPayload ? [geminiPayload, ...dbPayloads] : dbPayloads) {
+      const key = p.word.trim().toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        allPayloads.push(p);
+      }
+    }
+
+    // 4. Return 404 when pool is empty
+    if (allPayloads.length === 0) {
+      return NextResponse.json(
+        { error: 'ไม่มีศัพท์ในคลังสำหรับหมวดหมู่และระดับความยากนี้' },
+        { status: 404, headers: corsHeaders },
+      );
+    }
+
+    // 5. Slice to session count
+    const sessionItems = allPayloads.slice(0, count);
+
+    // Log only the Gemini-generated word if present
+    if (geminiPayload) {
+      await writeLog({ category, item: geminiPayload, status: 'success' });
+    }
+
     if (sessionMode) {
       return NextResponse.json(
         {
-          items: [payload],
+          items: sessionItems,
           category,
           settings: {
             title: settings.title,
@@ -331,13 +390,13 @@ export async function POST(request: NextRequest) {
         { status: 200, headers: corsHeaders },
       );
     }
-    return NextResponse.json(payload, { status: 200, headers: corsHeaders });
+    return NextResponse.json(sessionItems[0], { status: 200, headers: corsHeaders });
   } catch (error: unknown) {
     console.error('Dynamic vocabulary error:', error);
     const message = error instanceof Error
       ? error.message
       : 'Cannot generate vocabulary item.';
-    const status = error instanceof Error && 'status' in error && error.status === 429 ? 429 : 500;
+    const status = error instanceof Error && 'status' in error && (error as Error & { status?: number }).status === 429 ? 429 : 500;
     if (category) {
       await writeLog({ category, status: 'error', error: message });
     }

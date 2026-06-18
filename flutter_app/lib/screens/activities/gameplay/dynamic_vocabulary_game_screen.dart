@@ -179,8 +179,12 @@ class _DynamicVocabularyGameScreenState extends State<DynamicVocabularyGameScree
       _startTimer();
       _speakWord(loadedWords[0].word);
     } catch (e) {
+      String msg = e.toString().replaceFirst('Exception: ', '');
+      if (msg.contains('API Error (404):')) {
+        msg = msg.replaceFirst('API Error (404):', '').trim();
+      }
       setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _errorMessage = msg;
         _isLoading = false;
       });
     }
@@ -322,8 +326,8 @@ class _DynamicVocabularyGameScreenState extends State<DynamicVocabularyGameScree
         } catch (_) {}
       }
 
-      final similarityScore = (result['similarity_score'] as num?)?.toDouble() ?? 0.0;
-      final transcribedText = result['transcribed_text'] as String? ?? '';
+      final similarityScore = (result['score'] as num?)?.toDouble() ?? 0.0;
+      final transcribedText = result['text'] as String? ?? '';
 
       final cleanTranscribed = transcribedText
           .replaceAll(RegExp(r'[.,\/#!$%\^&\*;:{}=\-_`~()]'), '')
