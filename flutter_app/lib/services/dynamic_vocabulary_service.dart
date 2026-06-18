@@ -26,4 +26,19 @@ class DynamicVocabularyService {
         .where((category) => category.slug.isNotEmpty)
         .toList();
   }
+
+  Future<Map<String, dynamic>> fetchSession({
+    required String category,
+    required String difficulty,
+  }) async {
+    final response = await _apiService.post(
+      '/dynamic-vocabulary',
+      {
+        'category': category,
+        'difficulty': difficulty,
+        'session': true,
+      },
+    );
+    return response as Map<String, dynamic>;
+  }
 }

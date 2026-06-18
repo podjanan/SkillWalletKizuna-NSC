@@ -60,6 +60,7 @@ export async function proxy(req: NextRequest) {
   if (
     pathname === '/api/health' ||
     pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/api/dynamic-vocabulary') ||
     pathname.startsWith('/_next') ||
     pathname === '/favicon.ico'
   ) {

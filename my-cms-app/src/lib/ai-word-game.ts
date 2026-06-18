@@ -14,6 +14,10 @@ export type AiWordSettings = {
   geminiModel: string;
   promptTemplate: string;
   imageQuerySuffix: string;
+  wordsPerSessionEasy: number;
+  wordsPerSessionMedium: number;
+  wordsPerSessionHard: number;
+  enableSafeSearch: boolean;
 };
 
 export type AiWordCategory = {
@@ -33,6 +37,8 @@ export type AiWordFallbackWord = {
   word: string;
   thaiMeaning: string | null;
   phonetic: string | null;
+  imageUrl: string | null;
+  difficulty: 'easy' | 'medium' | 'hard';
   active: boolean;
 };
 
@@ -50,6 +56,10 @@ type SettingsRow = {
   gemini_model: string;
   prompt_template: string;
   image_query_suffix: string;
+  words_per_session_easy: number;
+  words_per_session_medium: number;
+  words_per_session_hard: number;
+  enable_safe_search: boolean;
 };
 
 type CategoryRow = {
@@ -69,6 +79,8 @@ type WordRow = {
   word: string;
   thai_meaning: string | null;
   phonetic: string | null;
+  image_url: string | null;
+  difficulty: 'easy' | 'medium' | 'hard';
   active: boolean;
 };
 
@@ -125,9 +137,45 @@ const defaultCategories = [
 
 export async function ensureAiWordGameDefaults() {
   await prisma.$executeRaw`
-    INSERT INTO ai_word_game_settings (id, updated_at)
-    VALUES ('default', CURRENT_TIMESTAMP)
-    ON CONFLICT (id) DO NOTHING
+    CREATE TABLE IF NOT EXISTS ai_word_game_settings (
+      id TEXT PRIMARY KEY DEFAULT 'default',
+      enabled BOOLEAN NOT NULL DEFAULT true,
+      show_in_app BOOLEAN NOT NULL DEFAULT true,
+      title TEXT NOT NULL DEFAULT 'Voice Quest',
+      description TEXT NOT NULL DEFAULT '',
+      cover_image_url TEXT NOT NULL DEFAULT 'asset:assets/images/voice_quest_cover.png',
+      max_score INTEGER NOT NULL DEFAULT 100,
+      use_gemini BOOLEAN NOT NULL DEFAULT true,
+      use_pixabay BOOLEAN NOT NULL DEFAULT true,
+      use_pexels BOOLEAN NOT NULL DEFAULT true,
+      image_provider_order TEXT NOT NULL DEFAULT 'pixabay,pexels',
+      gemini_model TEXT NOT NULL DEFAULT 'gemini-2.0-flash',
+      prompt_template TEXT NOT NULL DEFAULT '',
+      image_query_suffix TEXT NOT NULL DEFAULT 'cartoon illustration for kids',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+
+  await prisma.$executeRaw`
+    ALTER TABLE ai_word_game_settings
+      ADD COLUMN IF NOT EXISTS words_per_session_easy INTEGER NOT NULL DEFAULT 3,
+      ADD COLUMN IF NOT EXISTS words_per_session_medium INTEGER NOT NULL DEFAULT 5,
+      ADD COLUMN IF NOT EXISTS words_per_session_hard INTEGER NOT NULL DEFAULT 7,
+      ADD COLUMN IF NOT EXISTS enable_safe_search BOOLEAN NOT NULL DEFAULT true
+  `;
+
+  await prisma.$executeRaw`
+    ALTER TABLE ai_word_fallback_word
+      ADD COLUMN IF NOT EXISTS image_url TEXT,
+      ADD COLUMN IF NOT EXISTS difficulty TEXT NOT NULL DEFAULT 'easy'
+  `;
+
+  await prisma.$executeRaw`
+    INSERT INTO ai_word_game_settings (id, prompt_template, updated_at)
+    VALUES ('default', 'You are an expert children''s English vocabulary teacher. Generate exactly one simple English vocabulary word for kids ages 4-9 that belongs STRICTLY and directly to the category: {{category}} (Thai label/concept: {{thaiLabel}}).\n\nCategory Guidelines:\n- Animals (สัตว์): Must be a direct animal species (e.g., cat, dog, elephant, rabbit, turtle, dolphin, bee). Do NOT suggest food, vehicles, or places.\n- Food (อาหาร): Must be a direct edible food, fruit, vegetable, snack, or drink (e.g., apple, banana, cookie, bread, carrot, pizza, milk). Do NOT suggest animals or tools.\n- Vehicles (ยานพาหนะ): Must be a direct mode of transport (e.g., car, train, rocket, bicycle, boat, plane, tractor). Do NOT suggest roads, places, or jobs.\n- Nature (ธรรมชาติ): Must be a direct nature element, plant, flower, weather, or celestial body (e.g., tree, flower, rainbow, star, mountain, cloud, rain, sun). Do NOT suggest man-made items.\n- Bedroom (ห้องนอน): Must be a typical item found in a child''s bedroom (e.g., bed, pillow, blanket, lamp, toy, clock).\n- School (โรงเรียน) / Classroom: Must be a typical item found in a classroom or school (e.g., book, pencil, ruler, desk, chair, bag).\n\nCRITICAL CONSTRAINTS:\n1. The word MUST belong strictly to the category "{{category}}". Do NOT suggest words from other categories under any circumstances.\n2. The word MUST NOT be in this list of already existing words (case-insensitive): {{excludeList}}.\n3. The word must be a simple, concrete noun that a young child can understand and can be easily drawn in a kid-friendly cartoon illustration.\n4. Difficulty guidance:\n   - easy: 3-5 letters (e.g. cat, sun, apple)\n   - medium: 5-7 letters (e.g. rabbit, carrot, rocket, flower)\n   - hard: 7+ letters (e.g. elephant, butterfly, mountain)\n\nReturn the result in JSON format only:\n{\n  "word": "EnglishWord",\n  "thaiMeaning": "คำแปลภาษาไทยสั้นๆ ที่เข้าใจง่ายสำหรับเด็ก",\n  "phonetic": "phonetic guide for kids (e.g. AP-pul, PEN-gwin, ROK-it)"\n}', CURRENT_TIMESTAMP)
+    ON CONFLICT (id) DO UPDATE SET
+      prompt_template = CASE WHEN ai_word_game_settings.prompt_template = '' THEN 'You are an expert children''s English vocabulary teacher. Generate exactly one simple English vocabulary word for kids ages 4-9 that belongs STRICTLY and directly to the category: {{category}} (Thai label/concept: {{thaiLabel}}).\n\nCategory Guidelines:\n- Animals (สัตว์): Must be a direct animal species (e.g., cat, dog, elephant, rabbit, turtle, dolphin, bee). Do NOT suggest food, vehicles, or places.\n- Food (อาหาร): Must be a direct edible food, fruit, vegetable, snack, or drink (e.g., apple, banana, cookie, bread, carrot, pizza, milk). Do NOT suggest animals or tools.\n- Vehicles (ยานพาหนะ): Must be a direct mode of transport (e.g., car, train, rocket, bicycle, boat, plane, tractor). Do NOT suggest roads, places, or jobs.\n- Nature (ธรรมชาติ): Must be a direct nature element, plant, flower, weather, or celestial body (e.g., tree, flower, rainbow, star, mountain, cloud, rain, sun). Do NOT suggest man-made items.\n- Bedroom (ห้องนอน): Must be a typical item found in a child''s bedroom (e.g., bed, pillow, blanket, lamp, toy, clock).\n- School (โรงเรียน) / Classroom: Must be a typical item found in a classroom or school (e.g., book, pencil, ruler, desk, chair, bag).\n\nCRITICAL CONSTRAINTS:\n1. The word MUST belong strictly to the category "{{category}}". Do NOT suggest words from other categories under any circumstances.\n2. The word MUST NOT be in this list of already existing words (case-insensitive): {{excludeList}}.\n3. The word must be a simple, concrete noun that a young child can understand and can be easily drawn in a kid-friendly cartoon illustration.\n4. Difficulty guidance:\n   - easy: 3-5 letters (e.g. cat, sun, apple)\n   - medium: 5-7 letters (e.g. rabbit, carrot, rocket, flower)\n   - hard: 7+ letters (e.g. elephant, butterfly, mountain)\n\nReturn the result in JSON format only:\n{\n  "word": "EnglishWord",\n  "thaiMeaning": "คำแปลภาษาไทยสั้นๆ ที่เข้าใจง่ายสำหรับเด็ก",\n  "phonetic": "phonetic guide for kids (e.g. AP-pul, PEN-gwin, ROK-it)"\n}' ELSE ai_word_game_settings.prompt_template END
   `;
 
   for (const [index, category] of defaultCategories.entries()) {
@@ -157,9 +205,9 @@ export async function ensureAiWordGameDefaults() {
     for (const word of category.words) {
       await prisma.$executeRaw`
         INSERT INTO ai_word_fallback_word
-          (id, category_id, word, thai_meaning, phonetic, active, updated_at)
+          (id, category_id, word, thai_meaning, phonetic, image_url, difficulty, active, updated_at)
         VALUES
-          (${crypto.randomUUID()}, ${categoryId}, ${word[0]}, ${word[1]}, ${word[2]}, true, CURRENT_TIMESTAMP)
+          (${crypto.randomUUID()}, ${categoryId}, ${word[0]}, ${word[1]}, ${word[2]}, null, 'easy', true, CURRENT_TIMESTAMP)
       `;
     }
   }
@@ -180,6 +228,10 @@ export function mapSettings(row: SettingsRow): AiWordSettings {
     geminiModel: row.gemini_model,
     promptTemplate: row.prompt_template,
     imageQuerySuffix: row.image_query_suffix,
+    wordsPerSessionEasy: row.words_per_session_easy,
+    wordsPerSessionMedium: row.words_per_session_medium,
+    wordsPerSessionHard: row.words_per_session_hard,
+    enableSafeSearch: row.enable_safe_search,
   };
 }
 
@@ -203,6 +255,8 @@ export function mapWord(row: WordRow): AiWordFallbackWord {
     word: row.word,
     thaiMeaning: row.thai_meaning,
     phonetic: row.phonetic,
+    imageUrl: row.image_url,
+    difficulty: row.difficulty,
     active: row.active,
   };
 }
@@ -245,6 +299,25 @@ export async function getAiWordFallbackWords(categoryId?: string, activeOnly = f
         `
     : await prisma.$queryRaw<WordRow[]>`
         SELECT * FROM ai_word_fallback_word
+        ORDER BY word ASC
+      `;
+  return rows.map(mapWord);
+}
+
+export async function getAiWordFallbackWordsByDifficulty(
+  categoryId: string,
+  difficulty: 'easy' | 'medium' | 'hard',
+  activeOnly = true,
+) {
+  const rows = activeOnly
+    ? await prisma.$queryRaw<WordRow[]>`
+        SELECT * FROM ai_word_fallback_word
+        WHERE category_id = ${categoryId} AND difficulty = ${difficulty} AND active = true
+        ORDER BY word ASC
+      `
+    : await prisma.$queryRaw<WordRow[]>`
+        SELECT * FROM ai_word_fallback_word
+        WHERE category_id = ${categoryId} AND difficulty = ${difficulty}
         ORDER BY word ASC
       `;
   return rows.map(mapWord);

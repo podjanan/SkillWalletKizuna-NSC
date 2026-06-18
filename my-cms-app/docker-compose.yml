@@ -1,36 +1,39 @@
 services:
   db:
     container_name: swk-postgres
-    image: postgres:16
+    image: quay.io/sclorg/postgresql-16-c9s:latest
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: ${POSTGRES_DB}
+      POSTGRESQL_USER: ${POSTGRES_USER}
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
-      - swk_postgres_data:/var/lib/postgresql/data
+      - swk_postgres_data:/var/lib/pgsql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  pgadmin:
-    container_name: swk-pgadmin
-    image: dpage/pgadmin4:latest
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
-    ports:
-      - "5050:80"
-    volumes:
-      - swk_pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      db:
-        condition: service_healthy
+  # pgadmin:
+  #   container_name: swk-pgadmin
+  #   image: dpage/pgadmin4:latest
+  #   restart: unless-stopped
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+  #   ports:
+  #     - "5050:80"
+  #   volumes:
+  #     - swk_pgadmin_data:/var/lib/pgadmin
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
 
   app:
     container_name: swk-cms
@@ -52,6 +55,8 @@ services:
       - NODE_ENV=production
       - WHISPER_MODE=local
       - WHISPER_LOCAL_URL=http://whisper:8000
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - DIRECT_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
 
     depends_on:
       whisper:
@@ -92,7 +97,7 @@ services:
 
   minio:
     container_name: swk-minio
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
@@ -110,7 +115,7 @@ services:
     restart: unless-stopped
 
   minio-init:
-    image: minio/mc:latest
+    image: quay.io/minio/mc:latest
     depends_on:
       minio:
         condition: service_healthy

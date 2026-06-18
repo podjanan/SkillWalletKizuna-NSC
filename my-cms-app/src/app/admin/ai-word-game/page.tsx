@@ -1,8 +1,26 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Ban, Plus, RefreshCcw, Save, Sparkles, Trash2 } from 'lucide-react';
+import {
+  Ban,
+  ImageIcon,
+  Plus,
+  RefreshCcw,
+  Save,
+  Search,
+  Sparkles,
+  Trash2,
+  BookOpen,
+  Sliders,
+  Layers,
+  Check,
+  TrendingUp,
+  Image as ImageIconLucide,
+  HelpCircle
+} from 'lucide-react';
 import UserProfile from '@/components/UserProfile';
+
+type Difficulty = 'easy' | 'medium' | 'hard';
 
 type Settings = {
   enabled: boolean;
@@ -18,6 +36,10 @@ type Settings = {
   geminiModel: string;
   promptTemplate: string;
   imageQuerySuffix: string;
+  wordsPerSessionEasy: number;
+  wordsPerSessionMedium: number;
+  wordsPerSessionHard: number;
+  enableSafeSearch: boolean;
 };
 
 type Category = {
@@ -37,6 +59,8 @@ type FallbackWord = {
   word: string;
   thaiMeaning: string | null;
   phonetic: string | null;
+  imageUrl: string | null;
+  difficulty: Difficulty;
   active: boolean;
 };
 
@@ -65,6 +89,17 @@ type AdminData = {
   logs: GenerationLog[];
 };
 
+type PreviewWord = {
+  word: string;
+  thaiMeaning: string;
+  phonetic: string;
+  imageUrl: string;
+  imageSource?: string;
+  query?: string;
+  imageError?: string;
+  difficulty: Difficulty;
+};
+
 const emptyCategory: Category = {
   id: '',
   slug: '',
@@ -82,19 +117,62 @@ const emptyWord: FallbackWord = {
   word: '',
   thaiMeaning: '',
   phonetic: '',
+  imageUrl: '',
+  difficulty: 'easy',
   active: true,
 };
+
+const difficultyClasses: Record<Difficulty, string> = {
+  easy: 'bg-green-50 text-green-700 border-green-200',
+  medium: 'bg-amber-50 text-amber-800 border-amber-200',
+  hard: 'bg-red-50 text-red-700 border-red-200',
+};
+
+const defaultPromptTemplate = `You are an expert children's English vocabulary teacher. Generate exactly one simple English vocabulary word for kids ages 4-9 that belongs STRICTLY and directly to the category: {{category}} (Thai label/concept: {{thaiLabel}}).
+
+Category Guidelines:
+- Animals (สัตว์): Must be a direct animal species (e.g., cat, dog, elephant, rabbit, turtle, dolphin, bee). Do NOT suggest food, vehicles, or places.
+- Food (อาหาร): Must be a direct edible food, fruit, vegetable, snack, or drink (e.g., apple, banana, cookie, bread, carrot, pizza, milk). Do NOT suggest animals or tools.
+- Vehicles (ยานพาหนะ): Must be a direct mode of transport (e.g., car, train, rocket, bicycle, boat, plane, tractor). Do NOT suggest roads, places, or jobs.
+- Nature (ธรรมชาติ): Must be a direct nature element, plant, flower, weather, or celestial body (e.g., tree, flower, rainbow, star, mountain, cloud, rain, sun). Do NOT suggest man-made items.
+- Bedroom (ห้องนอน): Must be a typical item found in a child's bedroom (e.g., bed, pillow, blanket, lamp, toy, clock).
+- School (โรงเรียน) / Classroom: Must be a typical item found in a classroom or school (e.g., book, pencil, ruler, desk, chair, bag).
+
+CRITICAL CONSTRAINTS:
+1. The word MUST belong strictly to the category "{{category}}". Do NOT suggest words from other categories under any circumstances.
+2. The word MUST NOT be in this list of already existing words (case-insensitive): {{excludeList}}.
+3. The word must be a simple, concrete noun that a young child can understand and can be easily drawn in a kid-friendly cartoon illustration.
+4. Difficulty guidance:
+   - easy: 3-5 letters (e.g. cat, sun, apple)
+   - medium: 5-7 letters (e.g. rabbit, carrot, rocket, flower)
+   - hard: 7+ letters (e.g. elephant, butterfly, mountain)
+
+Return the result in JSON format only:
+{
+  "word": "EnglishWord",
+  "thaiMeaning": "คำแปลภาษาไทยสั้นๆ ที่เข้าใจง่ายสำหรับเด็ก",
+  "phonetic": "คำสะกดเสียงพจนานุกรม เช่น AP-pul, ZEE-bruh"
+}`;
 
 export default function AiWordGamePage() {
   const [data, setData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<'studio' | 'bank' | 'settings'>('studio');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [newCategory, setNewCategory] = useState<Category>(emptyCategory);
-  const [newWord, setNewWord] = useState<FallbackWord>(emptyWord);
+  const [creator, setCreator] = useState<FallbackWord>(emptyWord);
+  const [preview, setPreview] = useState<PreviewWord | null>(null);
+  const [creatorStatus, setCreatorStatus] = useState('');
   const [newBlockedTerm, setNewBlockedTerm] = useState('');
   const [testCategory, setTestCategory] = useState('');
+  const [testDifficulty, setTestDifficulty] = useState<Difficulty>('easy');
   const [testResult, setTestResult] = useState<Record<string, unknown> | null>(null);
 
+  const [showAdvancedCategories, setShowAdvancedCategories] = useState(false);
+
+  const activeCategories = useMemo(() => data?.categories.filter((category) => category.active) ?? [], [data?.categories]);
+  
   const wordsByCategory = useMemo(() => {
     const map: Record<string, FallbackWord[]> = {};
     for (const word of data?.words ?? []) {
@@ -103,21 +181,20 @@ export default function AiWordGamePage() {
     return map;
   }, [data?.words]);
 
+  const selectedCategory = activeCategories.find((category) => category.id === creator.categoryId) ?? activeCategories[0];
+
   const loadData = useCallback(async () => {
     setLoading(true);
     const res = await fetch('/api/admin/ai-word-game');
     const json = await res.json();
     setData(json);
-    setTestCategory(json.categories?.[0]?.slug ?? '');
-    setNewWord((prev) => ({
-      ...prev,
-      categoryId: json.categories?.[0]?.id ?? '',
-    }));
+    const firstCategory = json.categories?.[0];
+    setTestCategory(firstCategory?.slug ?? '');
+    setCreator((prev) => ({ ...prev, categoryId: prev.categoryId || firstCategory?.id || '' }));
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
   }, [loadData]);
 
@@ -133,13 +210,110 @@ export default function AiWordGamePage() {
     setSaving(false);
   }
 
-  async function runAction(payload: Record<string, unknown>) {
-    await fetch('/api/admin/ai-word-game', {
+  async function runAction(payload: Record<string, unknown>, reload = true) {
+    const res = await fetch('/api/admin/ai-word-game', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    await loadData();
+    const json = await res.json().catch(() => ({}));
+    if (reload) await loadData();
+    return json;
+  }
+
+  async function suggestWord() {
+    setCreatorStatus('Brainstorming word & generating art...');
+    setPreview(null);
+    const result = await runAction(
+      { action: 'suggestWord', categoryId: creator.categoryId, difficulty: creator.difficulty },
+      false,
+    );
+    const word = String(result.word ?? '');
+    const thaiMeaning = String(result.thaiMeaning ?? '');
+    const phonetic = String(result.phonetic ?? '');
+    const imageUrl = String(result.imageUrl ?? '');
+
+    setCreator((prev) => ({
+      ...prev,
+      word,
+      thaiMeaning,
+      phonetic,
+      imageUrl,
+    }));
+
+    setPreview({
+      word,
+      thaiMeaning,
+      phonetic,
+      imageUrl,
+      imageSource: result.imageSource ? String(result.imageSource) : undefined,
+      query: result.query ? String(result.query) : undefined,
+      imageError: result.imageError ? String(result.imageError) : undefined,
+      difficulty: creator.difficulty,
+    });
+    setCreatorStatus(result.imageError ? `AI ready (Image gen failed: ${result.imageError})` : (result.source === 'gemini' ? 'AI suggestion and drawing ready.' : 'Fallback suggestion ready.'));
+  }
+
+  async function previewWord() {
+    if (!creator.word.trim()) return;
+    setCreatorStatus('Creating preview...');
+    const result = await runAction(
+      {
+        action: 'previewWord',
+        categoryId: creator.categoryId,
+        difficulty: creator.difficulty,
+        word: creator.word,
+      },
+      false,
+    );
+    const nextPreview: PreviewWord = {
+      word: String(result.word ?? creator.word),
+      thaiMeaning: String(result.thaiMeaning ?? ''),
+      phonetic: String(result.phonetic ?? ''),
+      imageUrl: String(result.imageUrl ?? ''),
+      imageSource: result.imageSource ? String(result.imageSource) : undefined,
+      query: result.query ? String(result.query) : undefined,
+      imageError: result.imageError ? String(result.imageError) : undefined,
+      difficulty: creator.difficulty,
+    };
+    setPreview(nextPreview);
+    setCreator((prev) => ({
+      ...prev,
+      word: nextPreview.word,
+      thaiMeaning: nextPreview.thaiMeaning,
+      phonetic: nextPreview.phonetic,
+      imageUrl: nextPreview.imageUrl,
+    }));
+    setCreatorStatus(result.imageError ? `Preview ready (Image gen failed: ${result.imageError})` : 'Preview ready for approval.');
+  }
+
+  async function refreshPreviewImage() {
+    const word = preview?.word || creator.word;
+    if (!word.trim()) return;
+    setCreatorStatus('Refreshing image...');
+    const result = await runAction({ action: 'refreshImage', word }, false);
+    const imageUrl = String(result.imageUrl ?? '');
+    const imageError = result.imageError ? String(result.imageError) : undefined;
+    setPreview((prev) => prev ? { ...prev, imageUrl, imageError, imageSource: String(result.imageSource ?? ''), query: String(result.query ?? '') } : prev);
+    setCreator((prev) => ({ ...prev, imageUrl }));
+    setCreatorStatus(result.imageError ? `Image refresh failed: ${result.imageError}` : 'Image refreshed.');
+  }
+
+  async function saveCreatorWord() {
+    if (!creator.categoryId || !creator.word.trim()) return;
+    setCreatorStatus('Saving word...');
+    await runAction({
+      action: 'createWord',
+      ...creator,
+      thaiMeaning: creator.thaiMeaning || preview?.thaiMeaning || null,
+      phonetic: creator.phonetic || preview?.phonetic || null,
+      imageUrl: creator.imageUrl || preview?.imageUrl || null,
+    });
+    const categoryId = creator.categoryId;
+    const difficulty = creator.difficulty;
+    setCreator({ ...emptyWord, categoryId, difficulty });
+    setPreview(null);
+    setCreatorStatus('Word saved to the system.');
   }
 
   async function testGenerate() {
@@ -147,7 +321,7 @@ export default function AiWordGamePage() {
     const res = await fetch('/api/dynamic-vocabulary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category: testCategory }),
+      body: JSON.stringify({ category: testCategory, difficulty: testDifficulty, session: true }),
     });
     setTestResult(await res.json());
     await loadData();
@@ -155,8 +329,11 @@ export default function AiWordGamePage() {
 
   if (loading || !data) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="body-large-medium text-secondary--text">Loading...</div>
+      <div className="flex h-full min-h-[70vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCcw className="animate-spin text-primary" size={32} />
+          <div className="body-large-medium text-secondary--text">Loading Voice Quest Dashboard...</div>
+        </div>
       </div>
     );
   }
@@ -164,250 +341,724 @@ export default function AiWordGamePage() {
   const { settings } = data;
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-8 max-w-7xl mx-auto">
+      {/* Top Banner */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <div className="body-small-regular text-secondary--text mb-1">
-            AI Word Game &gt; Settings
-          </div>
-          <h1 className="heading-h3">AI WORD GAME</h1>
+          <div className="body-small-regular mb-1 text-secondary--text">CMS Tools &gt; Interactive Activities</div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
+            VOICE QUEST <span className="text-xs px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full font-bold border border-indigo-100">STUDIO</span>
+          </h1>
+          <p className="body-small-regular text-secondary--text mt-1">Refine, preview, and generate cartoon sticker assets for the vocabulary speech game.</p>
         </div>
         <UserProfile />
       </div>
 
-      <section className="bg-white rounded-lg shadow p-5 mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
-          <div>
-            <h2 className="heading-h5">Display & Providers</h2>
-            <p className="body-small-regular text-secondary--text">
-              Controls whether the Voice Quest card appears in the Language activity list.
-            </p>
+      {/* Tabs Menu */}
+      <div className="flex border-b border-slate-200 mb-8 gap-6">
+        <button
+          onClick={() => setActiveTab('studio')}
+          className={`flex items-center gap-2 pb-4 px-1 border-b-2 font-semibold text-sm transition-all duration-200 ${
+            activeTab === 'studio'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Sparkles size={18} />
+          🎨 Creator Studio
+        </button>
+        <button
+          onClick={() => setActiveTab('bank')}
+          className={`flex items-center gap-2 pb-4 px-1 border-b-2 font-semibold text-sm transition-all duration-200 ${
+            activeTab === 'bank'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <BookOpen size={18} />
+          📚 Playable Word Bank
+        </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`flex items-center gap-2 pb-4 px-1 border-b-2 font-semibold text-sm transition-all duration-200 ${
+            activeTab === 'settings'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Sliders size={18} />
+          ⚙️ Settings & System Logs
+        </button>
+      </div>
+
+      {/* Content Area */}
+      <div>
+        {/* TAB 1: CREATOR STUDIO */}
+        {activeTab === 'studio' && (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
+            
+            {/* Left Box: Controls */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900">1. Ideation & Transcription</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">Choose a category and let Gemini brainstorm a unique word, or type it manually.</p>
+                  </div>
+                  {creatorStatus && (
+                    <span className="text-xs font-semibold bg-slate-50 border border-slate-100 text-slate-600 px-3 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
+                      <span className="w-1.5 h-1.5 bg-slate-400 rounded-full"></span>
+                      {creatorStatus}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1.2fr_2fr] gap-4 mb-6">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">Vocabulary Category</label>
+                    <select
+                      value={creator.categoryId}
+                      onChange={(e) => {
+                        setCreator({ ...creator, categoryId: e.target.value });
+                        setPreview(null);
+                      }}
+                      className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium bg-slate-50/50 hover:bg-slate-50 focus:border-indigo-500 outline-none transition-all duration-200"
+                    >
+                      {activeCategories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">Difficulty Grade</label>
+                    <DifficultySelect
+                      value={creator.difficulty}
+                      onChange={(difficulty) => {
+                        setCreator({ ...creator, difficulty });
+                        setPreview(null);
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-600">English Word</label>
+                    <div className="relative flex items-center">
+                      <input
+                        placeholder="e.g. Octopus, Elephant, Rocket"
+                        value={creator.word}
+                        onChange={(e) => {
+                          setCreator({ ...creator, word: e.target.value });
+                          setPreview(null);
+                        }}
+                        className="w-full rounded-xl border border-slate-200 pl-3 pr-10 py-2.5 text-sm font-semibold focus:border-indigo-500 outline-none transition-all duration-200"
+                      />
+                      <button
+                        onClick={suggestWord}
+                        title="AI Suggest Word"
+                        className="absolute right-2 p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
+                      >
+                        <Sparkles size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Meta details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-100 pt-6">
+                  <TextInput
+                    label="Thai Translation"
+                    placeholder="เช่น หญ้า, ดวงอาทิตย์"
+                    value={creator.thaiMeaning ?? ''}
+                    onChange={(thaiMeaning) => setCreator({ ...creator, thaiMeaning })}
+                  />
+                  <TextInput
+                    label="PhoneticSynergy (คำสะกดเสียงพจนานุกรม)"
+                    placeholder="เช่น GRAS, SUN"
+                    value={creator.phonetic ?? ''}
+                    onChange={(phonetic) => setCreator({ ...creator, phonetic })}
+                  />
+                </div>
+              </div>
+
+              {/* Extra tools */}
+              <div className="bg-slate-50 border border-slate-200/50 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <HelpCircle size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">How to generate a sticker?</h3>
+                    <p className="text-xs text-slate-500 max-w-md mt-0.5">Simply click the suggest button or type a word, make sure the category is correct, then click "Generate Cartoon Art" inside the preview studio.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={previewWord}
+                  disabled={!creator.word.trim()}
+                  className="btn-primary flex items-center justify-center gap-2 rounded-xl px-5 py-3 shadow-md hover:shadow-indigo-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Search size={18} />
+                  Generate Cartoon Art
+                </button>
+              </div>
+            </div>
+
+            {/* Right Box: Sticker Preview */}
+            <div className="sticky top-6">
+              <PreviewCard
+                preview={preview}
+                category={selectedCategory}
+                creator={creator}
+                onRefresh={refreshPreviewImage}
+                onSave={saveCreatorWord}
+                creatorStatus={creatorStatus}
+              />
+            </div>
+
           </div>
-          <button
-            onClick={saveSettings}
-            disabled={saving}
-            className="btn-primary px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Save size={18} />
-            {saving ? 'Saving...' : 'Save Settings'}
-          </button>
-        </div>
+        )}
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <label className="flex items-center gap-3 bg-gray--light1 rounded-lg p-3">
-            <input
-              type="checkbox"
-              checked={settings.enabled}
-              onChange={(e) => setData({ ...data, settings: { ...settings, enabled: e.target.checked } })}
-            />
-            <span className="body-medium-medium">Game enabled</span>
-          </label>
-          <label className="flex items-center gap-3 bg-gray--light1 rounded-lg p-3">
-            <input
-              type="checkbox"
-              checked={settings.showInApp}
-              onChange={(e) => setData({ ...data, settings: { ...settings, showInApp: e.target.checked } })}
-            />
-            <span className="body-medium-medium">Show card in app</span>
-          </label>
-          <label className="flex items-center gap-3 bg-gray--light1 rounded-lg p-3">
-            <input
-              type="checkbox"
-              checked={settings.useGemini}
-              onChange={(e) => setData({ ...data, settings: { ...settings, useGemini: e.target.checked } })}
-            />
-            <span className="body-medium-medium">Use Gemini</span>
-          </label>
-        </div>
+        {/* TAB 2: PLAYABLE WORD BANK */}
+        {activeTab === 'bank' && (
+          <div className="space-y-8 animate-fadeIn">
+            {/* Category filter pills */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-xs font-semibold text-slate-500 mr-2">Filter by Category:</span>
+              <button
+                onClick={() => setFilterCategory('all')}
+                className={`text-xs px-3.5 py-2 rounded-xl font-bold border transition-all duration-200 ${
+                  filterCategory === 'all'
+                    ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                🌍 All Words ({data.words.length})
+              </button>
+              {data.categories.map((c) => {
+                const count = (wordsByCategory[c.id] ?? []).length;
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setFilterCategory(c.id)}
+                    className={`text-xs px-3.5 py-2 rounded-xl font-bold border transition-all duration-200 flex items-center gap-1.5 ${
+                      filterCategory === c.id
+                        ? 'text-white shadow-sm'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                    style={filterCategory === c.id ? { backgroundColor: c.color || '#4F46E5', borderColor: c.color || '#4F46E5' } : {}}
+                  >
+                    <span>{c.label}</span>
+                    <span className="opacity-75 font-medium">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-          <TextInput label="Card title" value={settings.title} onChange={(title) => setData({ ...data, settings: { ...settings, title } })} />
-          <TextInput label="Cover image URL" value={settings.coverImageUrl} onChange={(coverImageUrl) => setData({ ...data, settings: { ...settings, coverImageUrl } })} />
-          <TextInput label="Gemini model" value={settings.geminiModel} onChange={(geminiModel) => setData({ ...data, settings: { ...settings, geminiModel } })} />
-          <TextInput label="Image provider order" value={settings.imageProviderOrder} onChange={(imageProviderOrder) => setData({ ...data, settings: { ...settings, imageProviderOrder } })} />
-          <TextInput label="Image query suffix" value={settings.imageQuerySuffix} onChange={(imageQuerySuffix) => setData({ ...data, settings: { ...settings, imageQuerySuffix } })} />
-          <TextInput label="Max score" value={String(settings.maxScore)} onChange={(maxScore) => setData({ ...data, settings: { ...settings, maxScore: Number(maxScore) || 100 } })} />
-        </div>
+            {/* Categorized Word Grids */}
+            <div className="space-y-8">
+              {data.categories
+                .filter((cat) => filterCategory === 'all' || filterCategory === cat.id)
+                .map((cat) => {
+                  const words = wordsByCategory[cat.id] ?? [];
+                  if (words.length === 0) return null;
+                  return (
+                    <div key={cat.id} className="bg-slate-50/50 border border-slate-200/50 rounded-2xl p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className="w-3.5 h-3.5 rounded-full"
+                            style={{ backgroundColor: cat.color ?? '#4F46E5' }}
+                          ></span>
+                          <h3 className="text-base font-extrabold text-slate-950">{cat.label} ({cat.thaiLabel ?? ''})</h3>
+                        </div>
+                      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-          <label className="flex items-center gap-3">
-            <input type="checkbox" checked={settings.usePixabay} onChange={(e) => setData({ ...data, settings: { ...settings, usePixabay: e.target.checked } })} />
-            Pixabay
-          </label>
-          <label className="flex items-center gap-3">
-            <input type="checkbox" checked={settings.usePexels} onChange={(e) => setData({ ...data, settings: { ...settings, usePexels: e.target.checked } })} />
-            Pexels
-          </label>
-        </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {words.map((word) => (
+                          <WordRow
+                            key={word.id}
+                            word={word}
+                            categories={data.categories}
+                            onSave={(next) => runAction({ action: 'updateWord', ...next })}
+                            onDelete={() => runAction({ action: 'deleteWord', id: word.id })}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
 
-        <label className="block mt-4">
-          <span className="body-small-medium text-secondary--text">Prompt template</span>
-          <textarea
-            value={settings.promptTemplate}
-            onChange={(e) => setData({ ...data, settings: { ...settings, promptTemplate: e.target.value } })}
-            className="w-full mt-1 px-3 py-2 border border-gray6 rounded-lg min-h-28"
-          />
-        </label>
-      </section>
+            {/* Categories Management Panel */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Manage Game Categories</h2>
+                  <p className="text-xs text-slate-500">Edit metadata, color tags, sort orders, or add custom gameplay lists.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedCategories(!showAdvancedCategories)}
+                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors duration-150 px-3 py-2 bg-slate-50 rounded-xl hover:bg-slate-100 border border-slate-100"
+                  >
+                    {showAdvancedCategories ? 'Hide Advanced Config' : 'Show Advanced Config'}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      await runAction({ action: 'createCategory', ...newCategory });
+                      setNewCategory(emptyCategory);
+                    }}
+                    className="btn-primary flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-semibold shadow-sm hover:shadow-indigo-100 transition-all duration-200"
+                  >
+                    <Plus size={15} />
+                    Add Category
+                  </button>
+                </div>
+              </div>
 
-      <section className="bg-white rounded-lg shadow p-5 mb-6">
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <h2 className="heading-h5">Test Generate</h2>
-            <select value={testCategory} onChange={(e) => setTestCategory(e.target.value)} className="mt-2 px-3 py-2 border border-gray6 rounded-lg">
-              {data.categories.filter((c) => c.active).map((category) => (
-                <option key={category.id} value={category.slug}>{category.label}</option>
-              ))}
-            </select>
-          </div>
-          <button onClick={testGenerate} className="btn-primary px-4 py-2 rounded-lg flex items-center gap-2">
-            <Sparkles size={18} />
-            Test
-          </button>
-          {testResult && (
-            <pre className="bg-gray--light1 rounded-lg p-3 text-xs overflow-auto max-w-full">
-              {JSON.stringify(testResult, null, 2)}
-            </pre>
-          )}
-        </div>
-      </section>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 mb-4">
+                {showAdvancedCategories && (
+                  <input placeholder="slug (e.g. food)" value={newCategory.slug} onChange={(e) => setNewCategory({ ...newCategory, slug: e.target.value })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20" />
+                )}
+                <input placeholder="Category Name (e.g. Food)" value={newCategory.label} onChange={(e) => setNewCategory({ ...newCategory, label: e.target.value })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20" />
+                <input placeholder="Thai Label (e.g. อาหาร)" value={newCategory.thaiLabel ?? ''} onChange={(e) => setNewCategory({ ...newCategory, thaiLabel: e.target.value })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20" />
+                {showAdvancedCategories && (
+                  <>
+                    <input placeholder="Icon (e.g. restaurant)" value={newCategory.icon ?? ''} onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20" />
+                    <input placeholder="Hex Color (e.g. #FF9800)" value={newCategory.color ?? ''} onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20" />
+                    <input placeholder="Sort Index" value={newCategory.sortOrder} onChange={(e) => setNewCategory({ ...newCategory, sortOrder: Number(e.target.value) || 0 })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20" />
+                  </>
+                )}
+              </div>
 
-      <section className="bg-white rounded-lg shadow p-5 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="heading-h5">Categories</h2>
-          <button
-            onClick={() => runAction({ action: 'createCategory', ...newCategory })}
-            className="btn-primary px-3 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Plus size={16} />
-            Add Category
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-2 mb-3">
-          <input placeholder="slug" value={newCategory.slug} onChange={(e) => setNewCategory({ ...newCategory, slug: e.target.value })} className="px-3 py-2 border border-gray6 rounded-lg" />
-          <input placeholder="label" value={newCategory.label} onChange={(e) => setNewCategory({ ...newCategory, label: e.target.value })} className="px-3 py-2 border border-gray6 rounded-lg" />
-          <input placeholder="Thai label" value={newCategory.thaiLabel ?? ''} onChange={(e) => setNewCategory({ ...newCategory, thaiLabel: e.target.value })} className="px-3 py-2 border border-gray6 rounded-lg" />
-          <input placeholder="icon" value={newCategory.icon ?? ''} onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })} className="px-3 py-2 border border-gray6 rounded-lg" />
-          <input placeholder="#color" value={newCategory.color ?? ''} onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })} className="px-3 py-2 border border-gray6 rounded-lg" />
-          <input placeholder="sort" value={newCategory.sortOrder} onChange={(e) => setNewCategory({ ...newCategory, sortOrder: Number(e.target.value) || 0 })} className="px-3 py-2 border border-gray6 rounded-lg" />
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px]">
-            <tbody className="divide-y divide-gray4">
-              {data.categories.map((category) => (
-                <CategoryRow key={category.id} category={category} onSave={(next) => runAction({ action: 'updateCategory', ...next })} onDelete={() => runAction({ action: 'deleteCategory', id: category.id })} />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="bg-white rounded-lg shadow p-5 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="heading-h5">Fallback Words</h2>
-          <button onClick={() => runAction({ action: 'createWord', ...newWord })} className="btn-primary px-3 py-2 rounded-lg flex items-center gap-2">
-            <Plus size={16} />
-            Add Word
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-4">
-          <select value={newWord.categoryId} onChange={(e) => setNewWord({ ...newWord, categoryId: e.target.value })} className="px-3 py-2 border border-gray6 rounded-lg">
-            {data.categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}
-          </select>
-          <input placeholder="word" value={newWord.word} onChange={(e) => setNewWord({ ...newWord, word: e.target.value })} className="px-3 py-2 border border-gray6 rounded-lg" />
-          <input placeholder="Thai meaning" value={newWord.thaiMeaning ?? ''} onChange={(e) => setNewWord({ ...newWord, thaiMeaning: e.target.value })} className="px-3 py-2 border border-gray6 rounded-lg" />
-          <input placeholder="phonetic" value={newWord.phonetic ?? ''} onChange={(e) => setNewWord({ ...newWord, phonetic: e.target.value })} className="px-3 py-2 border border-gray6 rounded-lg" />
-        </div>
-        {data.categories.map((category) => (
-          <div key={category.id} className="mb-4">
-            <h3 className="body-medium-medium mb-2">{category.label}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-              {(wordsByCategory[category.id] ?? []).map((word) => (
-                <WordRow key={word.id} word={word} categories={data.categories} onSave={(next) => runAction({ action: 'updateWord', ...next })} onDelete={() => runAction({ action: 'deleteWord', id: word.id })} />
-              ))}
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 border-y border-slate-100 text-slate-600 font-bold text-left">
+                      {showAdvancedCategories && <th className="px-4 py-3">Slug</th>}
+                      <th className="px-4 py-3">Category Name (English)</th>
+                      <th className="px-4 py-3">Thai Label</th>
+                      {showAdvancedCategories && (
+                        <>
+                          <th className="px-4 py-3">Icon Name</th>
+                          <th className="px-4 py-3">Theme Color</th>
+                          <th className="px-4 py-3">Sort Order</th>
+                        </>
+                      )}
+                      <th className="px-4 py-3">Active</th>
+                      <th className="px-4 py-3 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium">
+                    {data.categories.map((category) => (
+                      <CategoryRow
+                        key={category.id}
+                        category={category}
+                        showAdvanced={showAdvancedCategories}
+                        onSave={(next) => runAction({ action: 'updateCategory', ...next })}
+                        onDelete={() => runAction({ action: 'deleteCategory', id: category.id })}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        ))}
-      </section>
+        )}
 
-      <section className="bg-white rounded-lg shadow p-5 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="heading-h5 flex items-center gap-2"><Ban size={18} /> Blocked Terms</h2>
-          <button onClick={() => runAction({ action: 'createBlockedTerm', term: newBlockedTerm, active: true })} className="btn-primary px-3 py-2 rounded-lg">Add</button>
-        </div>
-        <input value={newBlockedTerm} onChange={(e) => setNewBlockedTerm(e.target.value)} placeholder="blocked word" className="px-3 py-2 border border-gray6 rounded-lg mb-3" />
-        <div className="flex flex-wrap gap-2">
-          {data.blockedTerms.map((term) => (
-            <button key={term.id} onClick={() => runAction({ action: 'deleteBlockedTerm', id: term.id })} className="px-3 py-1 rounded-full bg-red--light6 text-red--dark body-small-medium">
-              {term.term} ×
-            </button>
-          ))}
-        </div>
-      </section>
+        {/* TAB 3: SETTINGS & SYSTEM LOGS */}
+        {activeTab === 'settings' && (
+          <div className="space-y-6 animate-fadeIn">
+            {/* System config */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+              <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">System Parameters & Image Provider Config</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Control difficulty quotas, API models, and search behavior.</p>
+                </div>
+                <button
+                  onClick={saveSettings}
+                  disabled={saving}
+                  className="btn-primary flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm hover:shadow-indigo-100 transition-all duration-200"
+                >
+                  <Save size={16} />
+                  {saving ? 'Saving...' : 'Save Settings'}
+                </button>
+              </div>
 
-      <section className="bg-white rounded-lg shadow p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="heading-h5">Generation Logs</h2>
-          <button onClick={loadData} className="btn-white px-3 py-2 rounded-lg flex items-center gap-2">
-            <RefreshCcw size={16} />
-            Refresh
-          </button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px]">
-            <thead className="bg-gray--light1">
-              <tr>
-                <th className="px-3 py-2 text-left">Time</th>
-                <th className="px-3 py-2 text-left">Category</th>
-                <th className="px-3 py-2 text-left">Word</th>
-                <th className="px-3 py-2 text-left">Source</th>
-                <th className="px-3 py-2 text-left">Image</th>
-                <th className="px-3 py-2 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray4">
-              {data.logs.map((log) => (
-                <tr key={log.id}>
-                  <td className="px-3 py-2 body-small-regular">{new Date(log.createdAt).toLocaleString()}</td>
-                  <td className="px-3 py-2">{log.categorySlug}</td>
-                  <td className="px-3 py-2">{log.word ?? '-'}</td>
-                  <td className="px-3 py-2">{log.wordSource ?? '-'}</td>
-                  <td className="px-3 py-2">{log.imageSource ?? '-'}</td>
-                  <td className="px-3 py-2">{log.status}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                <Checkbox label="Enable Gameplay Screen" checked={settings.enabled} onChange={(enabled) => setData({ ...data, settings: { ...settings, enabled } })} />
+                <Checkbox label="Show Card in Dashboard" checked={settings.showInApp} onChange={(showInApp) => setData({ ...data, settings: { ...settings, showInApp } })} />
+                <Checkbox label="Use Gemini (AI Mode)" checked={settings.useGemini} onChange={(useGemini) => setData({ ...data, settings: { ...settings, useGemini } })} />
+                <Checkbox label="Safe Search Enabled" checked={settings.enableSafeSearch} onChange={(enableSafeSearch) => setData({ ...data, settings: { ...settings, enableSafeSearch } })} />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-100 py-6">
+                <NumberInput label="Easy Mode Words Count" value={settings.wordsPerSessionEasy} onChange={(wordsPerSessionEasy) => setData({ ...data, settings: { ...settings, wordsPerSessionEasy } })} />
+                <NumberInput label="Medium Mode Words Count" value={settings.wordsPerSessionMedium} onChange={(wordsPerSessionMedium) => setData({ ...data, settings: { ...settings, wordsPerSessionMedium } })} />
+                <NumberInput label="Hard Mode Words Count" value={settings.wordsPerSessionHard} onChange={(wordsPerSessionHard) => setData({ ...data, settings: { ...settings, wordsPerSessionHard } })} />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-100 pt-6">
+                <TextInput label="Game Card Title" value={settings.title} onChange={(title) => setData({ ...data, settings: { ...settings, title } })} />
+                <TextInput label="Cover Image URL" value={settings.coverImageUrl} onChange={(coverImageUrl) => setData({ ...data, settings: { ...settings, coverImageUrl } })} />
+                <TextInput label="Gemini AI Model" value={settings.geminiModel} onChange={(geminiModel) => setData({ ...data, settings: { ...settings, geminiModel } })} />
+                <TextInput label="Max Score" type="number" value={String(settings.maxScore)} onChange={(maxScore) => setData({ ...data, settings: { ...settings, maxScore: Number(maxScore) || 100 } })} />
+              </div>
+
+              <div className="mt-6 border-t border-slate-100 pt-6">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-semibold text-slate-600 font-bold">Dynamic AI Prompt Template</span>
+                    <button
+                      type="button"
+                      onClick={() => setData({ ...data, settings: { ...settings, promptTemplate: defaultPromptTemplate } })}
+                      className="text-xs font-bold text-indigo-600 hover:text-indigo-850 hover:underline transition-all duration-150"
+                    >
+                      Reset to Default Prompt
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mb-1.5">Adjust template placeholders {"{{category}}"} or {"{{difficulty}}"} to customize vocabulary outputs.</p>
+                  <textarea
+                    value={settings.promptTemplate}
+                    onChange={(e) => setData({ ...data, settings: { ...settings, promptTemplate: e.target.value } })}
+                    className="w-full min-h-36 rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium font-mono focus:border-indigo-500 outline-none transition-all duration-200 bg-slate-50/20"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Test API tool */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+              <h2 className="text-base font-bold text-slate-900 mb-2">Test Live API Output</h2>
+              <p className="text-xs text-slate-500 mb-4">Dry-run a vocabulary session payload exactly like the Flutter client would call.</p>
+              
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <select value={testCategory} onChange={(e) => setTestCategory(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:indigo-500 outline-none bg-slate-50/50">
+                  {activeCategories.map((c) => <option key={c.id} value={c.slug}>{c.label}</option>)}
+                </select>
+                <DifficultySelect value={testDifficulty} onChange={setTestDifficulty} />
+                <button
+                  onClick={testGenerate}
+                  className="btn-primary flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold"
+                >
+                  <Sparkles size={14} />
+                  Test Live POST
+                </button>
+              </div>
+
+              {testResult && (
+                <pre className="max-w-full overflow-auto rounded-xl bg-slate-900 text-indigo-200 p-4 text-xs font-mono border border-slate-800 shadow-inner">
+                  {JSON.stringify(testResult, null, 2)}
+                </pre>
+              )}
+            </div>
+
+            {/* Blocked Words */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Safety Blocked Terms</h2>
+                  <p className="text-xs text-slate-500">Prevent Gemini from generating inappropriate, slang, or non-educational terms.</p>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    value={newBlockedTerm}
+                    onChange={(e) => setNewBlockedTerm(e.target.value)}
+                    placeholder="Add term..."
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:indigo-500 outline-none bg-slate-50/20"
+                  />
+                  <button
+                    onClick={() => {
+                      runAction({ action: 'createBlockedTerm', term: newBlockedTerm, active: true });
+                      setNewBlockedTerm('');
+                    }}
+                    className="btn-primary rounded-xl px-4 py-2 text-xs font-semibold"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {data.blockedTerms.map((term) => (
+                  <button
+                    key={term.id}
+                    onClick={() => runAction({ action: 'deleteBlockedTerm', id: term.id })}
+                    className="text-xs font-semibold bg-red-50 hover:bg-red-100 border border-red-100 text-red-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all duration-200"
+                  >
+                    <span>{term.term}</span>
+                    <span className="font-bold opacity-60">×</span>
+                  </button>
+                ))}
+                {data.blockedTerms.length === 0 && (
+                  <div className="text-xs text-slate-400 py-3 italic">No blocked terms configured. All safe words allowed.</div>
+                )}
+              </div>
+            </div>
+
+            {/* Generation logs */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">AI Generation Activity Log</h2>
+                  <p className="text-xs text-slate-500">Monitor live token queries, image outputs, and compilation logs.</p>
+                </div>
+                <button onClick={loadData} className="btn-white flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold">
+                  <RefreshCcw size={14} />
+                  Refresh logs
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-xs">
+                  <thead className="bg-slate-50 border-y border-slate-100 text-slate-600 font-bold text-left">
+                    <tr>
+                      <th className="px-4 py-3">Date/Time</th>
+                      <th className="px-4 py-3">Category</th>
+                      <th className="px-4 py-3">Word</th>
+                      <th className="px-4 py-3">Word Provider</th>
+                      <th className="px-4 py-3">Image Provider</th>
+                      <th className="px-4 py-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium">
+                    {data.logs.map((log) => (
+                      <tr key={log.id} className="hover:bg-slate-50/40">
+                        <td className="px-4 py-3.5 text-slate-500">{new Date(log.createdAt).toLocaleString()}</td>
+                        <td className="px-4 py-3.5 font-bold text-slate-800">{log.categorySlug.toUpperCase()}</td>
+                        <td className="px-4 py-3.5 font-semibold text-slate-900">{log.word ?? '-'}</td>
+                        <td className="px-4 py-3.5">{log.wordSource ? <span className="px-2 py-0.5 rounded bg-violet-50 text-violet-700 text-[10px] font-bold border border-violet-100">{log.wordSource.toUpperCase()}</span> : '-'}</td>
+                        <td className="px-4 py-3.5">{log.imageSource ? <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-100">{log.imageSource.toUpperCase()}</span> : '-'}</td>
+                        <td className="px-4 py-3.5">
+                          {log.status === 'success' ? (
+                            <span className="text-green-600 font-bold bg-green-50 border border-green-100 px-2 py-0.5 rounded">Success</span>
+                          ) : (
+                            <span className="text-red-600 font-bold bg-red-50 border border-red-100 px-2 py-0.5 rounded" title={log.error ?? ''}>Error</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {data.logs.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="text-center text-slate-400 py-6 italic">No activity logs recorded yet. Play the game to generate logs!</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-function TextInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+function TextInput({
+  label,
+  value,
+  placeholder,
+  onChange,
+  type = 'text'
+}: {
+  label: string;
+  value: string;
+  placeholder?: string;
+  onChange: (value: string) => void;
+  type?: string;
+}) {
   return (
-    <label className="block">
-      <span className="body-small-medium text-secondary--text">{label}</span>
-      <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full mt-1 px-3 py-2 border border-gray6 rounded-lg" />
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-semibold text-slate-600">{label}</span>
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20 focus:bg-white transition-all duration-200"
+      />
     </label>
   );
 }
 
-function CategoryRow({ category, onSave, onDelete }: { category: Category; onSave: (category: Category) => void; onDelete: () => void }) {
+function NumberInput({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-semibold text-slate-600">{label}</span>
+      <input
+        type="number"
+        min={1}
+        max={20}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value) || 1)}
+        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20 focus:bg-white transition-all duration-200"
+      />
+    </label>
+  );
+}
+
+function Checkbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <label className="flex items-center gap-3 rounded-xl bg-slate-50 border border-slate-200/50 p-4 hover:bg-slate-100/50 transition-all duration-150 cursor-pointer select-none">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+      />
+      <span className="text-xs font-bold text-slate-800">{label}</span>
+    </label>
+  );
+}
+
+function DifficultySelect({ value, onChange }: { value: Difficulty; onChange: (value: Difficulty) => void }) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value as Difficulty)}
+      className="rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium bg-slate-50/50 hover:bg-slate-50 focus:border-indigo-500 outline-none transition-all duration-200"
+    >
+      <option value="easy">🟩 Easy (ง่าย)</option>
+      <option value="medium">🟨 Medium (ปานกลาง)</option>
+      <option value="hard">🟥 Hard (ยาก)</option>
+    </select>
+  );
+}
+
+function PreviewCard({
+  preview,
+  category,
+  creator,
+  onRefresh,
+  onSave,
+  creatorStatus
+}: {
+  preview: PreviewWord | null;
+  category?: Category;
+  creator: FallbackWord;
+  onRefresh: () => void;
+  onSave: () => void;
+  creatorStatus?: string;
+}) {
+  const shadowColor = category?.color ? `${category.color}15` : '#6366F115';
+  const themeColor = category?.color ?? '#4F46E5';
+
+  const isGenerating = creatorStatus === 'Creating preview...' || creatorStatus === 'Refreshing image...';
+
+  return (
+    <div
+      className="bg-white rounded-3xl border-2 p-5 shadow-lg transition-all duration-300 relative overflow-hidden"
+      style={{
+        borderColor: themeColor,
+        boxShadow: `0 20px 25px -5px ${shadowColor}, 0 8px 10px -6px ${shadowColor}`
+      }}
+    >
+      <div className="absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-10" style={{ backgroundColor: themeColor }}></div>
+
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <span className="text-[10px] font-extrabold tracking-wider text-slate-400 uppercase">Sticker Preview</span>
+          <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight">{preview?.word || creator.word || 'Word Output'}</h3>
+          <p className="text-xs font-semibold text-slate-500 mt-0.5">
+            {category?.label ?? 'Category'} · <span className="text-indigo-600 font-mono">({preview?.phonetic || creator.phonetic || 'phonetic'})</span>
+          </p>
+        </div>
+        <span className={`text-[10px] font-extrabold rounded-full px-2.5 py-1 uppercase border ${difficultyClasses[preview?.difficulty || creator.difficulty]}`}>
+          {preview?.difficulty || creator.difficulty}
+        </span>
+      </div>
+
+      {/* Card Body */}
+      <div className="aspect-video relative overflow-hidden rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-4 group shadow-inner">
+        {isGenerating ? (
+          <div className="flex flex-col items-center gap-2.5">
+            <RefreshCcw className="animate-spin text-indigo-600" size={28} />
+            <span className="text-xs font-bold text-slate-500">Generating Cartoon Sticker...</span>
+          </div>
+        ) : preview?.imageUrl || creator.imageUrl ? (
+          <div className="relative w-full h-full flex items-center justify-center">
+            <img
+              src={preview?.imageUrl || creator.imageUrl || ''}
+              alt={preview?.word || creator.word}
+              className="w-full h-full object-contain p-2 hover:scale-105 transition-all duration-300"
+            />
+            {preview?.imageError && (
+              <div className="absolute bottom-0 left-0 right-0 bg-amber-50/95 border-t border-amber-200 px-3 py-1.5 text-center">
+                <span className="text-[10px] font-extrabold text-amber-700 block">
+                  ⚠️ {preview.imageError}
+                </span>
+              </div>
+            )}
+          </div>
+        ) : preview?.imageError ? (
+          <div className="flex flex-col items-center text-red-500 p-4 text-center select-none">
+            <span className="text-xs font-bold text-red-650 mb-1 flex items-center gap-1">⚠️ แจ้งเตือนระบบสร้างรูปภาพ</span>
+            <p className="text-[11px] text-red-500 max-w-xs leading-normal font-bold text-center mt-1">{preview.imageError}</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center text-slate-400 p-6 text-center select-none">
+            <ImageIconLucide size={36} className="opacity-40 mb-1.5" />
+            <span className="text-xs font-bold text-slate-600">No Cartoon Generated</span>
+            <p className="text-[10px] text-slate-500 max-w-xs mt-0.5 leading-normal">Click "Generate Cartoon Art" below to prompt the Gemini 2.5 Flash Image generator.</p>
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-xs">
+          <span className="font-bold text-slate-600 uppercase text-[9px] tracking-wider block mb-0.5">Thai translation</span>
+          <p className="font-semibold text-slate-800 text-sm">{preview?.thaiMeaning || creator.thaiMeaning || 'Waiting translation...'}</p>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onRefresh}
+            disabled={!preview?.imageUrl && !creator.imageUrl}
+            className="btn-white flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold shadow-sm hover:shadow-slate-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RefreshCcw size={14} />
+            Regenerate Art
+          </button>
+          
+          <button
+            onClick={onSave}
+            disabled={!creator.word.trim()}
+            className="btn-primary flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-extrabold text-white shadow-md hover:shadow-indigo-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: themeColor, borderColor: themeColor }}
+          >
+            <Check size={14} />
+            Save Word
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CategoryRow({ category, showAdvanced, onSave, onDelete }: { category: Category; showAdvanced: boolean; onSave: (category: Category) => void; onDelete: () => void }) {
   const [draft, setDraft] = useState(category);
   return (
-    <tr>
-      <td className="px-2 py-2"><input value={draft.slug} onChange={(e) => setDraft({ ...draft, slug: e.target.value })} className="w-full px-2 py-1 border rounded" /></td>
-      <td className="px-2 py-2"><input value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} className="w-full px-2 py-1 border rounded" /></td>
-      <td className="px-2 py-2"><input value={draft.thaiLabel ?? ''} onChange={(e) => setDraft({ ...draft, thaiLabel: e.target.value })} className="w-full px-2 py-1 border rounded" /></td>
-      <td className="px-2 py-2"><input value={draft.icon ?? ''} onChange={(e) => setDraft({ ...draft, icon: e.target.value })} className="w-full px-2 py-1 border rounded" /></td>
-      <td className="px-2 py-2"><input value={draft.color ?? ''} onChange={(e) => setDraft({ ...draft, color: e.target.value })} className="w-full px-2 py-1 border rounded" /></td>
-      <td className="px-2 py-2"><input value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: Number(e.target.value) || 0 })} className="w-20 px-2 py-1 border rounded" /></td>
-      <td className="px-2 py-2"><input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} /></td>
-      <td className="px-2 py-2">
-        <div className="flex gap-2">
-          <button onClick={() => onSave(draft)} className="btn-white p-2 rounded"><Save size={15} /></button>
-          <button onClick={onDelete} className="text-red--dark p-2"><Trash2 size={15} /></button>
+    <tr className="hover:bg-slate-50/30">
+      {showAdvanced && (
+        <td className="px-4 py-2"><input value={draft.slug} onChange={(e) => setDraft({ ...draft, slug: e.target.value })} className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold focus:border-indigo-500 outline-none" /></td>
+      )}
+      <td className="px-4 py-2"><input value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold focus:border-indigo-500 outline-none" /></td>
+      <td className="px-4 py-2"><input value={draft.thaiLabel ?? ''} onChange={(e) => setDraft({ ...draft, thaiLabel: e.target.value })} className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold focus:border-indigo-500 outline-none" /></td>
+      {showAdvanced && (
+        <>
+          <td className="px-4 py-2"><input value={draft.icon ?? ''} onChange={(e) => setDraft({ ...draft, icon: e.target.value })} className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold focus:border-indigo-500 outline-none" /></td>
+          <td className="px-4 py-2"><input value={draft.color ?? ''} onChange={(e) => setDraft({ ...draft, color: e.target.value })} className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold focus:border-indigo-500 outline-none" /></td>
+          <td className="px-4 py-2"><input value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: Number(e.target.value) || 0 })} className="w-20 rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold focus:border-indigo-500 outline-none" /></td>
+        </>
+      )}
+      <td className="px-4 py-2"><input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4" /></td>
+      <td className="px-4 py-2">
+        <div className="flex gap-2 justify-center">
+          <button onClick={() => onSave(draft)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 text-slate-700 transition-all duration-150"><Save size={14} /></button>
+          <button onClick={onDelete} className="p-2 bg-red-50 hover:bg-red-100 rounded-lg border border-red-100 text-red-600 transition-all duration-150"><Trash2 size={14} /></button>
         </div>
       </td>
     </tr>
@@ -416,22 +1067,52 @@ function CategoryRow({ category, onSave, onDelete }: { category: Category; onSav
 
 function WordRow({ word, categories, onSave, onDelete }: { word: FallbackWord; categories: Category[]; onSave: (word: FallbackWord) => void; onDelete: () => void }) {
   const [draft, setDraft] = useState(word);
+  
   return (
-    <div className="border border-gray4 rounded-lg p-3">
-      <select value={draft.categoryId} onChange={(e) => setDraft({ ...draft, categoryId: e.target.value })} className="w-full px-2 py-1 border rounded mb-2">
-        {categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}
-      </select>
-      <input value={draft.word} onChange={(e) => setDraft({ ...draft, word: e.target.value })} className="w-full px-2 py-1 border rounded mb-2" />
-      <input value={draft.thaiMeaning ?? ''} onChange={(e) => setDraft({ ...draft, thaiMeaning: e.target.value })} className="w-full px-2 py-1 border rounded mb-2" />
-      <input value={draft.phonetic ?? ''} onChange={(e) => setDraft({ ...draft, phonetic: e.target.value })} className="w-full px-2 py-1 border rounded mb-2" />
-      <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 body-small-regular">
-          <input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} />
-          Active
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-200 flex flex-col justify-between">
+      <div>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shadow-inner">
+            {draft.imageUrl ? (
+              <img src={draft.imageUrl} alt={draft.word} className="h-full w-full object-contain p-1" />
+            ) : (
+              <ImageIcon size={20} className="text-slate-400" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <input value={draft.word} onChange={(e) => setDraft({ ...draft, word: e.target.value })} className="w-full rounded-lg border border-slate-200 px-2 py-1 text-sm font-extrabold focus:border-indigo-500 outline-none" />
+            <div className="mt-1">
+              <span className={`text-[10px] font-extrabold rounded-full px-2 py-0.5 uppercase border ${difficultyClasses[draft.difficulty]}`}>{draft.difficulty}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-2 mb-3">
+          <div className="grid grid-cols-2 gap-2">
+            <select value={draft.categoryId} onChange={(e) => setDraft({ ...draft, categoryId: e.target.value })} className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold outline-none bg-slate-50/50">
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+            </select>
+            <select value={draft.difficulty} onChange={(e) => setDraft({ ...draft, difficulty: e.target.value as Difficulty })} className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-semibold outline-none bg-slate-50/50">
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+
+          <input value={draft.thaiMeaning ?? ''} onChange={(e) => setDraft({ ...draft, thaiMeaning: e.target.value })} placeholder="Thai translation" className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium focus:border-indigo-500 outline-none" />
+          <input value={draft.phonetic ?? ''} onChange={(e) => setDraft({ ...draft, phonetic: e.target.value })} placeholder="Phonetics guide" className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-mono font-medium focus:border-indigo-500 outline-none" />
+          <input value={draft.imageUrl ?? ''} onChange={(e) => setDraft({ ...draft, imageUrl: e.target.value })} placeholder="Image base64 URL" className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-mono font-medium focus:border-indigo-500 outline-none" />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between border-t border-slate-50 pt-3 mt-1">
+        <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5 cursor-pointer">
+          <input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5" />
+          Active word
         </label>
-        <div className="flex gap-2">
-          <button onClick={() => onSave(draft)} className="btn-white p-2 rounded"><Save size={15} /></button>
-          <button onClick={onDelete} className="text-red--dark p-2"><Trash2 size={15} /></button>
+        <div className="flex gap-1.5">
+          <button onClick={() => onSave(draft)} className="p-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 text-slate-700 transition-all duration-150" title="Save changes"><Save size={13} /></button>
+          <button onClick={onDelete} className="p-1.5 bg-red-50 hover:bg-red-100 rounded-lg border border-red-100 text-red-600 transition-all duration-150" title="Delete word"><Trash2 size={13} /></button>
         </div>
       </div>
     </div>

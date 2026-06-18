@@ -1,7 +1,10 @@
-FROM python:3.11-slim
+FROM ghcr.io/jumpserver/python:3.11-slim
 
 # Install FFmpeg for audio normalization
-RUN apt-get update && \
+RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list && \
+    sed -i 's|security.debian.org/debian-security|archive.debian.org/debian-security|g' /etc/apt/sources.list && \
+    sed -i '/buster-updates/d' /etc/apt/sources.list && \
+    apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
