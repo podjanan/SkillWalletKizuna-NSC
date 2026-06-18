@@ -165,6 +165,7 @@ export default function AiWordGamePage() {
   const [testCategory, setTestCategory] = useState('');
   const [testDifficulty, setTestDifficulty] = useState<Difficulty>('easy');
   const [testResult, setTestResult] = useState<Record<string, unknown> | null>(null);
+  const [suggestedHistory, setSuggestedHistory] = useState<string[]>([]);
 
   const [showAdvancedCategories, setShowAdvancedCategories] = useState(false);
 
@@ -195,6 +196,10 @@ export default function AiWordGamePage() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    setSuggestedHistory([]);
+  }, [creator.categoryId, creator.difficulty]);
+
   async function saveSettings() {
     if (!data) return;
     setSaving(true);
@@ -221,8 +226,20 @@ export default function AiWordGamePage() {
   async function suggestWord() {
     setCreatorStatus('Asking Gemini for a word...');
     setPreview(null);
+
+    const currentWordLower = creator.word.trim().toLowerCase();
+    const excludeList = Array.from(new Set([
+      ...(currentWordLower ? [currentWordLower] : []),
+      ...suggestedHistory.map((w) => w.trim().toLowerCase())
+    ])).filter(Boolean);
+
     const result = await runAction(
-      { action: 'suggestWord', categoryId: creator.categoryId, difficulty: creator.difficulty },
+      {
+        action: 'suggestWord',
+        categoryId: creator.categoryId,
+        difficulty: creator.difficulty,
+        exclude: excludeList
+      },
       false,
     );
     if (result.error) {
@@ -252,6 +269,11 @@ export default function AiWordGamePage() {
       imageError: result.imageError ? String(result.imageError) : undefined,
       difficulty: creator.difficulty,
     });
+
+    if (word) {
+      setSuggestedHistory((prev) => Array.from(new Set([...prev, word.trim().toLowerCase()])));
+    }
+
     setCreatorStatus(result.imageError ? `Gemini word ready (image lookup failed: ${result.imageError})` : 'Gemini suggestion and image ready.');
   }
 
@@ -318,6 +340,7 @@ export default function AiWordGamePage() {
     const difficulty = creator.difficulty;
     setCreator({ ...emptyWord, categoryId, difficulty });
     setPreview(null);
+    setSuggestedHistory([]);
     setCreatorStatus('Word saved to the system.');
   }
 
@@ -459,7 +482,12 @@ export default function AiWordGamePage() {
                         className="w-full rounded-xl border border-slate-200 pl-3 pr-10 py-2.5 text-sm font-semibold focus:border-indigo-500 outline-none transition-all duration-200"
                       />
                       <button
-                        onClick={suggestWord}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          suggestWord();
+                        }}
                         title="AI Suggest Word"
                         className="absolute right-2 p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all duration-200"
                       >

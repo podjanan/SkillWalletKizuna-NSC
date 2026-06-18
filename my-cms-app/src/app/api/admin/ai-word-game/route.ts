@@ -170,7 +170,11 @@ async function getGeminiErrorMessage(response: Response) {
   if (response.status === 400) return 'Gemini request is invalid. Please check the model or prompt.';
   return `Gemini request failed (HTTP ${response.status})`;
 }
-async function generateSuggestion(category: AiWordCategory, difficulty: 'easy' | 'medium' | 'hard') {
+async function generateSuggestion(
+  category: AiWordCategory,
+  difficulty: 'easy' | 'medium' | 'hard',
+  excludeWords: string[] = []
+) {
   const settings = await getAiWordSettings();
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
   const geminiModel = process.env.GEMINI_MODEL || settings.geminiModel;
@@ -183,7 +187,10 @@ async function generateSuggestion(category: AiWordCategory, difficulty: 'easy' |
 
   // Fetch existing words to exclude them from suggestions
   const existingWords = await getAiWordFallbackWords(category.id);
-  const existingWordSet = new Set(existingWords.map((w) => w.word.trim().toLowerCase()));
+  const existingWordSet = new Set([
+    ...existingWords.map((w) => w.word.trim().toLowerCase()),
+    ...excludeWords.map((w) => w.trim().toLowerCase())
+  ]);
 
   let lastError = '';
 
@@ -579,8 +586,9 @@ export async function POST(request: NextRequest) {
     const category = await getCategoryById(String(body.categoryId ?? ''));
     if (!category) return NextResponse.json({ error: 'Category is required' }, { status: 400 });
     const difficulty = toDifficulty(body.difficulty);
+    const exclude = Array.isArray(body.exclude) ? body.exclude.map(String) : [];
     try {
-      const suggestion = await generateSuggestion(category, difficulty);
+      const suggestion = await generateSuggestion(category, difficulty, exclude);
       const imageInfo = await fetchPreviewImage(suggestion.word);
       return NextResponse.json({
         word: suggestion.word,
