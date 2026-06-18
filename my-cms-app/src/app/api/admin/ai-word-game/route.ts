@@ -190,20 +190,6 @@ const kidsDictionary: Record<string, string[]> = {
   ]
 };
 
-async function uploadGeneratedImage(word: string, base64Bytes: string): Promise<string | null> {
-  try {
-    const buffer = Buffer.from(base64Bytes, 'base64');
-    const u8array = new Uint8Array(buffer);
-    const cleanWord = word.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-    const key = `ai-word-game/${cleanWord}.jpg`;
-    const url = await uploadToMinio(key, u8array, 'image/jpeg');
-    return url;
-  } catch (e) {
-    console.error('MinIO upload error:', e);
-    return null;
-  }
-}
-
 async function generateSuggestion(category: AiWordCategory, difficulty: 'easy' | 'medium' | 'hard') {
   const settings = await getAiWordSettings();
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
@@ -389,9 +375,9 @@ async function getDuckDuckGoImages(query: string) {
   }
 }
 
-async function fetchFallbackImage(word: string): Promise<{ url: string; error: string }> {
+async function fetchFallbackImage(word: string): Promise<{ url: string; error: string | null; source: string }> {
   try {
-    console.log(`Gemini quota limit hit. Falling back to DuckDuckGo for word: "${word}"`);
+    console.log(`Fetching image from DuckDuckGo for word: "${word}"`);
     const ddgImages = await getDuckDuckGoImages(`${word} cartoon clipart png`);
     for (const img of ddgImages.slice(0, 5)) {
       try {
@@ -409,10 +395,7 @@ async function fetchFallbackImage(word: string): Promise<{ url: string; error: s
           const fileExt = contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg' : 'png';
           const key = `ai-word-game/${cleanWord}.${fileExt}`;
           const minioUrl = await uploadToMinio(key, u8array, contentType);
-          return {
-            url: minioUrl,
-            error: `โควต้า Gemini หมดชั่วคราว: แสดงภาพค้นหา "${word}" แทน (MinIO Upload สำเร็จ)`,
-          };
+          return { url: minioUrl, error: null, source: 'duckduckgo' };
         }
       } catch (err) {
         console.error(`Failed to download DDG image ${img.image}:`, err);
@@ -422,7 +405,6 @@ async function fetchFallbackImage(word: string): Promise<{ url: string; error: s
     console.error('DuckDuckGo fallback failed:', fallbackErr);
   }
 
-  // Final fallback to RoboHash
   try {
     console.log(`DuckDuckGo fallback failed. Falling back to RoboHash for word: "${word}"`);
     const fallbackUrl = `https://robohash.org/${encodeURIComponent(word)}.png?set=set4`;
@@ -433,82 +415,25 @@ async function fetchFallbackImage(word: string): Promise<{ url: string; error: s
       const cleanWord = word.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
       const key = `ai-word-game/${cleanWord}.jpg`;
       const minioUrl = await uploadToMinio(key, u8array, 'image/png');
-      return {
-        url: minioUrl,
-        error: `โควต้า Gemini หมดชั่วคราว: แสดงภาพการ์ตูนหุ่นยนต์แทน (MinIO Upload สำเร็จ)`,
-      };
+      return { url: minioUrl, error: null, source: 'robohash' };
     }
   } catch (roboErr) {
     console.error('RoboHash fallback failed:', roboErr);
   }
 
-  return { url: '', error: 'ไม่สามารถดึงรูปภาพสำรองได้' };
-}
-
-async function generateGeminiImage(word: string) {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (!apiKey) return { error: 'Gemini API key is not configured.' };
-  try {
-    const prompt = `A cute, colorful cartoon illustration of "${word}" on a plain solid white background, flat vector design, child-friendly, sticker style, simple shapes, 2D art, no text, no labels.`.trim();
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseModalities: ["TEXT", "IMAGE"],
-        },
-      }),
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini Image Generation Error:', response.status, errorText);
-      
-      // Fallback to DuckDuckGo/RoboHash if Gemini quota is exhausted (429)
-      if (response.status === 429) {
-        return await fetchFallbackImage(word);
-      }
-
-      let errMsg = 'ระบบสร้างรูปภาพของ Gemini ขัดข้องชั่วคราว';
-      if (response.status === 429) {
-        if (errorText.includes('PerDay') || errorText.includes('daily requests') || errorText.includes('quota exceeded')) {
-          errMsg = 'โควต้าสร้างรูปภาพฟรีของวันนี้หมดแล้ว (จำกัด 200 รูปต่อวัน) ระบบจะรีเซ็ตโควต้าใหม่เวลา 14:00 น.';
-        } else {
-          errMsg = 'เรียกใช้งานสร้างรูปภาพถี่เกินไป (จำกัด 5 รูปต่อนาที) กรุณารอสักครู่แล้วลองใหม่อีกครั้ง';
-        }
-      } else if (response.status === 403) {
-        errMsg = 'API Key ไม่ได้รับอนุญาตให้ใช้บริการสร้างรูปภาพ';
-      } else if (response.status === 400) {
-        errMsg = 'คำสั่งหรือคำศัพท์ไม่ถูกต้องสำหรับการสร้างรูปการ์ตูน';
-      }
-      return { error: errMsg };
-    }
-    const data = await response.json();
-    const part = data?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData || p.inline_data);
-    const base64Bytes = part?.inlineData?.data || part?.inline_data?.data;
-    if (base64Bytes) {
-      const minioUrl = await uploadGeneratedImage(word, base64Bytes);
-      return { url: minioUrl };
-    }
-    return { error: 'No image data returned from Gemini.' };
-  } catch (e) {
-    console.error('Gemini Image Generation Exception:', e);
-    return { error: e instanceof Error ? e.message : 'Unknown exception.' };
-  }
+  return { url: '', error: 'Unable to fetch a fallback image.', source: '' };
 }
 
 async function fetchPreviewImage(word: string) {
-  const prompt = `A cute, colorful cartoon illustration of "${word}" on a plain solid white background, flat vector design, child-friendly, sticker style, simple shapes, 2D art, no text, no labels.`.trim();
-  const imageResult = await generateGeminiImage(word);
+  const query = `${word} cartoon clipart png`;
+  const imageResult = await fetchFallbackImage(word);
   return {
-    imageUrl: imageResult?.url ?? '',
-    imageSource: imageResult?.url ? 'gemini' : '',
-    query: prompt,
-    error: imageResult?.error ?? null,
+    imageUrl: imageResult.url,
+    imageSource: imageResult.source,
+    query,
+    error: imageResult.error,
   };
 }
-
 async function getLogs() {
   return prisma.$queryRaw`
     SELECT id, category_slug AS "categorySlug", word, thai_meaning AS "thaiMeaning",

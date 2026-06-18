@@ -222,7 +222,7 @@ export default function AiWordGamePage() {
   }
 
   async function suggestWord() {
-    setCreatorStatus('Brainstorming word & generating art...');
+    setCreatorStatus('Brainstorming word & finding image...');
     setPreview(null);
     const result = await runAction(
       { action: 'suggestWord', categoryId: creator.categoryId, difficulty: creator.difficulty },
@@ -251,7 +251,7 @@ export default function AiWordGamePage() {
       imageError: result.imageError ? String(result.imageError) : undefined,
       difficulty: creator.difficulty,
     });
-    setCreatorStatus(result.imageError ? `AI ready (Image gen failed: ${result.imageError})` : (result.source === 'gemini' ? 'AI suggestion and drawing ready.' : 'Fallback suggestion ready.'));
+    setCreatorStatus(result.imageError ? `AI ready (image lookup failed: ${result.imageError})` : (result.source === 'gemini' ? 'AI suggestion and image ready.' : 'Fallback suggestion ready.'));
   }
 
   async function previewWord() {
@@ -284,7 +284,7 @@ export default function AiWordGamePage() {
       phonetic: nextPreview.phonetic,
       imageUrl: nextPreview.imageUrl,
     }));
-    setCreatorStatus(result.imageError ? `Preview ready (Image gen failed: ${result.imageError})` : 'Preview ready for approval.');
+    setCreatorStatus(result.imageError ? `Preview ready (image lookup failed: ${result.imageError})` : 'Preview ready for approval.');
   }
 
   async function refreshPreviewImage() {
@@ -349,7 +349,7 @@ export default function AiWordGamePage() {
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
             VOICE QUEST <span className="text-xs px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full font-bold border border-indigo-100">STUDIO</span>
           </h1>
-          <p className="body-small-regular text-secondary--text mt-1">Refine, preview, and generate cartoon sticker assets for the vocabulary speech game.</p>
+          <p className="body-small-regular text-secondary--text mt-1">Refine, preview, and manage sticker assets for the vocabulary speech game.</p>
         </div>
         <UserProfile />
       </div>
@@ -488,8 +488,8 @@ export default function AiWordGamePage() {
                     <HelpCircle size={20} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900">How to generate a sticker?</h3>
-                    <p className="text-xs text-slate-500 max-w-md mt-0.5">Simply click the suggest button or type a word, make sure the category is correct, then click "Generate Cartoon Art" inside the preview studio.</p>
+                    <h3 className="text-sm font-bold text-slate-900">How to add a sticker?</h3>
+                    <p className="text-xs text-slate-500 max-w-md mt-0.5">Click the suggest button or type a word, make sure the category is correct, then use Find Sticker Image inside the preview studio.</p>
                   </div>
                 </div>
                 <button
@@ -498,7 +498,7 @@ export default function AiWordGamePage() {
                   className="btn-primary flex items-center justify-center gap-2 rounded-xl px-5 py-3 shadow-md hover:shadow-indigo-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Search size={18} />
-                  Generate Cartoon Art
+                  Find Sticker Image
                 </button>
               </div>
             </div>
@@ -976,7 +976,7 @@ function PreviewCard({
         {isGenerating ? (
           <div className="flex flex-col items-center gap-2.5">
             <RefreshCcw className="animate-spin text-indigo-600" size={28} />
-            <span className="text-xs font-bold text-slate-500">Generating Cartoon Sticker...</span>
+            <span className="text-xs font-bold text-slate-500">Finding Sticker Image...</span>
           </div>
         ) : preview?.imageUrl || creator.imageUrl ? (
           <div className="relative w-full h-full flex items-center justify-center">
@@ -1001,8 +1001,8 @@ function PreviewCard({
         ) : (
           <div className="flex flex-col items-center text-slate-400 p-6 text-center select-none">
             <ImageIconLucide size={36} className="opacity-40 mb-1.5" />
-            <span className="text-xs font-bold text-slate-600">No Cartoon Generated</span>
-            <p className="text-[10px] text-slate-500 max-w-xs mt-0.5 leading-normal">Click "Generate Cartoon Art" below to prompt the Gemini 2.5 Flash Image generator.</p>
+            <span className="text-xs font-bold text-slate-600">No Image Selected</span>
+            <p className="text-[10px] text-slate-500 max-w-xs mt-0.5 leading-normal">Use Find Sticker Image below to search for a kid-friendly sticker image.</p>
           </div>
         )}
       </div>
@@ -1016,11 +1016,11 @@ function PreviewCard({
         <div className="flex gap-2">
           <button
             onClick={onRefresh}
-            disabled={!preview?.imageUrl && !creator.imageUrl}
+            disabled={!preview?.word && !creator.word.trim()}
             className="btn-white flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold shadow-sm hover:shadow-slate-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <RefreshCcw size={14} />
-            Regenerate Art
+            Refresh Image
           </button>
           
           <button

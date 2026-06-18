@@ -106,20 +106,6 @@ function pickFallback(
   };
 }
 
-async function uploadGeneratedImage(word: string, base64Bytes: string): Promise<string | null> {
-  try {
-    const buffer = Buffer.from(base64Bytes, 'base64');
-    const u8array = new Uint8Array(buffer);
-    const cleanWord = word.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-    const key = `ai-word-game/${cleanWord}.jpg`;
-    const url = await uploadToMinio(key, u8array, 'image/jpeg');
-    return url;
-  } catch (e) {
-    console.error('MinIO upload error:', e);
-    return null;
-  }
-}
-
 async function generateWord(
   category: AiWordCategory,
   fallbackWords: AiWordFallbackWord[],
@@ -214,7 +200,7 @@ async function getDuckDuckGoImages(query: string) {
 
 async function fetchFallbackImage(word: string): Promise<string | null> {
   try {
-    console.log(`Gemini quota limit hit. Falling back to DuckDuckGo for word: "${word}"`);
+    console.log(`Fetching image from DuckDuckGo for word: "${word}"`);
     const ddgImages = await getDuckDuckGoImages(`${word} cartoon clipart png`);
     for (const img of ddgImages.slice(0, 5)) {
       try {
@@ -262,49 +248,11 @@ async function fetchFallbackImage(word: string): Promise<string | null> {
   return null;
 }
 
-async function generateGeminiImage(word: string) {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  if (!apiKey) return null;
-  try {
-    const prompt = `A cute, colorful cartoon illustration of "${word}" on a plain solid white background, flat vector design, child-friendly, sticker style, simple shapes, 2D art, no text, no labels.`.trim();
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseModalities: ["TEXT", "IMAGE"],
-        },
-      }),
-    });
-    if (!response.ok) {
-      const status = response.status;
-      const errorText = await response.text();
-      console.error('Gemini Image Generation Error:', status, errorText);
-      if (status === 429) {
-        return await fetchFallbackImage(word);
-      }
-      return null;
-    }
-    const data = await response.json();
-    const part = data?.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData || p.inline_data);
-    const base64Bytes = part?.inlineData?.data || part?.inline_data?.data;
-    if (base64Bytes) {
-      const minioUrl = await uploadGeneratedImage(word, base64Bytes);
-      return minioUrl;
-    }
-  } catch (e) {
-    console.error('Gemini Image Generation Exception:', e);
-  }
-  return null;
-}
-
 async function fetchImage(word: string) {
-  const imageUrl = await generateGeminiImage(word);
+  const imageUrl = await fetchFallbackImage(word);
   return {
     imageUrl: imageUrl ?? undefined,
-    imageSource: imageUrl ? 'gemini' : undefined,
+    imageSource: imageUrl ? 'web' : undefined,
   };
 }
 
