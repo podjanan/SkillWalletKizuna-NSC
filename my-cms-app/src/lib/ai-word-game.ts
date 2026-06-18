@@ -125,8 +125,8 @@ const defaultCategories = [
 
 export async function ensureAiWordGameDefaults() {
   await prisma.$executeRaw`
-    INSERT INTO ai_word_game_settings (id)
-    VALUES ('default')
+    INSERT INTO ai_word_game_settings (id, updated_at)
+    VALUES ('default', CURRENT_TIMESTAMP)
     ON CONFLICT (id) DO NOTHING
   `;
 
@@ -140,10 +140,10 @@ export async function ensureAiWordGameDefaults() {
       categoryId = crypto.randomUUID();
       await prisma.$executeRaw`
         INSERT INTO ai_word_category
-          (id, slug, label, thai_label, icon, color, active, sort_order)
+          (id, slug, label, thai_label, icon, color, active, sort_order, updated_at)
         VALUES
           (${categoryId}, ${category.slug}, ${category.label}, ${category.thaiLabel},
-           ${category.icon}, ${category.color}, true, ${index})
+           ${category.icon}, ${category.color}, true, ${index}, CURRENT_TIMESTAMP)
       `;
     }
 
@@ -157,9 +157,9 @@ export async function ensureAiWordGameDefaults() {
     for (const word of category.words) {
       await prisma.$executeRaw`
         INSERT INTO ai_word_fallback_word
-          (id, category_id, word, thai_meaning, phonetic, active)
+          (id, category_id, word, thai_meaning, phonetic, active, updated_at)
         VALUES
-          (${crypto.randomUUID()}, ${categoryId}, ${word[0]}, ${word[1]}, ${word[2]}, true)
+          (${crypto.randomUUID()}, ${categoryId}, ${word[0]}, ${word[1]}, ${word[2]}, true, CURRENT_TIMESTAMP)
       `;
     }
   }

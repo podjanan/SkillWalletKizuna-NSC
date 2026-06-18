@@ -92,13 +92,13 @@ export async function POST(request: NextRequest) {
     if (!slug) return NextResponse.json({ error: 'Slug is required' }, { status: 400 });
     await prisma.$executeRaw`
       INSERT INTO ai_word_category
-        (id, slug, label, thai_label, icon, color, active, sort_order)
+        (id, slug, label, thai_label, icon, color, active, sort_order, updated_at)
       VALUES
         (${crypto.randomUUID()}, ${slug}, ${String(body.label ?? slug)},
          ${body.thaiLabel ? String(body.thaiLabel) : null},
          ${body.icon ? String(body.icon) : null},
          ${body.color ? String(body.color) : null},
-         ${toBool(body.active)}, ${Number(body.sortOrder ?? 0)})
+         ${toBool(body.active)}, ${Number(body.sortOrder ?? 0)}, CURRENT_TIMESTAMP)
     `;
   } else if (action === 'updateCategory') {
     await prisma.$executeRaw`
@@ -120,12 +120,12 @@ export async function POST(request: NextRequest) {
   } else if (action === 'createWord') {
     await prisma.$executeRaw`
       INSERT INTO ai_word_fallback_word
-        (id, category_id, word, thai_meaning, phonetic, active)
+        (id, category_id, word, thai_meaning, phonetic, active, updated_at)
       VALUES
         (${crypto.randomUUID()}, ${String(body.categoryId)}, ${String(body.word ?? '')},
          ${body.thaiMeaning ? String(body.thaiMeaning) : null},
          ${body.phonetic ? String(body.phonetic) : null},
-         ${toBool(body.active)})
+         ${toBool(body.active)}, CURRENT_TIMESTAMP)
     `;
   } else if (action === 'updateWord') {
     await prisma.$executeRaw`
