@@ -28,8 +28,11 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
   // key = date string, value = list of activity records
   Map<String, List<Map<String, dynamic>>> _groupedByDate = {};
 
+  String get _normalizedGameName =>
+      _normalizeCategory(widget.gameName) ?? widget.gameName;
+
   Color get _accent {
-    switch (widget.gameName) {
+    switch (_normalizedGameName) {
       case 'ด้านภาษา':
         return const Color(0xFFFFB300);
       case 'ด้านร่างกาย':
@@ -59,8 +62,10 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
 
       // กรองเฉพาะ category ที่ต้องการ
       final filteredHistory = history.where((record) {
-        final category = record['activity']?['category'] as String?;
-        return category == widget.gameName;
+        final category = _normalizeCategory(
+          record['activity']?['category'] as String?,
+        );
+        return category == _normalizedGameName;
       }).toList();
 
       // Group by date - ใช้ yyyy-MM-dd เป็น key เพื่อง่ายต่อการ sort
@@ -107,6 +112,21 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
       debugPrint('❌ Error loading activity history: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  String? _normalizeCategory(String? category) {
+    final normalized = category?.trim().toUpperCase();
+    if (normalized == null || normalized.isEmpty) return null;
+    if (normalized == 'LANGUAGE' || normalized == 'AI WORD GAME') {
+      return 'ด้านภาษา';
+    }
+    if (normalized == 'PHYSICAL') {
+      return 'ด้านร่างกาย';
+    }
+    if (normalized == 'CALCULATION' || normalized == 'CALCULATE') {
+      return 'ด้านคำนวณ';
+    }
+    return category;
   }
 
   @override

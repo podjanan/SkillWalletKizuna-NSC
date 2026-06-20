@@ -406,6 +406,39 @@ class ActivityService {
   }
 
   /// สร้างกิจกรรมใหม่ผ่าน backend API
+  Future<Map<String, dynamic>> completeVoiceQuest({
+    required String childId,
+    required int totalScoreEarned,
+    required int maxScore,
+    required List<SegmentResult> segmentResults,
+    required String category,
+    required String difficulty,
+    int? timeSpent,
+  }) async {
+    final payload = {
+      'childId': childId,
+      'totalScoreEarned': totalScoreEarned,
+      'maxScore': maxScore,
+      'timeSpent': timeSpent,
+      'segmentResults': segmentResults.map((r) => r.toJson()).toList(),
+      'category': category,
+      'difficulty': difficulty,
+      'evidence': {
+        'wordCount': segmentResults.length,
+        'correctCount': segmentResults.where((r) => r.maxScore > 0).length,
+      },
+    };
+
+    try {
+      final res = await _apiService.post('/complete-voice-quest', payload);
+      res['scoreEarned'] = totalScoreEarned;
+      return res;
+    } catch (e) {
+      debugPrint('Complete Voice Quest Error: $e');
+      throw Exception('Failed to save Voice Quest score.');
+    }
+  }
+
   Future<Map<String, dynamic>> createActivity({
     required String parentId,
     required String name,

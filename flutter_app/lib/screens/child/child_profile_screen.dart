@@ -67,7 +67,9 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
       };
 
       for (var record in history) {
-        final category = record['activity']?['category'] as String?;
+        final category = _normalizeCategory(
+          record['activity']?['category'] as String?,
+        );
         if (category != null && stats.containsKey(category)) {
           stats[category] = (stats[category] ?? 0) + 1;
         }
@@ -84,6 +86,20 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     }
   }
 
+  String? _normalizeCategory(String? category) {
+    final normalized = category?.trim().toUpperCase();
+    if (normalized == null || normalized.isEmpty) return null;
+    if (normalized == 'LANGUAGE' || normalized == 'AI WORD GAME') {
+      return _categoryLanguage;
+    }
+    if (normalized == 'PHYSICAL') {
+      return _categoryPhysical;
+    }
+    if (normalized == 'CALCULATION' || normalized == 'CALCULATE') {
+      return _categoryCalculate;
+    }
+    return category;
+  }
 
   @override
   Widget build(BuildContext context) {

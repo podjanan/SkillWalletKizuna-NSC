@@ -1,5 +1,6 @@
 // app/api/activities/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { shouldInjectAiWordActivity } from '@/lib/ai-word-game';
@@ -39,7 +40,9 @@ export async function GET(request: Request) {
     const level = searchParams.get('level'); // filter by level_activity
 
     // Build where clause
-    const where: any = {};
+    const where: Prisma.activityWhereInput = {
+      NOT: { content: 'dynamic-vocabulary' },
+    };
 
     if (search) {
       where.name_activity = {

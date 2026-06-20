@@ -24,10 +24,38 @@ export async function GET(request: NextRequest, context: RouteContext) {
       orderBy: { created_at: 'desc' },
     });
 
-    return NextResponse.json(records);
-  } catch (err: any) {
+    const mappedRecords = records.map((record) => {
+      const evidence =
+        record.evidence &&
+        typeof record.evidence === 'object' &&
+        !Array.isArray(record.evidence)
+          ? (record.evidence as Record<string, unknown>)
+          : null;
+
+      if (record.activity || evidence?.type !== 'voice_quest') {
+        return record;
+      }
+
+      const maxScore =
+        typeof evidence.maxScore === 'number'
+          ? evidence.maxScore
+          : Number(evidence.maxScore ?? 0) || 100;
+
+      return {
+        ...record,
+        activity: {
+          name_activity: 'VOICE QUEST',
+          category: 'LANGUAGE',
+          maxscore: maxScore,
+        },
+      };
+    });
+
+    return NextResponse.json(mappedRecords);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Failed to get activity history', details: err.message },
+      { error: 'Failed to get activity history', details: message },
       { status: 500 }
     );
   }
