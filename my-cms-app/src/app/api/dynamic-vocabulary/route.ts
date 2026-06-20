@@ -95,12 +95,15 @@ async function generateWord(
 ) {
   const settings = await getAiWordSettings();
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL || settings.geminiModel;
+  const geminiModel = process.env.GEMINI_MODEL;
   if (!settings.useGemini) {
     throw new Error('Gemini vocabulary generation is disabled in AI Word Game settings.');
   }
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is missing from env.');
+  }
+  if (!geminiModel) {
+    throw new Error('GEMINI_MODEL is missing from env.');
   }
 
   const existingWords = await getAiWordFallbackWords(category.id);
@@ -381,6 +384,7 @@ export async function POST(request: NextRequest) {
         {
           items: sessionItems,
           category,
+          maxScore: settings.maxScore,
           settings: {
             title: settings.title,
             maxScore: settings.maxScore,

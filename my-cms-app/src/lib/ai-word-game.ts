@@ -184,8 +184,10 @@ export async function ensureAiWordGameDefaults() {
     `;
 
     let categoryId = existing[0]?.id;
+    let createdCategory = false;
     if (!categoryId) {
       categoryId = crypto.randomUUID();
+      createdCategory = true;
       await prisma.$executeRaw`
         INSERT INTO ai_word_category
           (id, slug, label, thai_label, icon, color, active, sort_order, updated_at)
@@ -195,12 +197,7 @@ export async function ensureAiWordGameDefaults() {
       `;
     }
 
-    const wordCount = await prisma.$queryRaw<Array<{ count: bigint }>>`
-      SELECT COUNT(*)::bigint AS count
-      FROM ai_word_fallback_word
-      WHERE category_id = ${categoryId}
-    `;
-    if (Number(wordCount[0]?.count ?? 0) > 0) continue;
+    if (!createdCategory) continue;
 
     for (const word of category.words) {
       await prisma.$executeRaw`

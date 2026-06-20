@@ -177,12 +177,15 @@ async function generateSuggestion(
 ) {
   const settings = await getAiWordSettings();
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL || settings.geminiModel;
+  const geminiModel = process.env.GEMINI_MODEL;
   if (!settings.useGemini) {
     throw new Error('Gemini suggestion is disabled in AI Word Game settings.');
   }
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is missing from env.');
+  }
+  if (!geminiModel) {
+    throw new Error('GEMINI_MODEL is missing from env.');
   }
 
   // Fetch existing words to exclude them from suggestions
@@ -288,13 +291,16 @@ Return the result in JSON format ONLY:
 async function enrichWord(word: string, category: AiWordCategory, difficulty: 'easy' | 'medium' | 'hard') {
   const settings = await getAiWordSettings();
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL || settings.geminiModel;
+  const geminiModel = process.env.GEMINI_MODEL;
   const fallback = getFallbackMetadata(word);
   if (!settings.useGemini) {
     throw new Error('Gemini metadata generation is disabled in AI Word Game settings.');
   }
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is missing from env.');
+  }
+  if (!geminiModel) {
+    throw new Error('GEMINI_MODEL is missing from env.');
   }
 
   const prompt = [
@@ -478,7 +484,6 @@ export async function PATCH(request: NextRequest) {
         use_pixabay = ${toBool(body.usePixabay)},
         use_pexels = ${toBool(body.usePexels)},
         image_provider_order = ${String(body.imageProviderOrder ?? 'pixabay,pexels')},
-        gemini_model = ${String(body.geminiModel ?? 'gemini-2.0-flash')},
         prompt_template = ${String(body.promptTemplate ?? '')},
         image_query_suffix = ${String(body.imageQuerySuffix ?? 'cartoon illustration for kids')},
         words_per_session_easy = ${Number(body.wordsPerSessionEasy ?? 3)},

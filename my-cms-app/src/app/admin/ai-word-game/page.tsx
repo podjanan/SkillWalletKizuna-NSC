@@ -161,10 +161,6 @@ export default function AiWordGamePage() {
   const [creator, setCreator] = useState<FallbackWord>(emptyWord);
   const [preview, setPreview] = useState<PreviewWord | null>(null);
   const [creatorStatus, setCreatorStatus] = useState('');
-  const [newBlockedTerm, setNewBlockedTerm] = useState('');
-  const [testCategory, setTestCategory] = useState('');
-  const [testDifficulty, setTestDifficulty] = useState<Difficulty>('easy');
-  const [testResult, setTestResult] = useState<Record<string, unknown> | null>(null);
   const [suggestedHistory, setSuggestedHistory] = useState<string[]>([]);
 
   const [showAdvancedCategories, setShowAdvancedCategories] = useState(false);
@@ -187,7 +183,6 @@ export default function AiWordGamePage() {
     const json = await res.json();
     setData(json);
     const firstCategory = json.categories?.[0];
-    setTestCategory(firstCategory?.slug ?? '');
     setCreator((prev) => ({ ...prev, categoryId: prev.categoryId || firstCategory?.id || '' }));
     setLoading(false);
   }, []);
@@ -342,17 +337,6 @@ export default function AiWordGamePage() {
     setPreview(null);
     setSuggestedHistory([]);
     setCreatorStatus('Word saved to the system.');
-  }
-
-  async function testGenerate() {
-    setTestResult(null);
-    const res = await fetch('/api/dynamic-vocabulary', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category: testCategory, difficulty: testDifficulty, session: true }),
-    });
-    setTestResult(await res.json());
-    await loadData();
   }
 
   if (loading || !data) {
@@ -736,7 +720,6 @@ export default function AiWordGamePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-100 pt-6">
                 <TextInput label="Game Card Title" value={settings.title} onChange={(title) => setData({ ...data, settings: { ...settings, title } })} />
                 <TextInput label="Cover Image URL" value={settings.coverImageUrl} onChange={(coverImageUrl) => setData({ ...data, settings: { ...settings, coverImageUrl } })} />
-                <TextInput label="Gemini AI Model" value={settings.geminiModel} onChange={(geminiModel) => setData({ ...data, settings: { ...settings, geminiModel } })} />
                 <TextInput label="Max Score" type="number" value={String(settings.maxScore)} onChange={(maxScore) => setData({ ...data, settings: { ...settings, maxScore: Number(maxScore) || 100 } })} />
               </div>
 
@@ -762,126 +745,6 @@ export default function AiWordGamePage() {
               </div>
             </div>
 
-            {/* Test API tool */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
-              <h2 className="text-base font-bold text-slate-900 mb-2">Test Live API Output</h2>
-              <p className="text-xs text-slate-500 mb-4">Dry-run a vocabulary session payload exactly like the Flutter client would call.</p>
-              
-              <div className="flex flex-wrap items-center gap-3 mb-4">
-                <select value={testCategory} onChange={(e) => setTestCategory(e.target.value)} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:indigo-500 outline-none bg-slate-50/50">
-                  {activeCategories.map((c) => <option key={c.id} value={c.slug}>{c.label}</option>)}
-                </select>
-                <DifficultySelect value={testDifficulty} onChange={setTestDifficulty} />
-                <button
-                  onClick={testGenerate}
-                  className="btn-primary flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-semibold"
-                >
-                  <Sparkles size={14} />
-                  Test Live POST
-                </button>
-              </div>
-
-              {testResult && (
-                <pre className="max-w-full overflow-auto rounded-xl bg-slate-900 text-indigo-200 p-4 text-xs font-mono border border-slate-800 shadow-inner">
-                  {JSON.stringify(testResult, null, 2)}
-                </pre>
-              )}
-            </div>
-
-            {/* Blocked Words */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">Safety Blocked Terms</h2>
-                  <p className="text-xs text-slate-500">Prevent Gemini from generating inappropriate, slang, or non-educational terms.</p>
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    value={newBlockedTerm}
-                    onChange={(e) => setNewBlockedTerm(e.target.value)}
-                    placeholder="Add term..."
-                    className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:indigo-500 outline-none bg-slate-50/20"
-                  />
-                  <button
-                    onClick={() => {
-                      runAction({ action: 'createBlockedTerm', term: newBlockedTerm, active: true });
-                      setNewBlockedTerm('');
-                    }}
-                    className="btn-primary rounded-xl px-4 py-2 text-xs font-semibold"
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {data.blockedTerms.map((term) => (
-                  <button
-                    key={term.id}
-                    onClick={() => runAction({ action: 'deleteBlockedTerm', id: term.id })}
-                    className="text-xs font-semibold bg-red-50 hover:bg-red-100 border border-red-100 text-red-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all duration-200"
-                  >
-                    <span>{term.term}</span>
-                    <span className="font-bold opacity-60">×</span>
-                  </button>
-                ))}
-                {data.blockedTerms.length === 0 && (
-                  <div className="text-xs text-slate-400 py-3 italic">No blocked terms configured. All safe words allowed.</div>
-                )}
-              </div>
-            </div>
-
-            {/* Generation logs */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">AI Generation Activity Log</h2>
-                  <p className="text-xs text-slate-500">Monitor live token queries, image outputs, and compilation logs.</p>
-                </div>
-                <button onClick={loadData} className="btn-white flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold">
-                  <RefreshCcw size={14} />
-                  Refresh logs
-                </button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[760px] text-xs">
-                  <thead className="bg-slate-50 border-y border-slate-100 text-slate-600 font-bold text-left">
-                    <tr>
-                      <th className="px-4 py-3">Date/Time</th>
-                      <th className="px-4 py-3">Category</th>
-                      <th className="px-4 py-3">Word</th>
-                      <th className="px-4 py-3">Word Provider</th>
-                      <th className="px-4 py-3">Image Provider</th>
-                      <th className="px-4 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium">
-                    {data.logs.map((log) => (
-                      <tr key={log.id} className="hover:bg-slate-50/40">
-                        <td className="px-4 py-3.5 text-slate-500">{new Date(log.createdAt).toLocaleString()}</td>
-                        <td className="px-4 py-3.5 font-bold text-slate-800">{log.categorySlug.toUpperCase()}</td>
-                        <td className="px-4 py-3.5 font-semibold text-slate-900">{log.word ?? '-'}</td>
-                        <td className="px-4 py-3.5">{log.wordSource ? <span className="px-2 py-0.5 rounded bg-violet-50 text-violet-700 text-[10px] font-bold border border-violet-100">{log.wordSource.toUpperCase()}</span> : '-'}</td>
-                        <td className="px-4 py-3.5">{log.imageSource ? <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-100">{log.imageSource.toUpperCase()}</span> : '-'}</td>
-                        <td className="px-4 py-3.5">
-                          {log.status === 'success' ? (
-                            <span className="text-green-600 font-bold bg-green-50 border border-green-100 px-2 py-0.5 rounded">Success</span>
-                          ) : (
-                            <span className="text-red-600 font-bold bg-red-50 border border-red-100 px-2 py-0.5 rounded" title={log.error ?? ''}>Error</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {data.logs.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="text-center text-slate-400 py-6 italic">No activity logs recorded yet. Play the game to generate logs!</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
 
           </div>
         )}
