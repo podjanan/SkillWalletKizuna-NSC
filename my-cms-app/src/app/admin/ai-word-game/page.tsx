@@ -13,7 +13,8 @@ import {
   Sliders,
   Check,
   Image as ImageIconLucide,
-  HelpCircle
+  HelpCircle,
+  Smile
 } from 'lucide-react';
 import UserProfile from '@/components/UserProfile';
 
@@ -36,6 +37,7 @@ type Settings = {
   wordsPerSessionEasy: number;
   wordsPerSessionMedium: number;
   wordsPerSessionHard: number;
+  timeLimitMinutes: number;
   enableSafeSearch: boolean;
 };
 
@@ -125,6 +127,48 @@ const difficultyClasses: Record<Difficulty, string> = {
   hard: 'bg-red-50 text-red-700 border-red-200',
 };
 
+const emojiOptions = [
+  '🦁', '🐶', '🐱', '🐰', '🐢', '🐬', '🐝', '🦋',
+  '🍎', '🍌', '🍪', '🥕', '🍕', '🥛', '🥤', '🍰',
+  '🚀', '🚗', '🚲', '🚂', '✈️', '🚢', '🚌', '🚁',
+  '🌈', '🌳', '🌸', '⭐', '☀️', '🌙', '☁️', '⛰️',
+  '📚', '✏️', '🎒', '💻', '🧮', '🎨', '🧸', '✨',
+];
+
+function emojiForCategoryIcon(icon: string | null | undefined, slug = '') {
+  const raw = (icon ?? '').trim();
+  const legacy: Record<string, string> = {
+    pets: '🦁',
+    restaurant: '🍎',
+    directions_car: '🚀',
+    vehicle: '🚀',
+    park: '🌈',
+    nature: '🌈',
+    bed: '🛏️',
+    school: '📚',
+    folder: '✨',
+    category: '✨',
+  };
+  if (raw && !legacy[raw]) return raw;
+
+  const normalized = slug.toLowerCase();
+  if (normalized.includes('animal')) return '🦁';
+  if (normalized.includes('food')) return '🍎';
+  if (normalized.includes('vehicle')) return '🚀';
+  if (normalized.includes('nature')) return '🌈';
+  if (normalized.includes('school') || normalized.includes('study')) return '📚';
+  if (normalized.includes('drink')) return '🥤';
+  if (normalized.includes('computer')) return '💻';
+  return legacy[raw] ?? '✨';
+}
+
+function normalizeCategoryIcon(category: Category): Category {
+  return {
+    ...category,
+    icon: emojiForCategoryIcon(category.icon, category.slug),
+  };
+}
+
 const defaultPromptTemplate = `You are an expert children's English vocabulary teacher. Generate exactly one simple English vocabulary word for kids ages 4-9 that belongs STRICTLY and directly to the category: {{category}} (Thai label/concept: {{thaiLabel}}).
 
 Category Guidelines:
@@ -181,6 +225,7 @@ export default function AiWordGamePage() {
     setLoading(true);
     const res = await fetch('/api/admin/ai-word-game');
     const json = await res.json();
+    json.categories = (json.categories ?? []).map(normalizeCategoryIcon);
     setData(json);
     const firstCategory = json.categories?.[0];
     setCreator((prev) => ({ ...prev, categoryId: prev.categoryId || firstCategory?.id || '' }));
@@ -399,7 +444,7 @@ export default function AiWordGamePage() {
           }`}
         >
           <Sliders size={18} />
-          ⚙️ Settings & System Logs
+          Settings
         </button>
       </div>
 
@@ -597,6 +642,14 @@ export default function AiWordGamePage() {
                             word={word}
                             categories={data.categories}
                             onSave={(next) => runAction({ action: 'updateWord', ...next })}
+                            onFindImage={async (next) => {
+                              const result = await runAction({ action: 'refreshImage', word: next.word }, false);
+                              const imageUrl = String(result.imageUrl ?? '');
+                              if (imageUrl) {
+                                await runAction({ action: 'updateWord', ...next, imageUrl });
+                              }
+                              return imageUrl;
+                            }}
                             onDelete={() => runAction({ action: 'deleteWord', id: word.id })}
                           />
                         ))}
@@ -642,7 +695,7 @@ export default function AiWordGamePage() {
                 <input placeholder="Thai Label (e.g. อาหาร)" value={newCategory.thaiLabel ?? ''} onChange={(e) => setNewCategory({ ...newCategory, thaiLabel: e.target.value })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20" />
                 {showAdvancedCategories && (
                   <>
-                    <input placeholder="Icon (e.g. restaurant)" value={newCategory.icon ?? ''} onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20" />
+                    <EmojiInput value={newCategory.icon ?? ''} onChange={(icon) => setNewCategory({ ...newCategory, icon })} />
                     <input placeholder="Hex Color (e.g. #FF9800)" value={newCategory.color ?? ''} onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20" />
                     <input placeholder="Sort Index" value={newCategory.sortOrder} onChange={(e) => setNewCategory({ ...newCategory, sortOrder: Number(e.target.value) || 0 })} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20" />
                   </>
@@ -658,7 +711,7 @@ export default function AiWordGamePage() {
                       <th className="px-4 py-3">Thai Label</th>
                       {showAdvancedCategories && (
                         <>
-                          <th className="px-4 py-3">Icon Name</th>
+                          <th className="px-4 py-3">Emoji</th>
                           <th className="px-4 py-3">Theme Color</th>
                           <th className="px-4 py-3">Sort Order</th>
                         </>
@@ -684,7 +737,7 @@ export default function AiWordGamePage() {
           </div>
         )}
 
-        {/* TAB 3: SETTINGS & SYSTEM LOGS */}
+        {/* TAB 3: Settings */}
         {activeTab === 'settings' && (
           <div className="space-y-6 animate-fadeIn">
             {/* System config */}
@@ -708,13 +761,13 @@ export default function AiWordGamePage() {
                 <Checkbox label="Enable Gameplay Screen" checked={settings.enabled} onChange={(enabled) => setData({ ...data, settings: { ...settings, enabled } })} />
                 <Checkbox label="Show Card in Dashboard" checked={settings.showInApp} onChange={(showInApp) => setData({ ...data, settings: { ...settings, showInApp } })} />
                 <Checkbox label="Use Gemini (AI Mode)" checked={settings.useGemini} onChange={(useGemini) => setData({ ...data, settings: { ...settings, useGemini } })} />
-                <Checkbox label="Safe Search Enabled" checked={settings.enableSafeSearch} onChange={(enableSafeSearch) => setData({ ...data, settings: { ...settings, enableSafeSearch } })} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-100 py-6">
                 <NumberInput label="Easy Mode Words Count" value={settings.wordsPerSessionEasy} onChange={(wordsPerSessionEasy) => setData({ ...data, settings: { ...settings, wordsPerSessionEasy } })} />
                 <NumberInput label="Medium Mode Words Count" value={settings.wordsPerSessionMedium} onChange={(wordsPerSessionMedium) => setData({ ...data, settings: { ...settings, wordsPerSessionMedium } })} />
                 <NumberInput label="Hard Mode Words Count" value={settings.wordsPerSessionHard} onChange={(wordsPerSessionHard) => setData({ ...data, settings: { ...settings, wordsPerSessionHard } })} />
+                <NumberInput label="Time Limit (Minutes)" value={settings.timeLimitMinutes} max={120} onChange={(timeLimitMinutes) => setData({ ...data, settings: { ...settings, timeLimitMinutes } })} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-slate-100 pt-6">
@@ -780,19 +833,73 @@ function TextInput({
   );
 }
 
-function NumberInput({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+function NumberInput({ label, value, onChange, max = 20 }: { label: string; value: number; onChange: (value: number) => void; max?: number }) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-xs font-semibold text-slate-600">{label}</span>
       <input
         type="number"
         min={1}
-        max={20}
+        max={max}
         value={value}
         onChange={(e) => onChange(Number(e.target.value) || 1)}
         className="w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium focus:border-indigo-500 outline-none bg-slate-50/20 focus:bg-white transition-all duration-200"
       />
     </label>
+  );
+}
+
+function EmojiInput({
+  value,
+  onChange,
+  compact = false,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  compact?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-1.5">
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="🍎"
+          className={`${compact ? 'h-9' : 'h-10'} w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-center text-lg font-semibold focus:border-indigo-500 outline-none bg-slate-50/20`}
+        />
+        <button
+          type="button"
+          onClick={() => setOpen((next) => !next)}
+          className={`${compact ? 'h-9 w-9' : 'h-10 w-10'} shrink-0 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-150 flex items-center justify-center`}
+          title="Open emoji picker"
+        >
+          <Smile size={compact ? 15 : 17} />
+        </button>
+      </div>
+
+      {open && (
+        <div className="absolute right-0 z-30 mt-2 w-64 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
+          <div className="mb-2 text-[11px] font-bold text-slate-500">Choose emoji</div>
+          <div className="grid grid-cols-8 gap-1.5">
+            {emojiOptions.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => {
+                  onChange(emoji);
+                  setOpen(false);
+                }}
+                className="h-8 w-8 rounded-lg text-lg hover:bg-indigo-50 transition-colors"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -935,7 +1042,12 @@ function PreviewCard({
 }
 
 function CategoryRow({ category, showAdvanced, onSave, onDelete }: { category: Category; showAdvanced: boolean; onSave: (category: Category) => void; onDelete: () => void }) {
-  const [draft, setDraft] = useState(category);
+  const [draft, setDraft] = useState(() => normalizeCategoryIcon(category));
+
+  useEffect(() => {
+    setDraft(normalizeCategoryIcon(category));
+  }, [category]);
+
   return (
     <tr className="hover:bg-slate-50/30">
       {showAdvanced && (
@@ -945,7 +1057,7 @@ function CategoryRow({ category, showAdvanced, onSave, onDelete }: { category: C
       <td className="px-4 py-2"><input value={draft.thaiLabel ?? ''} onChange={(e) => setDraft({ ...draft, thaiLabel: e.target.value })} className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold focus:border-indigo-500 outline-none" /></td>
       {showAdvanced && (
         <>
-          <td className="px-4 py-2"><input value={draft.icon ?? ''} onChange={(e) => setDraft({ ...draft, icon: e.target.value })} className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold focus:border-indigo-500 outline-none" /></td>
+          <td className="px-4 py-2"><EmojiInput value={draft.icon ?? ''} onChange={(icon) => setDraft({ ...draft, icon })} compact /></td>
           <td className="px-4 py-2"><input value={draft.color ?? ''} onChange={(e) => setDraft({ ...draft, color: e.target.value })} className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold focus:border-indigo-500 outline-none" /></td>
           <td className="px-4 py-2"><input value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: Number(e.target.value) || 0 })} className="w-20 rounded-lg border border-slate-200 px-2.5 py-1.5 font-semibold focus:border-indigo-500 outline-none" /></td>
         </>
@@ -961,8 +1073,32 @@ function CategoryRow({ category, showAdvanced, onSave, onDelete }: { category: C
   );
 }
 
-function WordRow({ word, categories, onSave, onDelete }: { word: FallbackWord; categories: Category[]; onSave: (word: FallbackWord) => void; onDelete: () => void }) {
+function WordRow({
+  word,
+  categories,
+  onSave,
+  onFindImage,
+  onDelete
+}: {
+  word: FallbackWord;
+  categories: Category[];
+  onSave: (word: FallbackWord) => void;
+  onFindImage: (word: FallbackWord) => Promise<string>;
+  onDelete: () => void;
+}) {
   const [draft, setDraft] = useState(word);
+  const [findingImage, setFindingImage] = useState(false);
+
+  async function findStickerImage() {
+    if (!draft.word.trim() || findingImage) return;
+    setFindingImage(true);
+    try {
+      const imageUrl = await onFindImage(draft);
+      if (imageUrl) setDraft((prev) => ({ ...prev, imageUrl }));
+    } finally {
+      setFindingImage(false);
+    }
+  }
   
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-200 flex flex-col justify-between">
@@ -998,6 +1134,20 @@ function WordRow({ word, categories, onSave, onDelete }: { word: FallbackWord; c
           <input value={draft.thaiMeaning ?? ''} onChange={(e) => setDraft({ ...draft, thaiMeaning: e.target.value })} placeholder="Thai translation" className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium focus:border-indigo-500 outline-none" />
           <input value={draft.phonetic ?? ''} onChange={(e) => setDraft({ ...draft, phonetic: e.target.value })} placeholder="Phonetics guide" className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-mono font-medium focus:border-indigo-500 outline-none" />
           <input value={draft.imageUrl ?? ''} onChange={(e) => setDraft({ ...draft, imageUrl: e.target.value })} placeholder="Image base64 URL" className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-mono font-medium focus:border-indigo-500 outline-none" />
+          <button
+            type="button"
+            onClick={findStickerImage}
+            disabled={!draft.word.trim() || findingImage}
+            className="w-full rounded-lg border border-indigo-100 bg-indigo-50 px-2 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-150 flex items-center justify-center gap-1.5"
+            title={draft.imageUrl ? 'Refresh sticker image' : 'Find sticker image'}
+          >
+            {findingImage ? (
+              <RefreshCcw size={13} className="animate-spin" />
+            ) : (
+              <Search size={13} />
+            )}
+            {findingImage ? 'Finding...' : draft.imageUrl ? 'Refresh Sticker Image' : 'Find Sticker Image'}
+          </button>
         </div>
       </div>
 
@@ -1014,3 +1164,4 @@ function WordRow({ word, categories, onSave, onDelete }: { word: FallbackWord; c
     </div>
   );
 }
+

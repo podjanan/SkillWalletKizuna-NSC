@@ -276,7 +276,9 @@ export async function GET() {
         enabled: settings.enabled,
         showInApp: settings.showInApp,
         title: settings.title,
+        maxScore: settings.maxScore,
         coverImageUrl: settings.coverImageUrl,
+        timeLimitMinutes: settings.timeLimitMinutes,
       },
       categories,
     },
@@ -388,6 +390,8 @@ export async function POST(request: NextRequest) {
           settings: {
             title: settings.title,
             maxScore: settings.maxScore,
+            coverImageUrl: settings.coverImageUrl,
+            timeLimitMinutes: settings.timeLimitMinutes,
             wordsPerSession: count,
           },
         },

@@ -17,6 +17,7 @@ export type AiWordSettings = {
   wordsPerSessionEasy: number;
   wordsPerSessionMedium: number;
   wordsPerSessionHard: number;
+  timeLimitMinutes: number;
   enableSafeSearch: boolean;
 };
 
@@ -59,6 +60,7 @@ type SettingsRow = {
   words_per_session_easy: number;
   words_per_session_medium: number;
   words_per_session_hard: number;
+  time_limit_minutes: number;
   enable_safe_search: boolean;
 };
 
@@ -89,7 +91,7 @@ const defaultCategories = [
     slug: 'animals',
     label: 'Animals',
     thaiLabel: 'สัตว์',
-    icon: 'pets',
+    icon: '🦁',
     color: '#66BB6A',
     words: [
       ['Octopus', 'ปลาหมึกยักษ์', 'OK-tuh-pus'],
@@ -101,7 +103,7 @@ const defaultCategories = [
     slug: 'food',
     label: 'Food',
     thaiLabel: 'อาหาร',
-    icon: 'restaurant',
+    icon: '🍎',
     color: '#FF9800',
     words: [
       ['Apple', 'แอปเปิล', 'AP-pul'],
@@ -113,7 +115,7 @@ const defaultCategories = [
     slug: 'vehicles',
     label: 'Vehicles',
     thaiLabel: 'ยานพาหนะ',
-    icon: 'directions_car',
+    icon: '🚀',
     color: '#0D92F4',
     words: [
       ['Rocket', 'จรวด', 'ROK-it'],
@@ -125,7 +127,7 @@ const defaultCategories = [
     slug: 'nature',
     label: 'Nature',
     thaiLabel: 'ธรรมชาติ',
-    icon: 'park',
+    icon: '🌈',
     color: '#1AAA88',
     words: [
       ['Rainbow', 'สายรุ้ง', 'RAYN-boh'],
@@ -162,6 +164,7 @@ export async function ensureAiWordGameDefaults() {
       ADD COLUMN IF NOT EXISTS words_per_session_easy INTEGER NOT NULL DEFAULT 3,
       ADD COLUMN IF NOT EXISTS words_per_session_medium INTEGER NOT NULL DEFAULT 5,
       ADD COLUMN IF NOT EXISTS words_per_session_hard INTEGER NOT NULL DEFAULT 7,
+      ADD COLUMN IF NOT EXISTS time_limit_minutes INTEGER NOT NULL DEFAULT 10,
       ADD COLUMN IF NOT EXISTS enable_safe_search BOOLEAN NOT NULL DEFAULT true
   `;
 
@@ -228,6 +231,7 @@ export function mapSettings(row: SettingsRow): AiWordSettings {
     wordsPerSessionEasy: row.words_per_session_easy,
     wordsPerSessionMedium: row.words_per_session_medium,
     wordsPerSessionHard: row.words_per_session_hard,
+    timeLimitMinutes: row.time_limit_minutes,
     enableSafeSearch: row.enable_safe_search,
   };
 }

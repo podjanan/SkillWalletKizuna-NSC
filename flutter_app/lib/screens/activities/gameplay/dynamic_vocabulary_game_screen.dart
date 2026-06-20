@@ -15,6 +15,7 @@ import '../../../routes/app_routes.dart';
 import '../../../providers/user_provider.dart';
 import '../../../services/dynamic_vocabulary_service.dart';
 import '../../../services/activity_service.dart';
+import '../../../services/child_service.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/palette.dart';
 
@@ -33,6 +34,7 @@ class _DynamicVocabularyGameScreenState
     with SingleTickerProviderStateMixin {
   final DynamicVocabularyService _service = DynamicVocabularyService();
   final ActivityService _activityService = ActivityService();
+  final ChildService _childService = ChildService();
   final AudioPlayer _ttsPlayer = AudioPlayer();
   final AudioRecorder _audioRecorder = AudioRecorder();
   final FlutterTts _flutterTts = FlutterTts();
@@ -46,13 +48,29 @@ class _DynamicVocabularyGameScreenState
 
   static const List<_VocabularyCategory> _fallbackCategories = [
     _VocabularyCategory(
-        'animals', 'Animals', 'สัตว์', Icons.pets_rounded, Palette.successAlt),
+        'animals',
+        'Animals',
+        '\u{0E2A}\u{0E31}\u{0E15}\u{0E27}\u{0E4C}',
+        '\u{1F981}',
+        Palette.successAlt),
     _VocabularyCategory(
-        'food', 'Food', 'อาหาร', Icons.restaurant_rounded, Palette.warning),
-    _VocabularyCategory('vehicles', 'Vehicles', 'ยานพาหนะ',
-        Icons.directions_car_rounded, Palette.sky),
+        'food',
+        'Food',
+        '\u{0E2D}\u{0E32}\u{0E2B}\u{0E32}\u{0E23}',
+        '\u{1F34E}',
+        Palette.warning),
     _VocabularyCategory(
-        'nature', 'Nature', 'ธรรมชาติ', Icons.park_rounded, Palette.teal),
+        'vehicles',
+        'Vehicles',
+        '\u{0E22}\u{0E32}\u{0E19}\u{0E1E}\u{0E32}\u{0E2B}\u{0E19}\u{0E30}',
+        '\u{1F680}',
+        Palette.sky),
+    _VocabularyCategory(
+        'nature',
+        'Nature',
+        '\u{0E18}\u{0E23}\u{0E23}\u{0E21}\u{0E0A}\u{0E32}\u{0E15}\u{0E34}',
+        '\u{1F308}',
+        Palette.teal),
   ];
 
   // Game States
@@ -68,7 +86,10 @@ class _DynamicVocabularyGameScreenState
   double _confidence = 0.0;
   int _score = 0;
   int _highScore = 0;
+  int _sessionMaxScore = 100;
+  int _sessionTimeLimitSeconds = 600;
   int _secondsLeft = 600;
+  String _coverImageUrl = 'asset:assets/images/voice_quest_cover.png';
   Timer? _timer;
 
   bool _isLoadingCategories = true;
@@ -160,7 +181,12 @@ class _DynamicVocabularyGameScreenState
   // Load Categories
   Future<void> _loadCategories() async {
     try {
-      final categories = await _service.fetchCategories();
+      final bootstrap = await _service.fetchBootstrap();
+      final categories = bootstrap.categories;
+      final settings = bootstrap.settings;
+      final timeLimitMinutes = _positiveInt(settings['timeLimitMinutes']);
+      final maxScore = _positiveInt(settings['maxScore']);
+      final coverImageUrl = settings['coverImageUrl']?.toString().trim();
       if (!mounted) return;
       setState(() {
         _categories = categories.isEmpty
@@ -170,10 +196,18 @@ class _DynamicVocabularyGameScreenState
                       category.slug,
                       category.label,
                       category.thaiLabel ?? '',
-                      _iconFromName(category.icon),
+                      _emojiFromValue(category.icon, category.slug),
                       _colorFromHex(category.color),
                     ))
                 .toList();
+        if (maxScore != null) _sessionMaxScore = maxScore;
+        if (timeLimitMinutes != null) {
+          _sessionTimeLimitSeconds = timeLimitMinutes * 60;
+          _secondsLeft = _sessionTimeLimitSeconds;
+        }
+        if (coverImageUrl != null && coverImageUrl.isNotEmpty) {
+          _coverImageUrl = coverImageUrl;
+        }
         _isLoadingCategories = false;
       });
     } catch (_) {
@@ -187,24 +221,48 @@ class _DynamicVocabularyGameScreenState
 
   // Load / Save High Score
   Future<void> _loadHighScore() async {
+    final childId = context.read<UserProvider>().currentChildId;
     final prefs = await SharedPreferences.getInstance();
+    final localHighScore = prefs.getInt(_highScorePrefsKey(childId)) ??
+        prefs.getInt('voiceQuestHighScore') ??
+        0;
+    var highScore = localHighScore;
+
+    if (childId != null) {
+      final historyHighScore =
+          await _childService.getVoiceQuestHighScore(childId);
+      if (historyHighScore > highScore) highScore = historyHighScore;
+      if (highScore > localHighScore) {
+        await prefs.setInt(_highScorePrefsKey(childId), highScore);
+      }
+    }
+
     if (!mounted) return;
     setState(() {
-      _highScore = prefs.getInt('voiceQuestHighScore') ?? 0;
+      _highScore = highScore;
     });
   }
 
   Future<void> _saveHighScore(int score) async {
+    final childId = context.read<UserProvider>().currentChildId;
     final prefs = await SharedPreferences.getInstance();
-    final currentHigh = prefs.getInt('voiceQuestHighScore') ?? 0;
+    final key = _highScorePrefsKey(childId);
+    final currentHigh = [
+      _highScore,
+      prefs.getInt(key) ?? 0,
+      prefs.getInt('voiceQuestHighScore') ?? 0,
+    ].fold<int>(0, (high, value) => value > high ? value : high);
     if (score > currentHigh) {
-      await prefs.setInt('voiceQuestHighScore', score);
+      await prefs.setInt(key, score);
       if (!mounted) return;
       setState(() {
         _highScore = score;
       });
     }
   }
+
+  String _highScorePrefsKey(String? childId) =>
+      childId == null ? 'voiceQuestHighScore' : 'voiceQuestHighScore_$childId';
 
   // Start the Game
   Future<void> _startGame() async {
@@ -225,6 +283,14 @@ class _DynamicVocabularyGameScreenState
           .map((json) =>
               DynamicVocabularyItem.fromJson(json as Map<String, dynamic>))
           .toList();
+      final settings = sessionData['settings'] as Map<String, dynamic>? ?? {};
+      final sessionMaxScore = _positiveInt(sessionData['maxScore']) ??
+          _positiveInt(settings['maxScore']) ??
+          loadedWords.length * 50;
+      final sessionTimeLimitMinutes =
+          _positiveInt(settings['timeLimitMinutes']) ?? 10;
+      final sessionTimeLimitSeconds = sessionTimeLimitMinutes * 60;
+      final coverImageUrl = settings['coverImageUrl']?.toString().trim();
 
       if (loadedWords.isEmpty) {
         throw Exception(
@@ -243,12 +309,17 @@ class _DynamicVocabularyGameScreenState
         _spokenText = '';
         _confidence = 0.0;
         _score = 0;
+        _sessionMaxScore = sessionMaxScore;
+        _sessionTimeLimitSeconds = sessionTimeLimitSeconds;
+        if (coverImageUrl != null && coverImageUrl.isNotEmpty) {
+          _coverImageUrl = coverImageUrl;
+        }
         _scoreSaved = false;
         _savedWallet = null;
         _screen = _ScreenState.gameplayScreen;
         _isLoading = false;
         _isSavingScore = false;
-        _secondsLeft = 600; // 10 minutes total
+        _secondsLeft = sessionTimeLimitSeconds;
       });
 
       _startTimer();
@@ -422,7 +493,12 @@ class _DynamicVocabularyGameScreenState
           .toLowerCase()
           .trim();
       final wordCorrect = cleanTranscribed == cleanTarget;
-      final wordScore = wordCorrect ? (similarityScore >= 80 ? 50 : 30) : 0;
+      final wordMaxScore = _wordMaxScore(_currentIndex);
+      final wordScore = wordCorrect
+          ? (similarityScore >= 80
+              ? wordMaxScore
+              : _partialWordScore(wordMaxScore))
+          : 0;
 
       await _clearCurrentRecordedAudio();
       if (!mounted) return;
@@ -497,10 +573,62 @@ class _DynamicVocabularyGameScreenState
         (value >> 24) & 0xFF,
       ]);
 
-  int get _maxScore => _words.length * 50;
-  int get _timeSpentSeconds => (600 - _secondsLeft).clamp(0, 600);
+  int get _maxScore =>
+      _sessionMaxScore > 0 ? _sessionMaxScore : _words.length * 50;
+  int get _timeSpentSeconds => (_sessionTimeLimitSeconds - _secondsLeft)
+      .clamp(0, _sessionTimeLimitSeconds);
   int get _currentWordScore =>
       _currentIndex < _wordScores.length ? _wordScores[_currentIndex] : 0;
+  String get _timeLimitLabel {
+    final minutes = (_sessionTimeLimitSeconds / 60).round();
+    return '$minutes Min';
+  }
+
+  static int? _positiveInt(dynamic value) {
+    if (value is int && value > 0) return value;
+    if (value is num && value > 0) return value.toInt();
+    final parsed = int.tryParse(value?.toString() ?? '');
+    return parsed != null && parsed > 0 ? parsed : null;
+  }
+
+  int _wordMaxScore(int index) {
+    if (_words.isEmpty || index < 0 || index >= _words.length) return 0;
+    final baseScore = _maxScore ~/ _words.length;
+    final remainder = _maxScore % _words.length;
+    return baseScore + (index < remainder ? 1 : 0);
+  }
+
+  int _partialWordScore(int wordMaxScore) {
+    return (wordMaxScore * 0.6).round().clamp(0, wordMaxScore).toInt();
+  }
+
+  Widget _buildCoverImage() {
+    final cover = _coverImageUrl.trim().isEmpty
+        ? 'asset:assets/images/voice_quest_cover.png'
+        : _coverImageUrl.trim();
+    if (cover.startsWith('asset:')) {
+      return Image.asset(
+        cover.replaceFirst('asset:', ''),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildCoverPlaceholder(),
+      );
+    }
+    return Image.network(
+      cover,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _buildCoverPlaceholder(),
+    );
+  }
+
+  Widget _buildCoverPlaceholder() {
+    return Container(
+      color: const Color(0xFFEAF3FF),
+      child: const Center(
+        child:
+            Icon(Icons.record_voice_over_rounded, color: Palette.sky, size: 56),
+      ),
+    );
+  }
 
   Future<void> _retryWord() async {
     if (_words.isEmpty || _isSavingScore) return;
@@ -604,22 +732,46 @@ class _DynamicVocabularyGameScreenState
   }
 
   // Helpers
-  static IconData _iconFromName(String? icon) {
-    switch ((icon ?? '').trim()) {
-      case 'restaurant':
-        return Icons.restaurant_rounded;
-      case 'directions_car':
-      case 'vehicle':
-        return Icons.directions_car_rounded;
-      case 'park':
-      case 'nature':
-        return Icons.park_rounded;
-      case 'category':
-        return Icons.category_rounded;
-      case 'pets':
-      default:
-        return Icons.pets_rounded;
+  static String _emojiFromValue(String? value, String slug) {
+    final raw = (value ?? '').trim();
+    if (raw.isNotEmpty && !_legacyIconNames.contains(raw)) return raw;
+    return _emojiFromSlug(slug);
+  }
+
+  static const Set<String> _legacyIconNames = {
+    'restaurant',
+    'directions_car',
+    'vehicle',
+    'park',
+    'nature',
+    'category',
+    'pets',
+    'folder',
+  };
+
+  static String _emojiFromSlug(String slug) {
+    final normalized = slug.toLowerCase();
+    if (normalized.contains('animal')) return '\u{1F981}';
+    if (normalized.contains('food') || normalized.contains('fruit')) {
+      return '\u{1F34E}';
     }
+    if (normalized.contains('vehicle') ||
+        normalized.contains('car') ||
+        normalized.contains('transport')) {
+      return '\u{1F680}';
+    }
+    if (normalized.contains('nature') ||
+        normalized.contains('park') ||
+        normalized.contains('garden')) {
+      return '\u{1F308}';
+    }
+    if (normalized.contains('toy')) return '\u{1F9F8}';
+    if (normalized.contains('color')) return '\u{1F3A8}';
+    if (normalized.contains('body')) return '\u{1F440}';
+    if (normalized.contains('clothing') || normalized.contains('clothes')) {
+      return '\u{1F455}';
+    }
+    return '\u{2728}';
   }
 
   static Color _colorFromHex(String? value) {
@@ -627,31 +779,6 @@ class _DynamicVocabularyGameScreenState
     if (raw.length != 6) return Palette.sky;
     final parsed = int.tryParse('FF$raw', radix: 16);
     return parsed == null ? Palette.sky : Color(parsed);
-  }
-
-  String getCategoryEmoji(String slug) {
-    final normalized = slug.toLowerCase();
-    if (normalized.contains('animal')) return '🦁';
-    if (normalized.contains('food') || normalized.contains('fruit')) {
-      return '🍎';
-    }
-    if (normalized.contains('vehicle') ||
-        normalized.contains('car') ||
-        normalized.contains('transport')) {
-      return '🚀';
-    }
-    if (normalized.contains('nature') ||
-        normalized.contains('park') ||
-        normalized.contains('garden')) {
-      return '🌈';
-    }
-    if (normalized.contains('toy')) return '🧸';
-    if (normalized.contains('color')) return '🎨';
-    if (normalized.contains('body')) return '👀';
-    if (normalized.contains('clothing') || normalized.contains('clothes')) {
-      return '👕';
-    }
-    return '✨';
   }
 
   Future<bool> _confirmExitIfNeeded() async {
@@ -696,34 +823,34 @@ class _DynamicVocabularyGameScreenState
         await _handleBackPressed();
       },
       child: Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFF0F6FF), Color(0xFFE2EEFF)],
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF0F6FF), Color(0xFFE2EEFF)],
+          ),
         ),
-      ),
         child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
           backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
-            onPressed: _handleBackPressed,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
+              onPressed: _handleBackPressed,
+            ),
+            centerTitle: true,
+            title: Text(
+              'VOICE QUEST',
+              style: AppTextStyles.heading(20, color: Palette.text),
+            ),
           ),
-          centerTitle: true,
-          title: Text(
-            'VOICE QUEST',
-            style: AppTextStyles.heading(20, color: Palette.text),
+          body: SafeArea(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _buildScreen(),
+            ),
           ),
-        ),
-        body: SafeArea(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _buildScreen(),
-          ),
-        ),
         ),
       ),
     );
@@ -780,7 +907,7 @@ class _DynamicVocabularyGameScreenState
                 _topBadge(Icons.emoji_events_rounded, 'High: $_highScore',
                     Colors.orange),
                 const SizedBox(width: 8),
-                _topBadge(Icons.timer_rounded, '10 Min', Colors.blue),
+                _topBadge(Icons.timer_rounded, _timeLimitLabel, Colors.blue),
               ],
             ),
           ],
@@ -805,10 +932,7 @@ class _DynamicVocabularyGameScreenState
                 borderRadius: BorderRadius.circular(20),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: Image.network(
-                    'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=800',
-                    fit: BoxFit.cover,
-                  ),
+                  child: _buildCoverImage(),
                 ),
               ),
               const SizedBox(height: 16),
@@ -849,7 +973,7 @@ class _DynamicVocabularyGameScreenState
 
               // Selectors
               DropdownButtonFormField<String>(
-                value: _selectedCategory ?? _categories.first.id,
+                initialValue: _selectedCategory ?? _categories.first.id,
                 decoration: InputDecoration(
                   labelText: 'Choose Category',
                   labelStyle: AppTextStyles.label(14, color: Palette.deepGrey),
@@ -862,7 +986,7 @@ class _DynamicVocabularyGameScreenState
                 items: _categories.map((c) {
                   return DropdownMenuItem<String>(
                     value: c.id,
-                    child: Text('${getCategoryEmoji(c.id)} ${c.label}'),
+                    child: Text('${c.icon} ${c.label}'),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -871,7 +995,7 @@ class _DynamicVocabularyGameScreenState
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _difficulty,
+                initialValue: _difficulty,
                 decoration: InputDecoration(
                   labelText: 'Choose Difficulty',
                   labelStyle: AppTextStyles.label(14, color: Palette.deepGrey),
@@ -934,7 +1058,7 @@ class _DynamicVocabularyGameScreenState
                       ),
                     ),
                     Text(
-                      getCategoryEmoji(selectedCat.id),
+                      selectedCat.icon,
                       style: const TextStyle(fontSize: 48),
                     ),
                   ],
@@ -1318,8 +1442,9 @@ class _DynamicVocabularyGameScreenState
         .replaceAll(RegExp(r'[.,\/#!$%\^&\*;:{}=\-_`~()]'), '')
         .toLowerCase()
         .trim();
-    final currentResult =
-        _currentIndex < _wordResults.length ? _wordResults[_currentIndex] : null;
+    final currentResult = _currentIndex < _wordResults.length
+        ? _wordResults[_currentIndex]
+        : null;
     final isCorrect = cleanSpoken == cleanTarget;
     final isPerfect = isCorrect && _confidence >= 0.8;
 
@@ -1782,7 +1907,7 @@ class _VocabularyCategory {
   final String id;
   final String label;
   final String thaiLabel;
-  final IconData icon;
+  final String icon;
   final Color color;
 
   const _VocabularyCategory(

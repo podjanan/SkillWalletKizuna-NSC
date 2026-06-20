@@ -207,6 +207,7 @@ model ai_word_game_settings {
   words_per_session_easy   Int  @default(3)
   words_per_session_medium Int  @default(5)
   words_per_session_hard   Int  @default(7)
+  time_limit_minutes       Int  @default(10)
   enable_safe_search       Boolean @default(true)
   created_at           DateTime @default(now()) @db.Timestamptz(6)
   updated_at           DateTime @updatedAt @db.Timestamptz(6)

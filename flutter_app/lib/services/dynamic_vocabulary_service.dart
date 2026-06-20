@@ -15,16 +15,28 @@ class DynamicVocabularyService {
     return DynamicVocabularyItem.fromJson(response);
   }
 
-  Future<List<DynamicVocabularyCategory>> fetchCategories() async {
+  Future<DynamicVocabularyBootstrap> fetchBootstrap() async {
     final response = await _apiService.get('/dynamic-vocabulary');
     final rawCategories = response is Map
         ? response['categories'] as List<dynamic>? ?? []
         : <dynamic>[];
-    return rawCategories
+    final categories = rawCategories
         .map((json) =>
             DynamicVocabularyCategory.fromJson(json as Map<String, dynamic>))
         .where((category) => category.slug.isNotEmpty)
         .toList();
+    final settings = response is Map
+        ? Map<String, dynamic>.from(response['settings'] as Map? ?? {})
+        : <String, dynamic>{};
+    return DynamicVocabularyBootstrap(
+      categories: categories,
+      settings: settings,
+    );
+  }
+
+  Future<List<DynamicVocabularyCategory>> fetchCategories() async {
+    final bootstrap = await fetchBootstrap();
+    return bootstrap.categories;
   }
 
   Future<Map<String, dynamic>> fetchSession({
@@ -39,6 +51,6 @@ class DynamicVocabularyService {
         'session': true,
       },
     );
-    return response as Map<String, dynamic>;
+    return response;
   }
 }

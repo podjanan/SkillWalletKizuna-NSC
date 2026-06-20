@@ -55,3 +55,13 @@ class DynamicVocabularyCategory {
     );
   }
 }
+
+class DynamicVocabularyBootstrap {
+  final List<DynamicVocabularyCategory> categories;
+  final Map<String, dynamic> settings;
+
+  const DynamicVocabularyBootstrap({
+    required this.categories,
+    required this.settings,
+  });
+}

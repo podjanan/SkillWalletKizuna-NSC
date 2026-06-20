@@ -131,6 +131,38 @@ class ChildService {
   }
 
   /// ดึงสรุปคะแนนของเด็ก
+  Future<int> getVoiceQuestHighScore(String childId) async {
+    final history = await getActivityHistory(childId);
+    var highScore = 0;
+
+    for (final record in history) {
+      if (!_isVoiceQuestRecord(record)) continue;
+      final score = _intFromValue(record['point']);
+      if (score > highScore) highScore = score;
+    }
+
+    return highScore;
+  }
+
+  bool _isVoiceQuestRecord(Map<String, dynamic> record) {
+    final evidence = record['evidence'];
+    if (evidence is Map && evidence['type']?.toString() == 'voice_quest') {
+      return true;
+    }
+
+    final activity = record['activity'];
+    final activityName = activity is Map
+        ? activity['name_activity']?.toString().trim().toUpperCase()
+        : null;
+    return activityName == 'VOICE QUEST';
+  }
+
+  int _intFromValue(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
   Future<Map<String, dynamic>> getChildStats(String childId) async {
     try {
       final result = await _apiService.get('/children/$childId/stats');

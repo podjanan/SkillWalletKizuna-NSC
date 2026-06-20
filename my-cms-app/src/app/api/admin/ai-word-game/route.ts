@@ -489,6 +489,7 @@ export async function PATCH(request: NextRequest) {
         words_per_session_easy = ${Number(body.wordsPerSessionEasy ?? 3)},
         words_per_session_medium = ${Number(body.wordsPerSessionMedium ?? 5)},
         words_per_session_hard = ${Number(body.wordsPerSessionHard ?? 7)},
+        time_limit_minutes = ${Number(body.timeLimitMinutes ?? 10)},
         enable_safe_search = ${toBool(body.enableSafeSearch)},
         updated_at = CURRENT_TIMESTAMP
     WHERE id = 'default'
@@ -514,15 +515,15 @@ export async function POST(request: NextRequest) {
     
     // Auto-pick icon
     const iconMap: Record<string, string> = {
-      animals: 'pets',
-      food: 'restaurant',
-      vehicles: 'directions_car',
-      nature: 'park',
-      bedroom: 'bed',
-      school: 'school',
-      classroom: 'school',
+      animals: '🦁',
+      food: '🍎',
+      vehicles: '🚀',
+      nature: '🌈',
+      bedroom: '🛏️',
+      school: '📚',
+      classroom: '📚',
     };
-    const defaultIcon = iconMap[slug] ?? 'folder';
+    const defaultIcon = iconMap[slug] ?? '✨';
     const icon = body.icon ? String(body.icon) : defaultIcon;
     
     // Query max sort order
