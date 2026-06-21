@@ -1,0 +1,23 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getSpaceAdventureSettings, updateSpaceAdventureSettings } from '@/lib/ai-word-game';
+
+export async function GET() {
+  try {
+    const settings = await getSpaceAdventureSettings();
+    return NextResponse.json({ success: true, data: settings });
+  } catch (e: any) {
+    return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const scorePerItem = Number(body.scorePerItem ?? 10);
+    const timerLimit = Number(body.timerLimit ?? 60);
+    const settings = await updateSpaceAdventureSettings(scorePerItem, timerLimit);
+    return NextResponse.json({ success: true, data: settings });
+  } catch (e: any) {
+    return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+  }
+}

@@ -16,6 +16,7 @@ import '../screens/activities/gameplay/item_intro_screen.dart';
 import '../screens/activities/gameplay/record_screen.dart';
 import '../screens/activities/gameplay/result_screen.dart';
 import '../screens/activities/gameplay/dynamic_vocabulary_game_screen.dart';
+import '../screens/activities/gameplay/space_adventure/space_adventure_scan_screen.dart';
 import '../models/activity.dart';
 import '../screens/activities/detail/physical_video_screen.dart';
 import '../screens/activities/detail/language_detail_screen.dart';
@@ -43,6 +44,8 @@ class AppRoutes {
   static const String record = '/record';
   static const String result = '/result';
   static const String dynamicVocabularyGame = '/dynamic-vocabulary-game';
+  static const String spaceAdventure = '/space-adventure';
+
   static const String videoDetail = '/video-detail';
   static const String languageDetail = '/language-detail';
   static const String physicalActivity = '/physical-activity';
@@ -122,6 +125,9 @@ class AppRoutes {
         // --- Child Management Section ---
         childSetting: (_) => const ChildSettingScreen(),
         addChild: (_) => const AddChildScreen(),
+
+        // Space Adventure Game
+        spaceAdventure: (_) => const SpaceAdventureScanScreen(),
 
         // Result
         result: (_) => const ResultScreen(),

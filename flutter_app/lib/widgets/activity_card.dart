@@ -111,6 +111,11 @@ class ActivityCard extends StatelessWidget {
         return;
       }
 
+      if (activity.id == 'space-adventure' || activity.content == 'Space Adventure') {
+        Navigator.pushNamed(context, AppRoutes.spaceAdventure);
+        return;
+      }
+
       // Check if there's a saved draft for a DIFFERENT activity
       final childId = userProvider.currentChildId!;
       final draft = await DraftService.loadDraft(childId);
@@ -245,6 +250,26 @@ class ActivityCard extends StatelessWidget {
     required bool hasYouTubeVideo,
     String? youtubeThumbnailUrl,
   }) {
+    if (activity.id == 'space-adventure' || activity.content == 'Space Adventure') {
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF0F0C20), Color(0xFF3F2B96)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.rocket_launch_rounded,
+          color: Colors.cyanAccent,
+          size: 40,
+        ),
+      );
+    }
+
     if (activity.isAiWordGame ||
         (activity.thumbnailUrl?.startsWith('asset:') ?? false)) {
       return Image.asset(

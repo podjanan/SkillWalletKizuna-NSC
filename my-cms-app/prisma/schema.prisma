@@ -270,3 +270,18 @@ model ai_word_generation_log {
   @@index([category_slug])
   @@index([created_at])
 }
+
+model GameSetting {
+  id           String   @id @default("default")
+  scorePerItem Int      @default(10)
+  timerLimit   Int      @default(60)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model GameScore {
+  id         String   @id @default(cuid())
+  playerName String   @default("Space Adventurer")
+  score      Int
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+}
+

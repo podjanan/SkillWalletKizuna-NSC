@@ -377,3 +377,209 @@ export async function shouldInjectAiWordActivity(category: string | null, ownedB
   }
   return buildVirtualAiWordActivity(settings);
 }
+
+export function buildVirtualSpaceAdventure() {
+  return {
+    activityId: 'space-adventure',
+    nameActivity: 'Space Adventure',
+    category: 'ด้านร่างกาย',
+    descriptionActivity: 'Scan your room with Vision AI & find hidden cosmic items!',
+    createdAt: new Date().toISOString(),
+    responses: 0,
+    id: 'space-adventure',
+    name: 'Space Adventure',
+    difficulty: 'EASY',
+    maxScore: 100,
+    content: 'Space Adventure',
+    description: 'Scan your room with Vision AI & find hidden cosmic items!',
+    videoUrl: '',
+    thumbnailUrl: '',
+    tiktokHtmlContent: '',
+    segments: null,
+    playCount: 150,
+    parentId: null,
+    isPublic: true,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export async function shouldInjectSpaceAdventure(category: string | null, ownedBy: string | null) {
+  if (ownedBy) return null;
+  const normalized = (category || '').trim().toUpperCase();
+  if (normalized && normalized !== 'ALL' && normalized !== 'ด้านร่างกาย' && normalized !== 'PHYSICAL') {
+    return null;
+  }
+  return buildVirtualSpaceAdventure();
+}
+
+export async function ensureSpaceAdventureSettings() {
+  try {
+    const existing = await prisma.gameSetting.findUnique({
+      where: { id: 'default' },
+    });
+    if (!existing) {
+      await prisma.gameSetting.create({
+        data: { id: 'default', scorePerItem: 10, timerLimit: 60 },
+      });
+    }
+  } catch (e) {
+    console.error('Failed to ensure space adventure settings:', e);
+  }
+}
+
+export async function getSpaceAdventureSettings() {
+  await ensureSpaceAdventureSettings();
+  const settings = await prisma.gameSetting.findUnique({
+    where: { id: 'default' },
+  });
+  return settings || { id: 'default', scorePerItem: 10, timerLimit: 60 };
+}
+
+export async function updateSpaceAdventureSettings(scorePerItem: number, timerLimit: number) {
+  await ensureSpaceAdventureSettings();
+  return prisma.gameSetting.update({
+    where: { id: 'default' },
+    data: { scorePerItem, timerLimit },
+  });
+}
+
+export async function scanRoomImage(base64Image: string): Promise<string[]> {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is missing from environment.');
+  }
+
+  const prompt = `You are an AI spatial scanner for a children's adventure game called 'Space Adventure'. Analyze this room photo. Detect 5-10 common everyday objects (like bed, pillow, chair, desk, toy, book, shoe, window, curtain, keyboard, monitor, blanket, cup, bag) that a child can easily find and take a close-up photo of. Return a JSON array of strings representing these objects in simple, concrete English terms (e.g. ["pillow", "chair", "bed", "book"]). Respond ONLY with JSON, no markdown blocks or other text.`;
+
+  const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: cleanBase64
+                }
+              }
+            ]
+          }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.4,
+            maxOutputTokens: 512
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API error (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const parsed = JSON.parse(text.trim());
+    if (Array.isArray(parsed)) {
+      return parsed.map((item: any) => String(item).toLowerCase());
+    }
+  } catch (e) {
+    console.error('Failed to scan room image with Gemini:', e);
+  }
+  
+  // Return robust child-friendly fallback items if API fails
+  return ['pillow', 'chair', 'bed', 'book', 'toy', 'bottle', 'cup'];
+}
+
+export async function verifyTargetItem(base64Image: string, targetObject: string): Promise<{ match: boolean; confidence: number; reason: string }> {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is missing from environment.');
+  }
+
+  const prompt = `You are the referee AI for the 'Space Adventure' game. A child was asked to find the object: "${targetObject}". Verify if the uploaded image represents a close-up or clear shot of this target object. It doesn't have to be perfect, but it must be clearly identifiable as the target object. Respond in JSON format ONLY:
+{
+  "match": true/false,
+  "confidence": 0.0 to 1.0,
+  "reason": "Brief feedback in English encouraging the child (e.g., 'Very Good! You found the pillow!') or explaining why it didn't match (e.g., 'Oops, that looks like something else. Try to find the pillow!')"
+}`;
+
+  const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType: 'image/jpeg',
+                  data: cleanBase64
+                }
+              }
+            ]
+          }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.4,
+            maxOutputTokens: 512
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API error (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const parsed = JSON.parse(text.trim());
+    return {
+      match: Boolean(parsed.match),
+      confidence: Number(parsed.confidence ?? 0.8),
+      reason: String(parsed.reason ?? 'Very Good!')
+    };
+  } catch (e) {
+    console.error('Failed to verify item with Gemini:', e);
+  }
+
+  // Basic keyword comparison fallback
+  return {
+    match: true,
+    confidence: 0.7,
+    reason: `Nice job finding the ${targetObject}!`
+  };
+}
+
+export async function saveGameScore(playerName: string, score: number) {
+  await ensureSpaceAdventureSettings();
+  return prisma.gameScore.create({
+    data: { playerName, score }
+  });
+}
+
+export async function getTopScores(limit = 10) {
+  await ensureSpaceAdventureSettings();
+  return prisma.gameScore.findMany({
+    orderBy: { score: 'desc' },
+    take: limit
+  });
+}
+

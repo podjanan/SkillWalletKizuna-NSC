@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
-import { shouldInjectAiWordActivity } from '@/lib/ai-word-game';
+import { shouldInjectAiWordActivity, shouldInjectSpaceAdventure } from '@/lib/ai-word-game';
 
 // Helper function to safely serialize JSON fields
 function safeJsonSerialize(value: any) {
@@ -169,9 +169,15 @@ export async function GET(request: Request) {
     });
 
     const virtualAiWordActivity = await shouldInjectAiWordActivity(category, ownedBy);
-    const data = virtualAiWordActivity
-      ? [virtualAiWordActivity, ...activitiesResponse]
-      : activitiesResponse;
+    const virtualSpaceAdventure = await shouldInjectSpaceAdventure(category, ownedBy);
+    
+    let data = [...activitiesResponse];
+    if (virtualSpaceAdventure) {
+      data = [virtualSpaceAdventure, ...data];
+    }
+    if (virtualAiWordActivity) {
+      data = [virtualAiWordActivity, ...data];
+    }
 
     // Return with proper structure (match frontend expectations)
     const response = {
@@ -180,7 +186,7 @@ export async function GET(request: Request) {
       pagination: {
         currentPage: page,
         totalPages,
-        total: totalCount + (virtualAiWordActivity ? 1 : 0),
+        total: totalCount + (virtualAiWordActivity ? 1 : 0) + (virtualSpaceAdventure ? 1 : 0),
         limit
       }
     };
@@ -243,7 +249,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!body.content) {
+    if (body.category !== 'ด้านภาษา' && body.category !== 'LANGUAGE' && !body.content) {
       return NextResponse.json(
         { error: 'content is required' },
         { status: 400 }
@@ -277,7 +283,7 @@ export async function POST(request: NextRequest) {
       data: {
         name_activity: body.name,
         category: body.category,
-        content: body.content,
+        content: body.content || '',
         level_activity: body.difficulty,
         maxscore: body.maxScore,
         description_activity: body.description || '',

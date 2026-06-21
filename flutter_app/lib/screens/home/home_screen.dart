@@ -1137,6 +1137,75 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 30),
 
+        // Space Adventure Game Launcher Banner
+        GestureDetector(
+          onTap: () => Navigator.pushNamed(context, AppRoutes.spaceAdventure),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0F0C20), Color(0xFF3F2B96)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF3F2B96).withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Space icon/avatar
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white10,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.cyanAccent.withOpacity(0.5), width: 1.5),
+                  ),
+                  child: const Icon(
+                    Icons.rocket_launch_rounded,
+                    color: Colors.cyanAccent,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'NEW GAME AVAILABLE!',
+                        style: AppTextStyles.label(11, color: Colors.cyanAccent),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Space Adventure Scavenger',
+                        style: AppTextStyles.heading(18, color: Colors.white),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Scan your room with Vision AI & find hidden cosmic items!',
+                        style: AppTextStyles.body(12, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white70,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 30),
+
         // Popular list
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,

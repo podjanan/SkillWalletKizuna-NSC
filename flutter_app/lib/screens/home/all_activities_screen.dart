@@ -203,6 +203,11 @@ class _ActivityGridCard extends StatelessWidget {
         return;
       }
 
+      if (activity.id == 'space-adventure' || activity.content == 'Space Adventure') {
+        Navigator.pushNamed(context, AppRoutes.spaceAdventure);
+        return;
+      }
+
       if (category == 'ด้านภาษา' || category == 'LANGUAGE') {
         Navigator.pushNamed(context, AppRoutes.languageDetail,
             arguments: activity);
@@ -272,6 +277,26 @@ class _ActivityGridCard extends StatelessWidget {
 
   Widget _buildThumbnail(
       {required bool hasTikTok, String? youtubeThumbnailUrl}) {
+    if (activity.id == 'space-adventure' || activity.content == 'Space Adventure') {
+      return Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF0F0C20), Color(0xFF3F2B96)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.rocket_launch_rounded,
+          color: Colors.cyanAccent,
+          size: 40,
+        ),
+      );
+    }
+
     final category = activity.category;
 
     if (activity.isAiWordGame ||
