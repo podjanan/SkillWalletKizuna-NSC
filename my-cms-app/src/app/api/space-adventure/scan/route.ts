@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { scanRoomImage } from '@/lib/ai-word-game';
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Unexpected error';
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -9,10 +13,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Image base64 data is required' }, { status: 400 });
     }
 
-    const objects = await scanRoomImage(image);
-    return NextResponse.json({ success: true, objects });
-  } catch (e: any) {
+    const scan = await scanRoomImage(image);
+    if (scan.fallback) {
+      return NextResponse.json({
+        success: false,
+        fallback: true,
+        objects: scan.objects,
+        error: 'Unable to scan room image with Gemini.',
+        reason: scan.reason,
+      });
+    }
+
+    return NextResponse.json({ success: true, objects: scan.objects, source: scan.source, fallback: false });
+  } catch (e: unknown) {
     console.error('Room scan API error:', e);
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: getErrorMessage(e) }, { status: 500 });
   }
 }

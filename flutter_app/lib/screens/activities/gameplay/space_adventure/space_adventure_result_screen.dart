@@ -2,8 +2,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'space_adventure_quest_screen.dart';
+import '../../../../providers/user_provider.dart';
 import '../../../../services/space_adventure_service.dart';
 import '../../../../theme/palette.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -112,35 +114,67 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
   Future<void> _submitScoreToLeaderboard() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
+    if (_saved) return;
+
+    final userProvider = context.read<UserProvider>();
+    final childId = userProvider.currentChildId;
+    if (childId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Child ID not found. Please choose a child first.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _isSaving = true;
     });
 
     try {
-      final success = await _spaceService.submitScore(name, widget.currentScore);
-      if (success) {
-        setState(() {
-          _saved = true;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Score saved to space database!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) {
-            Navigator.popUntil(context, (route) => route.isFirst);
-          }
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to save score. Try again.')),
-        );
-      }
+      final maxScore = widget.totalItems * widget.scorePerItem;
+      final completedItems = [
+        {
+          'id': 'space_adventure_${widget.currentIndex}',
+          'text': widget.targetObject,
+          'maxScore': widget.pointsEarned,
+          'recognizedText': widget.isMatch ? widget.targetObject : '',
+          'match': widget.isMatch,
+          'reason': widget.reasonText,
+        }
+      ];
+
+      await _spaceService.completeMission(
+        childId: childId,
+        totalScoreEarned: widget.currentScore,
+        maxScore: maxScore,
+        detectedObjects: widget.detectedObjects,
+        completedItems: completedItems,
+        scorePerItem: widget.scorePerItem,
+        timerLimit: widget.timerLimit,
+      );
+      await _spaceService.submitScore(name, widget.currentScore);
+      await userProvider.fetchChildrenData();
+      setState(() {
+        _saved = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Score saved to child history!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          Navigator.popUntil(context, (route) => route.isFirst);
+        }
+      });
     } catch (e) {
       print('Failed to save score: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save score. Try again.')),
+      );
     } finally {
       if (mounted) {
         setState(() {

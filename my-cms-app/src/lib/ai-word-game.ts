@@ -43,6 +43,17 @@ export type AiWordFallbackWord = {
   active: boolean;
 };
 
+export type SpaceAdventureArea = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  items: string[];
+  active: boolean;
+  sortOrder: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
 type SettingsRow = {
   enabled: boolean;
   show_in_app: boolean;
@@ -85,6 +96,64 @@ type WordRow = {
   difficulty: 'easy' | 'medium' | 'hard';
   active: boolean;
 };
+
+function extractGeminiJson(text: string, kind: 'array' | 'object'): unknown | null {
+  const cleaned = text
+    .trim()
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '');
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const match = kind === 'array'
+      ? cleaned.match(/\[[\s\S]*\]/)
+      : cleaned.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+
+    try {
+      return JSON.parse(match[0]);
+    } catch {
+      return null;
+    }
+  }
+}
+
+function normalizeSpaceAdventureItems(items: unknown): string[] {
+  const rawItems = Array.isArray(items)
+    ? items
+    : String(items ?? '')
+        .split(',')
+        .map((item) => item.trim());
+
+  return Array.from(new Set(
+    rawItems
+      .map((item) => String(item).trim().toLowerCase())
+      .filter(Boolean)
+  ));
+}
+
+function mapSpaceAdventureArea(row: {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  items: unknown;
+  active: boolean;
+  sortOrder: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+}): SpaceAdventureArea {
+  return {
+    id: row.id,
+    name: row.name,
+    imageUrl: row.imageUrl ?? '',
+    items: normalizeSpaceAdventureItems(row.items),
+    active: row.active,
+    sortOrder: row.sortOrder,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
 
 const defaultCategories = [
   {
@@ -382,7 +451,7 @@ export function buildVirtualSpaceAdventure() {
   return {
     activityId: 'space-adventure',
     nameActivity: 'Space Adventure',
-    category: 'ด้านร่างกาย',
+    category: 'LANGUAGE',
     descriptionActivity: 'Scan your room with Vision AI & find hidden cosmic items!',
     createdAt: new Date().toISOString(),
     responses: 0,
@@ -406,48 +475,191 @@ export function buildVirtualSpaceAdventure() {
 export async function shouldInjectSpaceAdventure(category: string | null, ownedBy: string | null) {
   if (ownedBy) return null;
   const normalized = (category || '').trim().toUpperCase();
-  if (normalized && normalized !== 'ALL' && normalized !== 'ด้านร่างกาย' && normalized !== 'PHYSICAL') {
+  if (normalized && normalized !== 'ALL' && normalized !== 'LANGUAGE' && category !== 'ด้านภาษา') {
     return null;
   }
   return buildVirtualSpaceAdventure();
 }
 
 export async function ensureSpaceAdventureSettings() {
-  try {
-    const existing = await prisma.gameSetting.findUnique({
-      where: { id: 'default' },
-    });
-    if (!existing) {
-      await prisma.gameSetting.create({
-        data: { id: 'default', scorePerItem: 10, timerLimit: 60 },
-      });
-    }
-  } catch (e) {
-    console.error('Failed to ensure space adventure settings:', e);
-  }
+  await prisma.$executeRaw`
+    CREATE TABLE IF NOT EXISTS "GameSetting" (
+      "id" TEXT NOT NULL DEFAULT 'default',
+      "scorePerItem" INTEGER NOT NULL DEFAULT 10,
+      "timerLimit" INTEGER NOT NULL DEFAULT 60,
+      "updatedAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "GameSetting_pkey" PRIMARY KEY ("id")
+    )
+  `;
+
+  await prisma.$executeRaw`
+    CREATE TABLE IF NOT EXISTS "GameScore" (
+      "id" TEXT NOT NULL,
+      "playerName" TEXT NOT NULL DEFAULT 'Space Adventurer',
+      "score" INTEGER NOT NULL,
+      "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "GameScore_pkey" PRIMARY KEY ("id")
+    )
+  `;
+
+  await prisma.$executeRaw`
+    CREATE TABLE IF NOT EXISTS "SpaceAdventureArea" (
+      "id" TEXT NOT NULL,
+      "name" TEXT NOT NULL,
+      "imageUrl" TEXT,
+      "items" JSONB NOT NULL DEFAULT '[]'::jsonb,
+      "active" BOOLEAN NOT NULL DEFAULT true,
+      "sortOrder" INTEGER NOT NULL DEFAULT 0,
+      "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "SpaceAdventureArea_pkey" PRIMARY KEY ("id")
+    )
+  `;
+
+  await prisma.$executeRaw`
+    INSERT INTO "GameSetting" ("id", "scorePerItem", "timerLimit", "updatedAt")
+    VALUES ('default', 10, 60, CURRENT_TIMESTAMP)
+    ON CONFLICT ("id") DO NOTHING
+  `;
 }
 
 export async function getSpaceAdventureSettings() {
   await ensureSpaceAdventureSettings();
-  const settings = await prisma.gameSetting.findUnique({
-    where: { id: 'default' },
-  });
-  return settings || { id: 'default', scorePerItem: 10, timerLimit: 60 };
+  const settings = await prisma.$queryRaw<Array<{
+    id: string;
+    scorePerItem: number;
+    timerLimit: number;
+    updatedAt: Date;
+  }>>`
+    SELECT "id", "scorePerItem", "timerLimit", "updatedAt"
+    FROM "GameSetting"
+    WHERE "id" = 'default'
+    LIMIT 1
+  `;
+  return settings[0] || { id: 'default', scorePerItem: 10, timerLimit: 60 };
 }
 
 export async function updateSpaceAdventureSettings(scorePerItem: number, timerLimit: number) {
   await ensureSpaceAdventureSettings();
-  return prisma.gameSetting.update({
-    where: { id: 'default' },
-    data: { scorePerItem, timerLimit },
-  });
+  const settings = await prisma.$queryRaw<Array<{
+    id: string;
+    scorePerItem: number;
+    timerLimit: number;
+    updatedAt: Date;
+  }>>`
+    UPDATE "GameSetting"
+    SET "scorePerItem" = ${scorePerItem},
+        "timerLimit" = ${timerLimit},
+        "updatedAt" = CURRENT_TIMESTAMP
+    WHERE "id" = 'default'
+    RETURNING "id", "scorePerItem", "timerLimit", "updatedAt"
+  `;
+  return settings[0];
 }
 
-export async function scanRoomImage(base64Image: string): Promise<string[]> {
+export async function getSpaceAdventureAreas(options: { activeOnly?: boolean } = {}) {
+  await ensureSpaceAdventureSettings();
+  const rows = options.activeOnly
+    ? await prisma.$queryRaw<Array<{
+        id: string;
+        name: string;
+        imageUrl: string | null;
+        items: unknown;
+        active: boolean;
+        sortOrder: number;
+        createdAt: Date;
+        updatedAt: Date;
+      }>>`
+        SELECT "id", "name", "imageUrl", "items", "active", "sortOrder", "createdAt", "updatedAt"
+        FROM "SpaceAdventureArea"
+        WHERE "active" = true
+        ORDER BY "sortOrder" ASC, "name" ASC
+      `
+    : await prisma.$queryRaw<Array<{
+        id: string;
+        name: string;
+        imageUrl: string | null;
+        items: unknown;
+        active: boolean;
+        sortOrder: number;
+        createdAt: Date;
+        updatedAt: Date;
+      }>>`
+        SELECT "id", "name", "imageUrl", "items", "active", "sortOrder", "createdAt", "updatedAt"
+        FROM "SpaceAdventureArea"
+        ORDER BY "sortOrder" ASC, "name" ASC
+      `;
+
+  return rows.map(mapSpaceAdventureArea);
+}
+
+export async function upsertSpaceAdventureArea(input: {
+  id?: string;
+  name: string;
+  imageUrl?: string;
+  items: unknown;
+  active?: boolean;
+  sortOrder?: number;
+}) {
+  await ensureSpaceAdventureSettings();
+  const id = input.id?.trim() || crypto.randomUUID();
+  const name = input.name.trim();
+  const items = normalizeSpaceAdventureItems(input.items);
+  if (!name) throw new Error('Area name is required.');
+  if (items.length === 0) throw new Error('At least one item is required.');
+
+  const rows = await prisma.$queryRaw<Array<{
+    id: string;
+    name: string;
+    imageUrl: string | null;
+    items: unknown;
+    active: boolean;
+    sortOrder: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }>>`
+    INSERT INTO "SpaceAdventureArea" ("id", "name", "imageUrl", "items", "active", "sortOrder", "createdAt", "updatedAt")
+    VALUES (
+      ${id},
+      ${name},
+      ${input.imageUrl?.trim() || ''},
+      ${JSON.stringify(items)}::jsonb,
+      ${input.active ?? true},
+      ${Number(input.sortOrder ?? 0)},
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP
+    )
+    ON CONFLICT ("id") DO UPDATE SET
+      "name" = EXCLUDED."name",
+      "imageUrl" = EXCLUDED."imageUrl",
+      "items" = EXCLUDED."items",
+      "active" = EXCLUDED."active",
+      "sortOrder" = EXCLUDED."sortOrder",
+      "updatedAt" = CURRENT_TIMESTAMP
+    RETURNING "id", "name", "imageUrl", "items", "active", "sortOrder", "createdAt", "updatedAt"
+  `;
+
+  return mapSpaceAdventureArea(rows[0]);
+}
+
+export async function deleteSpaceAdventureArea(id: string) {
+  await ensureSpaceAdventureSettings();
+  await prisma.$executeRaw`
+    DELETE FROM "SpaceAdventureArea"
+    WHERE "id" = ${id}
+  `;
+}
+
+export async function scanRoomImage(base64Image: string): Promise<{ objects: string[]; source: 'gemini'; fallback: false } | { objects: string[]; source: 'none'; fallback: true; reason: string }> {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
   const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
   if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is missing from environment.');
+    return {
+      objects: [],
+      source: 'none',
+      fallback: true,
+      reason: 'GEMINI_API_KEY is missing from environment.'
+    };
   }
 
   const prompt = `You are an AI spatial scanner for a children's adventure game called 'Space Adventure'. Analyze this room photo. Detect 5-10 common everyday objects (like bed, pillow, chair, desk, toy, book, shoe, window, curtain, keyboard, monitor, blanket, cup, bag) that a child can easily find and take a close-up photo of. Return a JSON array of strings representing these objects in simple, concrete English terms (e.g. ["pillow", "chair", "bed", "book"]). Respond ONLY with JSON, no markdown blocks or other text.`;
@@ -474,6 +686,10 @@ export async function scanRoomImage(base64Image: string): Promise<string[]> {
           }],
           generationConfig: {
             responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'ARRAY',
+              items: { type: 'STRING' }
+            },
             temperature: 0.4,
             maxOutputTokens: 512
           }
@@ -488,16 +704,28 @@ export async function scanRoomImage(base64Image: string): Promise<string[]> {
 
     const result = await response.json();
     const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const parsed = JSON.parse(text.trim());
+    const parsed = extractGeminiJson(text, 'array');
     if (Array.isArray(parsed)) {
-      return parsed.map((item: any) => String(item).toLowerCase());
+      const objects = parsed
+        .map((item: unknown) => String(item).trim().toLowerCase())
+        .filter(Boolean);
+      if (objects.length > 0) return { objects, source: 'gemini', fallback: false };
     }
+    return {
+      objects: [],
+      source: 'none',
+      fallback: true,
+      reason: 'Gemini did not return a valid list of room objects.'
+    };
   } catch (e) {
     console.error('Failed to scan room image with Gemini:', e);
+    return {
+      objects: [],
+      source: 'none',
+      fallback: true,
+      reason: e instanceof Error ? e.message : 'Unknown Gemini scan error.'
+    };
   }
-  
-  // Return robust child-friendly fallback items if API fails
-  return ['pillow', 'chair', 'bed', 'book', 'toy', 'bottle', 'cup'];
 }
 
 export async function verifyTargetItem(base64Image: string, targetObject: string): Promise<{ match: boolean; confidence: number; reason: string }> {
@@ -536,6 +764,15 @@ export async function verifyTargetItem(base64Image: string, targetObject: string
           }],
           generationConfig: {
             responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                match: { type: 'BOOLEAN' },
+                confidence: { type: 'NUMBER' },
+                reason: { type: 'STRING' }
+              },
+              required: ['match', 'confidence', 'reason']
+            },
             temperature: 0.4,
             maxOutputTokens: 512
           }
@@ -550,7 +787,8 @@ export async function verifyTargetItem(base64Image: string, targetObject: string
 
     const result = await response.json();
     const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const parsed = JSON.parse(text.trim());
+    const parsed = extractGeminiJson(text, 'object') as Record<string, unknown> | null;
+    if (!parsed) throw new Error('Gemini did not return valid verification JSON.');
     return {
       match: Boolean(parsed.match),
       confidence: Number(parsed.confidence ?? 0.8),
@@ -558,28 +796,42 @@ export async function verifyTargetItem(base64Image: string, targetObject: string
     };
   } catch (e) {
     console.error('Failed to verify item with Gemini:', e);
+    const reason = e instanceof Error ? e.message : 'Unknown Gemini verification error.';
+    return {
+      match: false,
+      confidence: 0,
+      reason: `Verification failed because the AI service returned an error: ${reason}`
+    };
   }
-
-  // Basic keyword comparison fallback
-  return {
-    match: true,
-    confidence: 0.7,
-    reason: `Nice job finding the ${targetObject}!`
-  };
 }
 
 export async function saveGameScore(playerName: string, score: number) {
   await ensureSpaceAdventureSettings();
-  return prisma.gameScore.create({
-    data: { playerName, score }
-  });
+  const rows = await prisma.$queryRaw<Array<{
+    id: string;
+    playerName: string;
+    score: number;
+    createdAt: Date;
+  }>>`
+    INSERT INTO "GameScore" ("id", "playerName", "score")
+    VALUES (${crypto.randomUUID()}, ${playerName}, ${score})
+    RETURNING "id", "playerName", "score", "createdAt"
+  `;
+  return rows[0];
 }
 
 export async function getTopScores(limit = 10) {
   await ensureSpaceAdventureSettings();
-  return prisma.gameScore.findMany({
-    orderBy: { score: 'desc' },
-    take: limit
-  });
+  return prisma.$queryRaw<Array<{
+    id: string;
+    playerName: string;
+    score: number;
+    createdAt: Date;
+  }>>`
+    SELECT "id", "playerName", "score", "createdAt"
+    FROM "GameScore"
+    ORDER BY "score" DESC
+    LIMIT ${limit}
+  `;
 }
 

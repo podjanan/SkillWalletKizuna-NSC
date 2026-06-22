@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveGameScore, getTopScores } from '@/lib/ai-word-game';
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Unexpected error';
+}
+
 export async function GET() {
   try {
     const scores = await getTopScores(20);
     return NextResponse.json({ success: true, scores });
-  } catch (e: any) {
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    return NextResponse.json({ success: false, error: getErrorMessage(e) }, { status: 500 });
   }
 }
 
@@ -17,7 +21,7 @@ export async function POST(request: NextRequest) {
     const score = Number(body.score ?? 0);
     const newScore = await saveGameScore(playerName, score);
     return NextResponse.json({ success: true, score: newScore });
-  } catch (e: any) {
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    return NextResponse.json({ success: false, error: getErrorMessage(e) }, { status: 500 });
   }
 }

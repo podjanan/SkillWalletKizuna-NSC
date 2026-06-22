@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSpaceAdventureSettings, updateSpaceAdventureSettings } from '@/lib/ai-word-game';
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Unexpected error';
+}
+
 export async function GET() {
   try {
     const settings = await getSpaceAdventureSettings();
     return NextResponse.json({ success: true, data: settings });
-  } catch (e: any) {
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    return NextResponse.json({ success: false, error: getErrorMessage(e) }, { status: 500 });
   }
 }
 
@@ -17,7 +21,7 @@ export async function POST(request: NextRequest) {
     const timerLimit = Number(body.timerLimit ?? 60);
     const settings = await updateSpaceAdventureSettings(scorePerItem, timerLimit);
     return NextResponse.json({ success: true, data: settings });
-  } catch (e: any) {
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    return NextResponse.json({ success: false, error: getErrorMessage(e) }, { status: 500 });
   }
 }

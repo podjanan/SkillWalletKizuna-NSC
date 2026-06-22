@@ -21,7 +21,10 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
   late AnimationController _scanAnimationController;
   Uint8List? _roomImageBytes;
   bool _isScanning = false;
+  bool _isLoadingAreas = true;
   List<String> _detectedObjects = [];
+  List<SpaceAdventureArea> _areas = [];
+  String? _scanError;
   Map<String, dynamic> _gameSettings = {'scorePerItem': 10, 'timerLimit': 60};
 
   @override
@@ -32,6 +35,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
       duration: const Duration(seconds: 2),
     );
     _loadSettings();
+    _loadAreas();
   }
 
   Future<void> _loadSettings() async {
@@ -50,31 +54,58 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
   }
 
   Future<void> _captureRoom() async {
-    final picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.camera,
-      imageQuality: 65,
-    );
-    if (image == null) return;
+    final source = await _showImageSourceDialog();
+    if (source == null) return;
 
-    final bytes = await image.readAsBytes();
+    Uint8List bytes;
+    try {
+      final picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        imageQuality: 65,
+      );
+      if (image == null) return;
+
+      bytes = await image.readAsBytes();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to open image picker: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _roomImageBytes = bytes;
       _isScanning = true;
       _detectedObjects = [];
+      _scanError = null;
     });
 
     _scanAnimationController.repeat(reverse: true);
 
     try {
       final base64String = base64Encode(bytes);
-      final objects = await _spaceService.scanRoom(base64String);
+      final result = await _spaceService.scanRoom(base64String);
       
       if (mounted) {
         setState(() {
-          _detectedObjects = objects;
+          _detectedObjects = result.success ? result.objects : [];
+          _scanError = result.success
+              ? null
+              : '${result.error ?? 'Scan failed.'}${(result.reason ?? '').isNotEmpty ? '\nReason: ${result.reason}' : ''}';
         });
+        if (!result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_scanError ?? 'Scan failed.'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
       }
     } catch (e) {
       print('Scan failed: $e');
@@ -88,6 +119,49 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
     }
   }
 
+  Future<void> _loadAreas() async {
+    final areas = await _spaceService.getAreas();
+    if (mounted) {
+      setState(() {
+        _areas = areas;
+        _isLoadingAreas = false;
+      });
+    }
+  }
+
+  Future<ImageSource?> _showImageSourceDialog() {
+    return showDialog<ImageSource>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Select image source',
+          style: AppTextStyles.heading(18),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Palette.success),
+              title: Text(
+                'Camera',
+                style: AppTextStyles.body(14),
+              ),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Palette.sky),
+              title: Text(
+                'Gallery',
+                style: AppTextStyles.body(14),
+              ),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _finishScanAndStartQuest() {
     if (_detectedObjects.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -99,9 +173,25 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
       return;
     }
 
-    // Select random object from scanned list
-    _detectedObjects.shuffle();
-    final targetObject = _detectedObjects.first;
+    _startQuestWithObjects(_detectedObjects);
+  }
+
+  void _startQuestWithObjects(List<String> objects) {
+    final availableObjects = List<String>.from(objects)
+      ..removeWhere((item) => item.trim().isEmpty);
+
+    if (availableObjects.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This area does not have any target items yet.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    availableObjects.shuffle();
+    final targetObject = availableObjects.first;
 
     Navigator.push(
       context,
@@ -110,12 +200,123 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
           targetObject: targetObject,
           timerLimit: _gameSettings['timerLimit'] ?? 60,
           scorePerItem: _gameSettings['scorePerItem'] ?? 10,
-          detectedObjects: _detectedObjects,
+          detectedObjects: availableObjects,
           currentScore: 0,
           currentIndex: 1,
-          totalItems: _detectedObjects.length,
+          totalItems: availableObjects.length,
         ),
       ),
+    );
+  }
+
+  void _showAreasSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'CHOOSE A PLAY AREA',
+                  style: luckiestH(20, color: Colors.black87),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                if (_isLoadingAreas)
+                  const Center(child: CircularProgressIndicator(color: Palette.sky))
+                else if (_areas.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Text(
+                      'No areas are available yet. Please add one in Space Adventure CMS.',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.body(14, color: Palette.deepGrey),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.55,
+                    child: ListView.separated(
+                      itemCount: _areas.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final area = _areas[index];
+                        return InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _startQuestWithObjects(area.items);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Palette.sky.withOpacity(0.06),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: Palette.sky.withOpacity(0.2)),
+                            ),
+                            child: Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: area.imageUrl.isNotEmpty
+                                      ? Image.network(
+                                          area.imageUrl,
+                                          width: 76,
+                                          height: 76,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => _areaPlaceholder(),
+                                        )
+                                      : _areaPlaceholder(),
+                                ),
+                                const SizedBox(width: 14),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        area.name.toUpperCase(),
+                                        style: AppTextStyles.label(14, color: Colors.black87),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        area.items.join(', '),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTextStyles.body(12, color: Palette.deepGrey),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios, size: 16, color: Palette.sky),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _areaPlaceholder() {
+    return Container(
+      width: 76,
+      height: 76,
+      color: Palette.sky.withOpacity(0.12),
+      child: const Icon(Icons.meeting_room_outlined, color: Palette.sky, size: 34),
     );
   }
 
@@ -305,6 +506,31 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
               ),
               const SizedBox(height: 24),
 
+              if (_scanError != null && !_isScanning) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.redAccent.withOpacity(0.35)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _scanError!,
+                          style: AppTextStyles.body(12, color: Colors.redAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               // Scanned items output tag view
               if (_detectedObjects.isNotEmpty && !_isScanning) ...[
                 Text(
@@ -352,6 +578,15 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                       bg: Palette.sky,
                       fg: Colors.white,
                       onTap: _isScanning ? null : _captureRoom,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: PillButton(
+                      label: 'VIEW AREAS',
+                      bg: Palette.warning,
+                      fg: Colors.white,
+                      onTap: _isScanning ? null : _showAreasSheet,
                     ),
                   ),
                   if (_roomImageBytes != null && _detectedObjects.isNotEmpty) ...[
