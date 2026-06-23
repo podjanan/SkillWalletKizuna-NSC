@@ -381,6 +381,8 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
       return;
     }
 
+    if (_isSubmitting) return;
+
     final timeSpentSeconds = _elapsedSeconds;
     setState(() => _isSubmitting = true);
 
@@ -1078,6 +1080,7 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
           ),
           child: TextField(
             controller: _descriptionController,
+            enabled: !_isSubmitting,
             maxLines: null,
             decoration: InputDecoration(
               border: InputBorder.none,
@@ -1106,7 +1109,7 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
             style: AppTextStyles.heading(18, color: Colors.black54)),
         const SizedBox(height: 5),
         GestureDetector(
-          onTap: () => _handleMediaSelection(isVideo: false),
+          onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: false),
           child: Container(
             height: 120,
             width: double.infinity,
@@ -1140,7 +1143,7 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                           child: IconButton(
                             icon: const Icon(Icons.close,
                                 color: Colors.white, size: 16),
-                            onPressed: () => setState(() => _imagePath = null),
+                            onPressed: _isSubmitting ? null : () => setState(() => _imagePath = null),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
                                 minWidth: 28, minHeight: 28),
@@ -1175,7 +1178,7 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
             style: AppTextStyles.heading(18, color: Colors.black54)),
         const SizedBox(height: 5),
         GestureDetector(
-          onTap: () => _handleMediaSelection(isVideo: true),
+          onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: true),
           child: Container(
             height: 120,
             width: double.infinity,
@@ -1236,7 +1239,7 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                           child: IconButton(
                             icon: const Icon(Icons.close,
                                 color: Colors.white, size: 16),
-                            onPressed: () => setState(() {
+                            onPressed: _isSubmitting ? null : () => setState(() {
                               _videoPath = null;
                               _videoThumbnail = null;
                             }),

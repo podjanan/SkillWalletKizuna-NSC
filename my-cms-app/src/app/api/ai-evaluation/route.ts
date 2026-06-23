@@ -39,12 +39,83 @@ function cleanText(text: string): string {
     return text.toLowerCase().replace(/[^\w\s]/g, '').trim();
 }
 
+function levenshteinDistance(a: string, b: string): number {
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+    for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+            if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1, // substitution
+                    Math.min(
+                        matrix[i][j - 1] + 1, // insertion
+                        matrix[i - 1][j] + 1  // deletion
+                    )
+                );
+            }
+        }
+    }
+    return matrix[b.length][a.length];
+}
+
+function getLevenshteinSimilarity(a: string, b: string): number {
+    const distance = levenshteinDistance(a, b);
+    const maxLength = Math.max(a.length, b.length);
+    if (maxLength === 0) return 100;
+    return Math.floor((1 - distance / maxLength) * 100);
+}
+
+function countSyllables(word: string): number {
+    word = word.toLowerCase().replace(/[^a-z]/g, "");
+    if (word.length === 0) return 0;
+    if (word.length <= 3) return 1;
+    if (word.endsWith('e')) word = word.slice(0, -1);
+    const matches = word.match(/[aeiouy]+/g);
+    return matches ? matches.length : 1;
+}
+
+function getFirstNSyllables(text: string, n: number): string {
+    const words = text.split(/\s+/).filter(Boolean);
+    const resultWords: string[] = [];
+    let currentSyllableCount = 0;
+    for (const word of words) {
+        if (currentSyllableCount >= n) break;
+        resultWords.push(word);
+        currentSyllableCount += countSyllables(word);
+    }
+    return resultWords.join(" ");
+}
+
 // 🔧 Helper: คำนวณคะแนนความแม่นยำ
 function calculateAccuracy(recognized: string, expected: string): number {
-    const recognizedWords = cleanText(recognized).split(/\s+/).filter(Boolean);
-    const expectedWords = cleanText(expected).split(/\s+/).filter(Boolean);
+    const cleanExpected = cleanText(expected);
+    const cleanRecognized = cleanText(recognized);
 
-    if (expectedWords.length === 0) return 100;
+    if (cleanExpected.length === 0) return 100;
+    if (cleanRecognized.length === 0) return 0;
+
+    // Check if it's a single word (no spaces)
+    const isSingleWord = !cleanExpected.includes(" ");
+    if (isSingleWord) {
+        // Slice the recognized text to match the syllable count of the expected word
+        const expectedSyllables = countSyllables(cleanExpected);
+        const slicedRecognized = cleanText(getFirstNSyllables(recognized, expectedSyllables));
+        
+        // If the sliced recognized word has no spaces, do Levenshtein character comparison
+        if (!slicedRecognized.includes(" ") && slicedRecognized.length > 0) {
+            return getLevenshteinSimilarity(slicedRecognized, cleanExpected);
+        }
+        
+        // Fallback to word-level comparison
+        return slicedRecognized === cleanExpected ? 100 : 0;
+    }
+
+    // Standard word-level accuracy for multi-word phrases/sentences
+    const recognizedWords = cleanRecognized.split(/\s+/).filter(Boolean);
+    const expectedWords = cleanExpected.split(/\s+/).filter(Boolean);
 
     const expectedCounts: Record<string, number> = {};
     for (const w of expectedWords) {
@@ -340,6 +411,9 @@ export async function POST(request: NextRequest) {
             groqForm.append("model", "whisper-large-v3");
             if (whisperLanguage) groqForm.append("language", whisperLanguage);
             groqForm.append("response_format", "json");
+            if (originalText) {
+                groqForm.append("prompt", originalText);
+            }
 
             const groqResponse = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
                 method: "POST",
@@ -361,6 +435,11 @@ export async function POST(request: NextRequest) {
             const groqResult = await groqResponse.json();
             recognizedText = groqResult.text || "";
             score = calculateAccuracy(recognizedText, originalText);
+        }
+
+        // Force output to English characters only if expected language is English
+        if (whisperLanguage === "en") {
+            recognizedText = recognizedText.replace(/[^a-zA-Z\s'.,?-]/g, "").trim();
         }
 
         return NextResponse.json(

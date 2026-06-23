@@ -674,7 +674,7 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
   }
 
   Future<void> _handleFinishQuest() async {
-    if (_childId == null) return;
+    if (_childId == null || _isSubmitting.value) return;
     _isSubmitting.value = true;
 
     _activityStopwatch.stop();

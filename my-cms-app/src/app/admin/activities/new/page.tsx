@@ -39,6 +39,9 @@ export default function NewActivityPage() {
   const router = useRouter();
   
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [timeLimit, setTimeLimit] = useState<number>(60);
+  const [scorePerItem, setScorePerItem] = useState<number>(10);
+  const [wordCategory, setWordCategory] = useState<string>('animals');
   const [formData, setFormData] = useState<ActivityFormData>({
     name: '',
     category: '',
@@ -99,9 +102,9 @@ export default function NewActivityPage() {
     setSelectedCategory(category);
     setFormData(prev => ({
       ...prev,
-      category: category,
+      category: (category === 'voice_quest' || category === 'space_adventure') ? 'ด้านภาษา' : category,
       videoUrl: '',
-      content: '',  // Reset content when changing category
+      content: (category === 'voice_quest' || category === 'space_adventure') ? category : '',
       segments: null
     }));
     setVideoId(null);
@@ -314,12 +317,16 @@ export default function NewActivityPage() {
         segments = formData.segments;
       } else if (selectedCategory === 'ด้านคำนวณ') {
         segments = questions;
+      } else if (selectedCategory === 'voice_quest') {
+        segments = { timeLimit, wordCategory };
+      } else if (selectedCategory === 'space_adventure') {
+        segments = { timeLimit, scorePerItem };
       }
 
       const dataToSubmit = {
         ...formData,
         segments,
-        videoUrl: selectedCategory === 'ด้านคำนวณ' ? '' : formData.videoUrl
+        videoUrl: (selectedCategory === 'ด้านคำนวณ' || selectedCategory === 'voice_quest' || selectedCategory === 'space_adventure') ? '' : formData.videoUrl
       };
 
       const response = await fetch('/api/activities', {
@@ -417,51 +424,91 @@ export default function NewActivityPage() {
       {/* Category Selection */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">
         <h3 className="body-large-semibold text-dark mb-4">
-          Select Activity Category <span className="text-red">*</span>
+          Select Activity Category / Type <span className="text-red">*</span>
         </h3>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           <button
             type="button"
             onClick={() => handleCategorySelect('ด้านภาษา')}
-            className={`p-6 border-2 rounded-lg transition-all ${
+            className={`p-6 border-2 rounded-lg transition-all text-center flex flex-col justify-between h-full ${
               selectedCategory === 'ด้านภาษา'
                 ? 'border-purple bg-purple--light5'
                 : 'border-gray6 hover:border-purple--light3'
             }`}
           >
-            <div className="body-large-semibold mb-2">ด้านภาษา</div>
-            <div className="body-small-regular text-secondary--text">
-              YouTube video with subtitles
+            <div>
+              <div className="body-large-semibold mb-2">ด้านภาษา</div>
+              <div className="body-small-regular text-secondary--text">
+                YouTube video with subtitles
+              </div>
             </div>
           </button>
 
           <button
             type="button"
             onClick={() => handleCategorySelect('ด้านร่างกาย')}
-            className={`p-6 border-2 rounded-lg transition-all ${
+            className={`p-6 border-2 rounded-lg transition-all text-center flex flex-col justify-between h-full ${
               selectedCategory === 'ด้านร่างกาย'
                 ? 'border-purple bg-purple--light5'
                 : 'border-gray6 hover:border-purple--light3'
             }`}
           >
-            <div className="body-large-semibold mb-2">ด้านร่างกาย</div>
-            <div className="body-small-regular text-secondary--text">
-              TikTok video demonstration
+            <div>
+              <div className="body-large-semibold mb-2">ด้านร่างกาย</div>
+              <div className="body-small-regular text-secondary--text">
+                TikTok video demonstration
+              </div>
             </div>
           </button>
 
           <button
             type="button"
             onClick={() => handleCategorySelect('ด้านคำนวณ')}
-            className={`p-6 border-2 rounded-lg transition-all ${
+            className={`p-6 border-2 rounded-lg transition-all text-center flex flex-col justify-between h-full ${
               selectedCategory === 'ด้านคำนวณ'
                 ? 'border-purple bg-purple--light5'
                 : 'border-gray6 hover:border-purple--light3'
             }`}
           >
-            <div className="body-large-semibold mb-2">ด้านคำนวณ</div>
-            <div className="body-small-regular text-secondary--text">
-              Questions and answers
+            <div>
+              <div className="body-large-semibold mb-2">ด้านคำนวณ</div>
+              <div className="body-small-regular text-secondary--text">
+                Questions and answers
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleCategorySelect('voice_quest')}
+            className={`p-6 border-2 rounded-lg transition-all text-center flex flex-col justify-between h-full ${
+              selectedCategory === 'voice_quest'
+                ? 'border-purple bg-purple--light5'
+                : 'border-gray6 hover:border-purple--light3'
+            }`}
+          >
+            <div>
+              <div className="body-large-semibold mb-2">Voice Quest</div>
+              <div className="body-small-regular text-secondary--text">
+                AI English speech matching game
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleCategorySelect('space_adventure')}
+            className={`p-6 border-2 rounded-lg transition-all text-center flex flex-col justify-between h-full ${
+              selectedCategory === 'space_adventure'
+                ? 'border-purple bg-purple--light5'
+                : 'border-gray6 hover:border-purple--light3'
+            }`}
+          >
+            <div>
+              <div className="body-large-semibold mb-2">Space Adventure</div>
+              <div className="body-small-regular text-secondary--text">
+                Vision scavenger match game
+              </div>
             </div>
           </button>
         </div>
@@ -470,6 +517,90 @@ export default function NewActivityPage() {
       {/* Form - Only show after category selection */}
       {selectedCategory && (
         <form onSubmit={handlePublish} className="space-y-6">
+          {selectedCategory === 'space_adventure' && (
+            <div className="bg-white rounded-lg shadow p-6 space-y-4">
+              <label className="body-large-semibold text-dark block">
+                Target Category / หมวดหมู่กิจกรรม <span className="text-red">*</span>
+              </label>
+              <p className="body-small-regular text-secondary--text">
+                Select which category this game will show up under in the app.
+              </p>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
+              >
+                <option value="ด้านภาษา">ด้านภาษา (Language)</option>
+                <option value="ด้านร่างกาย">ด้านร่างกาย (Physical)</option>
+                <option value="ด้านคำนวณ">ด้านคำนวณ (Calculate)</option>
+              </select>
+            </div>
+          )}
+
+          {selectedCategory === 'voice_quest' && (
+            <div className="bg-white rounded-lg shadow p-6 space-y-4">
+              <label className="body-large-semibold text-dark block">
+                หมวดหมู่คำศัพท์ / Vocabulary Category <span className="text-red">*</span>
+              </label>
+              <p className="body-small-regular text-secondary--text">
+                Select which word category should load for this game.
+              </p>
+              <select
+                name="wordCategory"
+                value={wordCategory}
+                onChange={(e) => setWordCategory(e.target.value)}
+                required
+                className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
+              >
+                <option value="animals">🦁 สัตว์ (Animals)</option>
+                <option value="food">🍎 อาหาร (Food)</option>
+                <option value="vehicles">🚀 ยานพาหนะ (Vehicles)</option>
+                <option value="nature">🌈 ธรรมชาติ (Nature)</option>
+                <option value="bedroom">🛏️ ห้องนอน (Bedroom)</option>
+                <option value="school">🎒 โรงเรียน (School)</option>
+              </select>
+            </div>
+          )}
+
+          {(selectedCategory === 'voice_quest' || selectedCategory === 'space_adventure') && (
+            <div className="bg-white rounded-lg shadow p-6 space-y-4">
+              <h3 className="body-large-semibold text-dark">Game Settings</h3>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <label className="body-large-semibold text-dark block mb-2">
+                    Time Limit (Seconds) <span className="text-red">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="10"
+                    value={timeLimit}
+                    onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)}
+                    required
+                    className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
+                  />
+                </div>
+                
+                {selectedCategory === 'space_adventure' && (
+                  <div>
+                    <label className="body-large-semibold text-dark block mb-2">
+                      Score Per Scanned Item <span className="text-red">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={scorePerItem}
+                      onChange={(e) => setScorePerItem(parseInt(e.target.value) || 0)}
+                      required
+                      className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Video Information - Language & Physical */}
           {(selectedCategory === 'ด้านภาษา' || selectedCategory === 'ด้านร่างกาย') && (
             <div className="bg-white rounded-lg shadow p-6 space-y-4">

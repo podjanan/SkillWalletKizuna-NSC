@@ -57,6 +57,9 @@ export default function ActivityDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<ActivityDetail>>({});
   const [saving, setSaving] = useState(false);
+  const [timeLimit, setTimeLimit] = useState<number>(60);
+  const [scorePerItem, setScorePerItem] = useState<number>(10);
+  const [wordCategory, setWordCategory] = useState<string>('animals');
 
   // Segment state สำหรับ Language
   const [languageSegments, setLanguageSegments] = useState<LanguageSegment[]>([]);
@@ -89,7 +92,13 @@ export default function ActivityDetailPage() {
             ? JSON.parse(data.segments)
             : data.segments;
 
-          if (data.category === 'ด้านภาษา') {
+          if (data.content === 'voice_quest') {
+            setTimeLimit(parsedSegments?.timeLimit ?? 60);
+            setWordCategory(parsedSegments?.wordCategory ?? 'animals');
+          } else if (data.content === 'space_adventure') {
+            setTimeLimit(parsedSegments?.timeLimit ?? 60);
+            setScorePerItem(parsedSegments?.scorePerItem ?? 10);
+          } else if (data.category === 'ด้านภาษา') {
             setLanguageSegments(parsedSegments || []);
             setLanguageHistory([parsedSegments || []]);
             setLanguageHistoryIndex(0);
@@ -287,11 +296,15 @@ export default function ActivityDetailPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // เตรียม segments ตาม category
+      // เตรียม segments ตาม category / content
       let segmentsToSave = null;
       let maxScoreToSave = editForm.maxScore;
 
-      if (activity?.category === 'ด้านภาษา') {
+      if (activity?.content === 'voice_quest') {
+        segmentsToSave = { timeLimit, wordCategory };
+      } else if (activity?.content === 'space_adventure') {
+        segmentsToSave = { timeLimit, scorePerItem };
+      } else if (activity?.category === 'ด้านภาษา') {
         segmentsToSave = languageSegments;
       } else if (activity?.category === 'ด้านคำนวณ') {
         segmentsToSave = analysisSegments;
@@ -496,16 +509,46 @@ export default function ActivityDetailPage() {
           {/* Category and Difficulty */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="body-small-medium text-secondary--text mb-2 block">Category</label>
+              <label className="body-small-medium text-secondary--text mb-2 block">
+                {activity.content === 'voice_quest' ? 'Vocabulary Category' : 'Category'}
+              </label>
               {isEditing ? (
-                <input
-                  type="text"
-                  value={editForm.category || ''}
-                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
-                />
+                activity.content === 'voice_quest' ? (
+                  <select
+                    value={wordCategory}
+                    onChange={(e) => setWordCategory(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
+                  >
+                    <option value="animals">🦁 สัตว์ (Animals)</option>
+                    <option value="food">🍎 อาหาร (Food)</option>
+                    <option value="vehicles">🚀 ยานพาหนะ (Vehicles)</option>
+                    <option value="nature">🌈 ธรรมชาติ (Nature)</option>
+                    <option value="bedroom">🛏️ ห้องนอน (Bedroom)</option>
+                    <option value="school">🎒 โรงเรียน (School)</option>
+                  </select>
+                ) : (
+                  <select
+                    value={editForm.category || ''}
+                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
+                  >
+                    <option value="ด้านภาษา">ด้านภาษา (Language)</option>
+                    <option value="ด้านร่างกาย">ด้านร่างกาย (Physical)</option>
+                    <option value="ด้านคำนวณ">ด้านคำนวณ (Calculate)</option>
+                  </select>
+                )
               ) : (
-                <div className="body-medium-medium">{activity.category}</div>
+                <div className="body-medium-medium">
+                  {activity.content === 'voice_quest'
+                    ? wordCategory === 'animals' ? '🦁 Animals (สัตว์)'
+                      : wordCategory === 'food' ? '🍎 Food (อาหาร)'
+                      : wordCategory === 'vehicles' ? '🚀 Vehicles (ยานพาหนะ)'
+                      : wordCategory === 'nature' ? '🌈 Nature (ธรรมชาติ)'
+                      : wordCategory === 'bedroom' ? '🛏️ Bedroom (ห้องนอน)'
+                      : wordCategory === 'school' ? '🎒 School (โรงเรียน)'
+                      : wordCategory
+                    : activity.category}
+                </div>
               )}
             </div>
 
@@ -558,50 +601,94 @@ export default function ActivityDetailPage() {
           </div>
 
           {/* Video URL */}
-          <div>
-            <label className="body-small-medium text-secondary--text mb-2 block">Video URL</label>
-            {isEditing ? (
-              <input
-                type="url"
-                value={editForm.videoUrl || ''}
-                onChange={(e) => setEditForm({ ...editForm, videoUrl: e.target.value })}
-                placeholder="https://..."
-                className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
-              />
-            ) : (
-              activity.videoUrl ? (
-                <a href={activity.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-purple hover:text-purple--dark body-medium-medium">
-                  <Video size={16} />
-                  {activity.videoUrl}
-                </a>
+          {activity.content !== 'voice_quest' && activity.content !== 'space_adventure' && (
+            <div>
+              <label className="body-small-medium text-secondary--text mb-2 block">Video URL</label>
+              {isEditing ? (
+                <input
+                  type="url"
+                  value={editForm.videoUrl || ''}
+                  onChange={(e) => setEditForm({ ...editForm, videoUrl: e.target.value })}
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
+                />
               ) : (
-                <div className="body-medium-regular text-secondary--text">No video URL</div>
-              )
-            )}
-          </div>
+                activity.videoUrl ? (
+                  <a href={activity.videoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-purple hover:text-purple--dark body-medium-medium">
+                    <Video size={16} />
+                    {activity.videoUrl}
+                  </a>
+                ) : (
+                  <div className="body-medium-regular text-secondary--text">No video URL</div>
+                )
+              )}
+            </div>
+          )}
+
+          {/* Game Settings for Custom Games */}
+          {(activity.content === 'voice_quest' || activity.content === 'space_adventure') && (
+            <div className="border border-gray6 rounded-lg p-4 bg-gray--light1 space-y-4">
+              <h4 className="body-medium-semibold">Game Settings</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="body-small-medium text-secondary--text mb-2 block">Time Limit (Seconds)</label>
+                  {isEditing ? (
+                    <input
+                      type="number"
+                      min="10"
+                      value={timeLimit}
+                      onChange={(e) => setTimeLimit(parseInt(e.target.value) || 0)}
+                      className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
+                    />
+                  ) : (
+                    <div className="body-medium-medium">{timeLimit} seconds</div>
+                  )}
+                </div>
+
+                {activity.content === 'space_adventure' && (
+                  <div>
+                    <label className="body-small-medium text-secondary--text mb-2 block">Score Per Scanned Item</label>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        min="1"
+                        value={scorePerItem}
+                        onChange={(e) => setScorePerItem(parseInt(e.target.value) || 0)}
+                        className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
+                      />
+                    ) : (
+                      <div className="body-medium-medium">{scorePerItem} points</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Content Section */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <FileText size={24} className="text-purple" />
-          <h3 className="heading-h5">Content</h3>
+      {activity.content !== 'voice_quest' && activity.content !== 'space_adventure' && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText size={24} className="text-purple" />
+            <h3 className="heading-h5">Content</h3>
+          </div>
+          {isEditing ? (
+            <textarea
+              value={editForm.content || ''}
+              onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
+              rows={8}
+              className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
+            />
+          ) : (
+            <div className="body-medium-regular whitespace-pre-wrap">{activity.content}</div>
+          )}
         </div>
-        {isEditing ? (
-          <textarea
-            value={editForm.content || ''}
-            onChange={(e) => setEditForm({ ...editForm, content: e.target.value })}
-            rows={8}
-            className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
-          />
-        ) : (
-          <div className="body-medium-regular whitespace-pre-wrap">{activity.content}</div>
-        )}
-      </div>
+      )}
 
       {/* Language Segments Editor */}
-      {activity?.category === 'ด้านภาษา' && isEditing && (
+      {activity?.category === 'ด้านภาษา' && activity?.content !== 'voice_quest' && activity?.content !== 'space_adventure' && isEditing && (
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="heading-h5">ประโยค (Segments)</h3>
@@ -709,7 +796,7 @@ export default function ActivityDetailPage() {
       )}
 
       {/* Analysis Segments Editor */}
-      {activity?.category === 'ด้านคำนวณ' && isEditing && (
+      {activity?.category === 'ด้านคำนวณ' && activity?.content !== 'voice_quest' && activity?.content !== 'space_adventure' && isEditing && (
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="heading-h5">คำถาม (Questions)</h3>

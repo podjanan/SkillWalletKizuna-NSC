@@ -111,10 +111,10 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
     );
   }
 
-  Future<void> _submitScoreToLeaderboard() async {
+  Future<void> _submitScoreToLeaderboard(VoidCallback updateDialogState) async {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
-    if (_saved) return;
+    if (_saved || _isSaving) return;
 
     final userProvider = context.read<UserProvider>();
     final childId = userProvider.currentChildId;
@@ -131,6 +131,7 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
     setState(() {
       _isSaving = true;
     });
+    updateDialogState();
 
     try {
       final maxScore = widget.totalItems * widget.scorePerItem;
@@ -159,6 +160,7 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
       setState(() {
         _saved = true;
       });
+      updateDialogState();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Score saved to child history!'),
@@ -180,6 +182,7 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
         setState(() {
           _isSaving = false;
         });
+        updateDialogState();
       }
     }
   }
@@ -189,68 +192,72 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
       context: context,
       barrierDismissible: false,
       builder: (context) => StatefulBuilder(
-        builder: (context, setStateDialog) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          backgroundColor: Colors.white,
-          title: Text(
-            'Mission completed!',
-            textAlign: TextAlign.center,
-            style: AppTextStyles.heading(20, color: Colors.black87),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.stars, color: Palette.yellow, size: 64),
-              const SizedBox(height: 12),
-              Text(
-                'You scanned all items! Awesome work, Space Ranger!',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.body(14, color: Palette.deepGrey),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Total score: ${widget.currentScore}',
-                style: AppTextStyles.heading(18, color: Palette.skyDark),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _nameController,
-                style: const TextStyle(color: Colors.black87),
-                decoration: InputDecoration(
-                  labelText: 'RANGER NAME',
-                  labelStyle: const TextStyle(color: Palette.skyDark),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Palette.divider, width: 2),
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Palette.sky, width: 2),
-                    borderRadius: BorderRadius.circular(15),
+        builder: (context, setStateDialog) => PopScope(
+          canPop: !_isSaving,
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            backgroundColor: Colors.white,
+            title: Text(
+              'Mission completed!',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.heading(20, color: Colors.black87),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.stars, color: Palette.yellow, size: 64),
+                const SizedBox(height: 12),
+                Text(
+                  'You scanned all items! Awesome work, Space Ranger!',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.body(14, color: Palette.deepGrey),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Total score: ${widget.currentScore}',
+                  style: AppTextStyles.heading(18, color: Palette.skyDark),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _nameController,
+                  enabled: !_isSaving,
+                  style: const TextStyle(color: Colors.black87),
+                  decoration: InputDecoration(
+                    labelText: 'RANGER NAME',
+                    labelStyle: const TextStyle(color: Palette.skyDark),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Palette.divider, width: 2),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Palette.sky, width: 2),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
                   ),
                 ),
-              ),
+              ],
+            ),
+            actionsAlignment: MainAxisAlignment.center,
+            actions: [
+              if (_isSaving)
+                const CircularProgressIndicator(color: Palette.sky)
+              else
+                TextButton(
+                  onPressed: () => _submitScoreToLeaderboard(() => setStateDialog(() {})),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Palette.successAlt,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: const Text(
+                      'SUBMIT & EXIT',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
             ],
           ),
-          actionsAlignment: MainAxisAlignment.center,
-          actions: [
-            if (_isSaving)
-              const CircularProgressIndicator(color: Palette.sky)
-            else
-              TextButton(
-                onPressed: _submitScoreToLeaderboard,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Palette.successAlt,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: const Text(
-                    'SUBMIT & EXIT',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-          ],
         ),
       ),
     );

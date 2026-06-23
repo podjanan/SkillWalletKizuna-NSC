@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'space_adventure_quest_screen.dart';
+import '../../../../models/activity.dart';
 import '../../../../services/space_adventure_service.dart';
 import '../../../../theme/palette.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -28,6 +29,8 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
   String? _scanError;
   Map<String, dynamic> _gameSettings = {'scorePerItem': 10, 'timerLimit': 60};
 
+  bool _settingsLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -35,12 +38,40 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     );
-    _loadSettings();
     _loadAreas();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadSettings();
+  }
+
   Future<void> _loadSettings() async {
+    if (_settingsLoaded) return;
+    final activity = ModalRoute.of(context)?.settings.arguments as Activity?;
+    if (activity != null) {
+      _settingsLoaded = true;
+      int timerLimit = 60;
+      int scorePerItem = 10;
+      if (activity.segments is Map) {
+        final map = activity.segments as Map;
+        timerLimit = int.tryParse(map['timeLimit']?.toString() ?? '60') ?? 60;
+        scorePerItem = int.tryParse(map['scorePerItem']?.toString() ?? '10') ?? 10;
+      }
+      if (mounted) {
+        setState(() {
+          _gameSettings = {
+            'timerLimit': timerLimit,
+            'scorePerItem': scorePerItem,
+          };
+        });
+      }
+      return;
+    }
+
     final settings = await _spaceService.getSettings();
+    _settingsLoaded = true;
     if (mounted) {
       setState(() {
         _gameSettings = settings;

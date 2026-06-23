@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
           point: scoreToAdd,
           time_spent: timeSpent || null,
           date: new Date(),
-          segment_results: Array.isArray(completedItems) ? completedItems : null,
+          segment_results: (Array.isArray(completedItems) ? completedItems : null) as any,
           evidence: {
             type: 'space_adventure',
             category: 'LANGUAGE',

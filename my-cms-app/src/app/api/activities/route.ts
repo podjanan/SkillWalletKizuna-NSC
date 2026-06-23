@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
-import { shouldInjectAiWordActivity, shouldInjectSpaceAdventure } from '@/lib/ai-word-game';
 
 // Helper function to safely serialize JSON fields
 function safeJsonSerialize(value: any) {
@@ -168,16 +167,7 @@ export async function GET(request: Request) {
       }
     });
 
-    const virtualAiWordActivity = await shouldInjectAiWordActivity(category, ownedBy);
-    const virtualSpaceAdventure = await shouldInjectSpaceAdventure(category, ownedBy);
-    
-    let data = [...activitiesResponse];
-    if (virtualSpaceAdventure) {
-      data = [virtualSpaceAdventure, ...data];
-    }
-    if (virtualAiWordActivity) {
-      data = [virtualAiWordActivity, ...data];
-    }
+    const data = [...activitiesResponse];
 
     // Return with proper structure (match frontend expectations)
     const response = {
@@ -186,7 +176,7 @@ export async function GET(request: Request) {
       pagination: {
         currentPage: page,
         totalPages,
-        total: totalCount + (virtualAiWordActivity ? 1 : 0) + (virtualSpaceAdventure ? 1 : 0),
+        total: totalCount,
         limit
       }
     };

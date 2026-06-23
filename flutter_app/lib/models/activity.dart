@@ -86,7 +86,9 @@ class Activity {
       tiktokHtmlContent: pick<String>('tiktokhtmlcontent', 'tiktokHtmlContent'),
       isAiWordGame: json['isAiWordGame'] == true ||
           (json['activity_id'] ?? json['activityId'] ?? json['id']) ==
-              'ai-word-game',
+              'ai-word-game' ||
+          json['content'] == 'voice_quest' ||
+          json['content'] == 'ai-word-game',
       createdAt: _tryParseDate(json['created_at'] ?? json['createdAt']),
       updatedAt: _tryParseDate(json['update_at'] ?? json['updatedAt']),
     );

@@ -566,9 +566,16 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       onTap: () {
-        // ✅ ตรวจสอบว่าเลือกเด็กแล้วหรือยัง
         if (activity.isAiWordGame) {
-          Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame);
+          Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame, arguments: activity);
+          return;
+        }
+
+        if (activity.id == 'space-adventure' ||
+            activity.content == 'Space Adventure' ||
+            activity.content == 'space_adventure' ||
+            activity.content == 'space-adventure') {
+          Navigator.pushNamed(context, AppRoutes.spaceAdventure, arguments: activity);
           return;
         }
 
@@ -601,7 +608,9 @@ class _HomeScreenState extends State<HomeScreen> {
             if (activity.isAiWordGame)
               const GameActivityCover(type: GameCoverType.voiceQuest)
             else if (activity.id == 'space-adventure' ||
-                activity.content == 'Space Adventure')
+                activity.content == 'Space Adventure' ||
+                activity.content == 'space_adventure' ||
+                activity.content == 'space-adventure')
               const GameActivityCover(type: GameCoverType.spaceAdventure)
             else if (activity.thumbnailUrl?.startsWith('asset:') ?? false)
               Image.asset(

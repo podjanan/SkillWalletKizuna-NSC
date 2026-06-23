@@ -11,6 +11,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:provider/provider.dart';
 
 import '../../../models/dynamic_vocabulary_item.dart';
+import '../../../models/activity.dart';
 import '../../../routes/app_routes.dart';
 import '../../../providers/user_provider.dart';
 import '../../../services/dynamic_vocabulary_service.dart';
@@ -76,6 +77,7 @@ class _DynamicVocabularyGameScreenState
   ];
 
   // Game States
+  bool _isCustomActivity = false;
   _ScreenState _screen = _ScreenState.startScreen;
   List<_VocabularyCategory> _categories = _fallbackCategories;
   String? _selectedCategory;
@@ -117,6 +119,8 @@ class _DynamicVocabularyGameScreenState
       (_screen == _ScreenState.gameplayScreen ||
           _screen == _ScreenState.resultScreen);
 
+  bool _categoriesLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -125,8 +129,16 @@ class _DynamicVocabularyGameScreenState
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
-    _loadCategories();
     _loadHighScore();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_categoriesLoaded) {
+      _categoriesLoaded = true;
+      _loadCategories();
+    }
   }
 
   @override
@@ -191,12 +203,45 @@ class _DynamicVocabularyGameScreenState
   // Load Categories
   Future<void> _loadCategories() async {
     try {
+      final activity = ModalRoute.of(context)?.settings.arguments as Activity?;
       final bootstrap = await _service.fetchBootstrap();
       final categories = bootstrap.categories;
       final settings = bootstrap.settings;
-      final timeLimitMinutes = _positiveInt(settings['timeLimitMinutes']);
-      final maxScore = _positiveInt(settings['maxScore']);
+      
+      int? timeLimitMinutes;
+      int? maxScore;
+      String? difficulty;
+      String? wordCategory;
+      
+      if (activity != null) {
+        maxScore = activity.maxScore;
+        final diffStr = activity.difficulty.trim().toUpperCase();
+        if (diffStr == 'ง่าย' || diffStr == 'EASY') {
+          difficulty = 'easy';
+        } else if (diffStr == 'กลาง' || diffStr == 'MEDIUM') {
+          difficulty = 'medium';
+        } else if (diffStr == 'ยาก' || diffStr == 'HARD') {
+          difficulty = 'hard';
+        }
+        
+        if (activity.segments is Map) {
+          final segmentsMap = activity.segments as Map;
+          final timeLimitSec = segmentsMap['timeLimit'];
+          if (timeLimitSec != null) {
+            timeLimitMinutes = (int.tryParse(timeLimitSec.toString()) ?? 60) ~/ 60;
+            if (timeLimitMinutes == 0) timeLimitMinutes = 1;
+          }
+          final wordCat = segmentsMap['wordCategory'];
+          if (wordCat != null) {
+            wordCategory = wordCat.toString();
+          }
+        }
+      }
+
+      timeLimitMinutes ??= _positiveInt(settings['timeLimitMinutes']);
+      maxScore ??= _positiveInt(settings['maxScore']);
       final coverImageUrl = settings['coverImageUrl']?.toString().trim();
+      
       if (!mounted) return;
       setState(() {
         _categories = categories.isEmpty
@@ -215,9 +260,16 @@ class _DynamicVocabularyGameScreenState
           _sessionTimeLimitSeconds = timeLimitMinutes * 60;
           _secondsLeft = _sessionTimeLimitSeconds;
         }
+        if (difficulty != null) {
+          _difficulty = difficulty;
+        }
+        if (wordCategory != null) {
+          _selectedCategory = wordCategory;
+        }
         if (coverImageUrl != null && coverImageUrl.isNotEmpty) {
           _coverImageUrl = coverImageUrl;
         }
+        _isCustomActivity = activity != null;
         _isLoadingCategories = false;
       });
     } catch (_) {
@@ -294,12 +346,27 @@ class _DynamicVocabularyGameScreenState
               DynamicVocabularyItem.fromJson(json as Map<String, dynamic>))
           .toList();
       final settings = sessionData['settings'] as Map<String, dynamic>? ?? {};
-      final sessionMaxScore = _positiveInt(sessionData['maxScore']) ??
+
+      final activity = ModalRoute.of(context)?.settings.arguments as Activity?;
+      int? activityMaxScore;
+      int? activityTimeLimitSeconds;
+      if (activity != null) {
+        activityMaxScore = activity.maxScore;
+        if (activity.segments is Map) {
+          final segmentsMap = activity.segments as Map;
+          final timeLimitSec = segmentsMap['timeLimit'];
+          if (timeLimitSec != null) {
+            activityTimeLimitSeconds = int.tryParse(timeLimitSec.toString()) ?? 60;
+          }
+        }
+      }
+
+      final sessionMaxScore = activityMaxScore ??
+          _positiveInt(sessionData['maxScore']) ??
           _positiveInt(settings['maxScore']) ??
           loadedWords.length * 50;
-      final sessionTimeLimitMinutes =
-          _positiveInt(settings['timeLimitMinutes']) ?? 10;
-      final sessionTimeLimitSeconds = sessionTimeLimitMinutes * 60;
+      final sessionTimeLimitSeconds = activityTimeLimitSeconds ??
+          (_positiveInt(settings['timeLimitMinutes']) ?? 10) * 60;
       final coverImageUrl = settings['coverImageUrl']?.toString().trim();
 
       if (loadedWords.isEmpty) {
@@ -502,12 +569,14 @@ class _DynamicVocabularyGameScreenState
           .replaceAll(RegExp(r'[.,\/#!$%\^&\*;:{}=\-_`~()]'), '')
           .toLowerCase()
           .trim();
-      final wordCorrect = cleanTranscribed == cleanTarget;
+      
+      final hasWord = cleanTranscribed.split(RegExp(r'\s+')).contains(cleanTarget);
+      final wordCorrect = cleanTranscribed == cleanTarget || hasWord || similarityScore >= 60.0;
       final wordMaxScore = _wordMaxScore(_currentIndex);
       final wordScore = wordCorrect
-          ? (similarityScore >= 80
+          ? (similarityScore >= 80.0
               ? wordMaxScore
-              : _partialWordScore(wordMaxScore))
+              : (similarityScore >= 60.0 ? _partialWordScore(wordMaxScore) : 0))
           : 0;
 
       await _clearCurrentRecordedAudio();
@@ -945,68 +1014,68 @@ class _DynamicVocabularyGameScreenState
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-
-              // Selectors
-              DropdownButtonFormField<String>(
-                initialValue: _selectedCategory ?? _categories.first.id,
-                decoration: InputDecoration(
-                  labelText: 'Choose Category',
-                  labelStyle: AppTextStyles.label(14, color: Palette.deepGrey),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+              if (!_isCustomActivity) ...[
+                // Selectors
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedCategory ?? _categories.first.id,
+                  decoration: InputDecoration(
+                    labelText: 'Choose Category',
+                    labelStyle: AppTextStyles.label(14, color: Palette.deepGrey),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Palette.sky, width: 2),
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Palette.sky, width: 2),
-                  ),
+                  items: _categories.map((c) {
+                    return DropdownMenuItem<String>(
+                      value: c.id,
+                      child: Text('${c.icon} ${c.label}'),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() => _selectedCategory = value);
+                  },
                 ),
-                items: _categories.map((c) {
-                  return DropdownMenuItem<String>(
-                    value: c.id,
-                    child: Text('${c.icon} ${c.label}'),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() => _selectedCategory = value);
-                },
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: _difficulty,
-                decoration: InputDecoration(
-                  labelText: 'Choose Difficulty',
-                  labelStyle: AppTextStyles.label(14, color: Palette.deepGrey),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _difficulty,
+                  decoration: InputDecoration(
+                    labelText: 'Choose Difficulty',
+                    labelStyle: AppTextStyles.label(14, color: Palette.deepGrey),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(color: Palette.sky, width: 2),
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: Palette.sky, width: 2),
-                  ),
+                  items: const [
+                    DropdownMenuItem(
+                        value: 'easy', child: Text('🟩 Easy (ง่าย)')),
+                    DropdownMenuItem(
+                        value: 'medium', child: Text('🟨 Medium (ปานกลาง)')),
+                    DropdownMenuItem(value: 'hard', child: Text('🟥 Hard (ยาก)')),
+                  ],
+                  onChanged: (value) {
+                    setState(() => _difficulty = value ?? 'easy');
+                  },
                 ),
-                items: const [
-                  DropdownMenuItem(
-                      value: 'easy', child: Text('🟩 Easy (ง่าย)')),
-                  DropdownMenuItem(
-                      value: 'medium', child: Text('🟨 Medium (ปานกลาง)')),
-                  DropdownMenuItem(value: 'hard', child: Text('🟥 Hard (ยาก)')),
-                ],
-                onChanged: (value) {
-                  setState(() => _difficulty = value ?? 'easy');
-                },
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
+              ],
 
               // Category card preview banner
               AnimatedContainer(

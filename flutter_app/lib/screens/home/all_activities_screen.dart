@@ -194,7 +194,7 @@ class _ActivityGridCard extends StatelessWidget {
 
     void navigate() {
       if (activity.isAiWordGame) {
-        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame);
+        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame, arguments: activity);
         return;
       }
 
@@ -204,8 +204,11 @@ class _ActivityGridCard extends StatelessWidget {
         return;
       }
 
-      if (activity.id == 'space-adventure' || activity.content == 'Space Adventure') {
-        Navigator.pushNamed(context, AppRoutes.spaceAdventure);
+      if (activity.id == 'space-adventure' ||
+          activity.content == 'Space Adventure' ||
+          activity.content == 'space_adventure' ||
+          activity.content == 'space-adventure') {
+        Navigator.pushNamed(context, AppRoutes.spaceAdventure, arguments: activity);
         return;
       }
 
@@ -279,7 +282,9 @@ class _ActivityGridCard extends StatelessWidget {
   Widget _buildThumbnail(
       {required bool hasTikTok, String? youtubeThumbnailUrl}) {
     if (activity.id == 'space-adventure' ||
-        activity.content == 'Space Adventure') {
+        activity.content == 'Space Adventure' ||
+        activity.content == 'space_adventure' ||
+        activity.content == 'space-adventure') {
       return const GameActivityCover(
         type: GameCoverType.spaceAdventure,
         compact: true,
