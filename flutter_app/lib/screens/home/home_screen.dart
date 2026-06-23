@@ -16,6 +16,7 @@ import '../../widgets/child_avatar.dart';
 import '../../widgets/draft_banner.dart';
 import '../../widgets/scrollable_activity_list.dart';
 import '../../widgets/main_bottom_nav.dart';
+import '../../widgets/game_activity_cover.dart';
 import '../profile/profile_screen.dart';
 import '../activities/create_activity_screen.dart';
 import '../child/add_child_screen.dart';
@@ -597,12 +598,14 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (activity.isAiWordGame ||
-                (activity.thumbnailUrl?.startsWith('asset:') ?? false))
+            if (activity.isAiWordGame)
+              const GameActivityCover(type: GameCoverType.voiceQuest)
+            else if (activity.id == 'space-adventure' ||
+                activity.content == 'Space Adventure')
+              const GameActivityCover(type: GameCoverType.spaceAdventure)
+            else if (activity.thumbnailUrl?.startsWith('asset:') ?? false)
               Image.asset(
-                (activity.thumbnailUrl ??
-                        'asset:assets/images/voice_quest_cover.png')
-                    .replaceFirst('asset:', ''),
+                activity.thumbnailUrl!.replaceFirst('asset:', ''),
                 fit: BoxFit.cover,
               )
             else if (thumbnailUrl != null && hasYouTubeVideo)
@@ -1137,70 +1140,86 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const SizedBox(height: 30),
 
-        // Space Adventure Game Launcher Banner
+        // Space Adventure — featured card matching app activity style
         GestureDetector(
           onTap: () => Navigator.pushNamed(context, AppRoutes.spaceAdventure),
           child: Container(
-            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF0F0C20), Color(0xFF3F2B96)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF3F2B96).withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: Palette.cardShadow,
             ),
-            child: Row(
-              children: [
-                // Space icon/avatar
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white10,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.cyanAccent.withOpacity(0.5), width: 1.5),
+            clipBehavior: Clip.antiAlias,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 110,
+                    child: GameActivityCover(
+                      type: GameCoverType.spaceAdventure,
+                      compact: true,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.rocket_launch_rounded,
-                    color: Colors.cyanAccent,
-                    size: 32,
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Palette.teal,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'NEW',
+                              style: AppTextStyles.label(10, color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Space Adventure',
+                            style: AppTextStyles.heading(16, color: Palette.text),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Scan your room and find hidden items!',
+                            style: AppTextStyles.body(12, color: Palette.deepGrey),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.star_rounded,
+                                size: 14,
+                                color: Palette.pink,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '100',
+                                style: AppTextStyles.label(12, color: Palette.pink),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'NEW GAME AVAILABLE!',
-                        style: AppTextStyles.label(11, color: Colors.cyanAccent),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Space Adventure Scavenger',
-                        style: AppTextStyles.heading(18, color: Colors.white),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Scan your room with Vision AI & find hidden cosmic items!',
-                        style: AppTextStyles.body(12, color: Colors.white70),
-                      ),
-                    ],
+                  const Padding(
+                    padding: EdgeInsets.only(right: 14),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: Palette.sky,
+                    ),
                   ),
-                ),
-                const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: Colors.white70,
-                  size: 20,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

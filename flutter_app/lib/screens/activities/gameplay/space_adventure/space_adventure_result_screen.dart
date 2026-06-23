@@ -193,9 +193,9 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           backgroundColor: Colors.white,
           title: Text(
-            'MISSION COMPLETED!',
+            'Mission completed!',
             textAlign: TextAlign.center,
-            style: luckiestH(22, color: Colors.black87),
+            style: AppTextStyles.heading(20, color: Colors.black87),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -209,8 +209,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
               ),
               const SizedBox(height: 16),
               Text(
-                'TOTAL SCORE: ${widget.currentScore}',
-                style: luckiestH(20, color: Palette.skyDark),
+                'Total score: ${widget.currentScore}',
+                style: AppTextStyles.heading(18, color: Palette.skyDark),
               ),
               const SizedBox(height: 20),
               TextField(
@@ -265,8 +265,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Text(
-          'SCAN RESULTS',
-          style: luckiestH(22, color: Colors.black87),
+          'Scan results',
+          style: AppTextStyles.heading(20, color: Colors.black87),
         ),
         centerTitle: true,
       ),
@@ -328,8 +328,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                         ),
                         const SizedBox(width: 10),
                         Text(
-                          widget.isMatch ? 'MATCH!' : 'TRY AGAIN',
-                          style: luckiestH(30,
+                          widget.isMatch ? 'Match!' : 'Try again',
+                          style: AppTextStyles.heading(26,
                               color: widget.isMatch ? Palette.successAlt : Palette.errorStrong),
                         ),
                       ],
@@ -337,8 +337,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                     const SizedBox(height: 10),
                     // Encouragement/AI feedback
                     Text(
-                      widget.isMatch ? 'Very Good! 🚀' : 'Oops, close! 📡',
-                      style: luckiestH(18, color: Palette.teal),
+                      widget.isMatch ? 'Great job!' : 'Almost there!',
+                      style: AppTextStyles.heading(16, color: Palette.teal),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -371,21 +371,23 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                 children: [
                   if (widget.imageBytes != null) ...[
                     Expanded(
-                      child: PillButton(
-                        label: 'SHARE PHOTO',
-                        bg: Palette.sky,
-                        fg: Colors.white,
+                      child: GradientButton.primary(
+                        label: 'Share photo',
                         onTap: _sharePhoto,
+                        fontSize: 14,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                     const SizedBox(width: 12),
                   ],
                   Expanded(
-                    child: PillButton(
-                      label: (widget.detectedObjects.length <= 1) ? 'FINISH MISSION' : 'NEXT QUEST',
-                      bg: Palette.successAlt,
-                      fg: Colors.white,
+                    child: GradientButton.success(
+                      label: (widget.detectedObjects.length <= 1)
+                          ? 'Finish mission'
+                          : 'Next quest',
                       onTap: _nextQuest,
+                      fontSize: 14,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
                 ],
@@ -394,7 +396,7 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
               TextButton(
                 onPressed: _showGameOverDialog,
                 child: Text(
-                  'FINISH MISSION & RECORD SCORE',
+                  'Finish mission & save score',
                   style: AppTextStyles.label(12, color: Palette.deepGrey),
                 ),
               )

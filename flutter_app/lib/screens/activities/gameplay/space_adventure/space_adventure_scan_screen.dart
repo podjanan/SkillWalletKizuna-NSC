@@ -7,6 +7,7 @@ import '../../../../services/space_adventure_service.dart';
 import '../../../../theme/palette.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../widgets/ui.dart';
+import '../../../../widgets/game_activity_cover.dart';
 
 class SpaceAdventureScanScreen extends StatefulWidget {
   const SpaceAdventureScanScreen({super.key});
@@ -225,8 +226,8 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'CHOOSE A PLAY AREA',
-                  style: luckiestH(20, color: Colors.black87),
+                  'Choose a play area',
+                  style: AppTextStyles.heading(18, color: Colors.black87),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -332,8 +333,8 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'SPACE SCANNER',
-          style: luckiestH(22, color: Colors.black87),
+          'Space Adventure',
+          style: AppTextStyles.heading(20, color: Colors.black87),
         ),
         centerTitle: true,
       ),
@@ -348,19 +349,21 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Palette.divider,
-                    width: 2,
-                  ),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: Palette.cardShadow,
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.rocket_launch_rounded,
-                      color: Palette.sky,
-                      size: 32,
+                    SizedBox(
+                      width: 72,
+                      height: 72,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: GameActivityCover(
+                          type: GameCoverType.spaceAdventure,
+                          compact: true,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -368,12 +371,12 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'PHASE 1: INITIAL ROOM SCAN',
+                            'Phase 1: Room scan',
                             style: AppTextStyles.label(13, color: Palette.sky),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Take a photo of your room to detect target quest items hidden in space!',
+                            'Take a photo of your room to find quest items.',
                             style: AppTextStyles.body(12, color: Colors.black87),
                           ),
                         ],
@@ -421,12 +424,12 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              'MAP SCAN COORDINATES',
-                              style: luckiestH(18, color: Colors.black87),
+                              'Scan your room',
+                              style: AppTextStyles.heading(18, color: Colors.black87),
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              'Tap button below to snap room photo',
+                              'Tap below to take a photo',
                               style: AppTextStyles.body(13, color: Colors.black54),
                             ),
                           ],
@@ -491,7 +494,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
-                                    'SCANNING FOR ITEMS...',
+                                    'Scanning for items...',
                                     style: AppTextStyles.label(13, color: Palette.sky),
                                   ),
                                 ],
@@ -534,7 +537,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
               // Scanned items output tag view
               if (_detectedObjects.isNotEmpty && !_isScanning) ...[
                 Text(
-                  'ITEMS DETECTED IN YOUR ROOM:',
+                  'Items detected:',
                   style: AppTextStyles.label(12, color: Colors.black54),
                 ),
                 const SizedBox(height: 10),
@@ -573,30 +576,33 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
               Row(
                 children: [
                   Expanded(
-                    child: PillButton(
-                      label: _roomImageBytes == null ? 'SCAN ROOM' : 'RE-SCAN',
-                      bg: Palette.sky,
-                      fg: Colors.white,
+                    child: GradientButton.primary(
+                      label: _roomImageBytes == null ? 'Scan room' : 'Re-scan',
                       onTap: _isScanning ? null : _captureRoom,
+                      fontSize: 14,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: PillButton(
-                      label: 'VIEW AREAS',
-                      bg: Palette.warning,
-                      fg: Colors.white,
+                    child: GradientButton(
+                      label: 'View areas',
+                      gradient: LinearGradient(
+                        colors: [Palette.warningLight, Palette.warning],
+                      ),
                       onTap: _isScanning ? null : _showAreasSheet,
+                      fontSize: 14,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
                   if (_roomImageBytes != null && _detectedObjects.isNotEmpty) ...[
                     const SizedBox(width: 12),
                     Expanded(
-                      child: PillButton(
-                        label: 'FINISH SCAN',
-                        bg: Palette.successAlt,
-                        fg: Colors.white,
+                      child: GradientButton.success(
+                        label: 'Start quest',
                         onTap: _isScanning ? null : _finishScanAndStartQuest,
+                        fontSize: 14,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                   ],

@@ -9,6 +9,7 @@ import '../../services/activity_service.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/palette.dart';
 import '../../utils/youtube_helper.dart';
+import '../../widgets/game_activity_cover.dart';
 
 enum ActivityListType { popular, newActivity }
 
@@ -277,38 +278,31 @@ class _ActivityGridCard extends StatelessWidget {
 
   Widget _buildThumbnail(
       {required bool hasTikTok, String? youtubeThumbnailUrl}) {
-    if (activity.id == 'space-adventure' || activity.content == 'Space Adventure') {
-      return Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF0F0C20), Color(0xFF3F2B96)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        alignment: Alignment.center,
-        child: const Icon(
-          Icons.rocket_launch_rounded,
-          color: Colors.cyanAccent,
-          size: 40,
-        ),
+    if (activity.id == 'space-adventure' ||
+        activity.content == 'Space Adventure') {
+      return const GameActivityCover(
+        type: GameCoverType.spaceAdventure,
+        compact: true,
       );
     }
 
-    final category = activity.category;
+    if (activity.isAiWordGame) {
+      return const GameActivityCover(
+        type: GameCoverType.voiceQuest,
+        compact: true,
+      );
+    }
 
-    if (activity.isAiWordGame ||
-        (activity.thumbnailUrl?.startsWith('asset:') ?? false)) {
+    if (activity.thumbnailUrl?.startsWith('asset:') ?? false) {
       return Image.asset(
-        (activity.thumbnailUrl ?? 'asset:assets/images/voice_quest_cover.png')
-            .replaceFirst('asset:', ''),
+        activity.thumbnailUrl!.replaceFirst('asset:', ''),
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
       );
     }
+
+    final category = activity.category;
 
     if (hasTikTok && activity.thumbnailUrl != null) {
       return Image.network(activity.thumbnailUrl!,

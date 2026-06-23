@@ -158,8 +158,8 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'OBJECT HUNTER',
-          style: luckiestH(22, color: Colors.black87),
+          'Object Hunter',
+          style: AppTextStyles.heading(20, color: Colors.black87),
         ),
         centerTitle: true,
         actions: [
@@ -174,7 +174,7 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                   border: Border.all(color: Palette.sky.withOpacity(0.3)),
                 ),
                 child: Text(
-                  'SCORE: ${widget.currentScore}',
+                  'Score: ${widget.currentScore}',
                   style: AppTextStyles.label(13, color: Palette.skyDark),
                 ),
               ),
@@ -193,11 +193,7 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Palette.divider,
-                    width: 2,
-                  ),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: Palette.cardShadow,
                 ),
                 child: Column(
@@ -210,7 +206,7 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                         const SizedBox(width: 8),
                         Text(
                           '00:${_timeLeft.toString().padLeft(2, '0')}',
-                          style: luckiestH(28, color: Colors.black87),
+                          style: AppTextStyles.heading(28, color: Colors.black87),
                         ),
                       ],
                     ),
@@ -227,14 +223,14 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'SPACE MISSION QUEST: ${widget.currentIndex} / ${widget.totalItems}',
+                      'Quest ${widget.currentIndex} / ${widget.totalItems}',
                       style: AppTextStyles.label(12, color: Palette.sky),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'FIND ITEM: ${widget.targetObject.toUpperCase()}',
+                      'Find: ${widget.targetObject}',
                       textAlign: TextAlign.center,
-                      style: luckiestH(24, color: Colors.black87),
+                      style: AppTextStyles.heading(22, color: Colors.black87),
                     ),
                   ],
                 ),
@@ -278,8 +274,8 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                             ),
                             const SizedBox(height: 20),
                             Text(
-                              'TAKE TARGET PHOTO',
-                              style: luckiestH(16, color: Colors.black54),
+                              'Take target photo',
+                              style: AppTextStyles.label(14, color: Colors.black54),
                             ),
                           ],
                         ),
@@ -302,8 +298,8 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                               const CircularProgressIndicator(color: Palette.sky),
                               const SizedBox(height: 18),
                               Text(
-                                'AI REF REFEREE VERIFYING...',
-                                style: luckiestH(16, color: Palette.skyDark),
+                                'Verifying match...',
+                                style: AppTextStyles.label(14, color: Palette.skyDark),
                               ),
                             ],
                           ),
@@ -319,21 +315,21 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: PillButton(
-                      label: _capturedImageBytes == null ? 'READY/CAPTURE' : 'RE-TAKE',
-                      bg: Palette.sky,
-                      fg: Colors.white,
+                    child: GradientButton.primary(
+                      label: _capturedImageBytes == null ? 'Capture' : 'Re-take',
                       onTap: _isEvaluating ? null : _captureItem,
+                      fontSize: 14,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
                   if (_capturedImageBytes != null) ...[
                     const SizedBox(width: 12),
                     Expanded(
-                      child: PillButton(
-                        label: 'VERIFY MATCH',
-                        bg: Palette.successAlt,
-                        fg: Colors.white,
+                      child: GradientButton.success(
+                        label: 'Verify match',
                         onTap: _isEvaluating ? null : _verifyMatch,
+                        fontSize: 14,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
                   ],

@@ -18,6 +18,8 @@ import '../../../services/activity_service.dart';
 import '../../../services/child_service.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/palette.dart';
+import '../../../widgets/game_activity_cover.dart';
+import '../../../widgets/ui.dart';
 
 enum _ScreenState { startScreen, gameplayScreen, resultScreen, summaryScreen }
 
@@ -101,6 +103,14 @@ class _DynamicVocabularyGameScreenState
   int? _savedWallet;
   String? _errorMessage;
   String _tempFilePath = '';
+
+  static const Color _languageAccent = Color(0xFFFFB300);
+
+  BoxDecoration get _cardDecoration => BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: Palette.cardShadow,
+      );
 
   bool get _shouldConfirmExit =>
       _words.isNotEmpty &&
@@ -603,31 +613,11 @@ class _DynamicVocabularyGameScreenState
   }
 
   Widget _buildCoverImage() {
-    final cover = _coverImageUrl.trim().isEmpty
-        ? 'asset:assets/images/voice_quest_cover.png'
-        : _coverImageUrl.trim();
-    if (cover.startsWith('asset:')) {
-      return Image.asset(
-        cover.replaceFirst('asset:', ''),
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildCoverPlaceholder(),
-      );
-    }
-    return Image.network(
-      cover,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => _buildCoverPlaceholder(),
-    );
+    return const GameActivityCover(type: GameCoverType.voiceQuest);
   }
 
   Widget _buildCoverPlaceholder() {
-    return Container(
-      color: const Color(0xFFEAF3FF),
-      child: const Center(
-        child:
-            Icon(Icons.record_voice_over_rounded, color: Palette.sky, size: 56),
-      ),
-    );
+    return const GameActivityCover(type: GameCoverType.voiceQuest);
   }
 
   Future<void> _retryWord() async {
@@ -822,34 +812,25 @@ class _DynamicVocabularyGameScreenState
         if (didPop) return;
         await _handleBackPressed();
       },
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF0F6FF), Color(0xFFE2EEFF)],
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
+            onPressed: _handleBackPressed,
+          ),
+          centerTitle: true,
+          title: Text(
+            'Voice Quest',
+            style: AppTextStyles.heading(20, color: Palette.text),
           ),
         ),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
-              onPressed: _handleBackPressed,
-            ),
-            centerTitle: true,
-            title: Text(
-              'VOICE QUEST',
-              style: AppTextStyles.heading(20, color: Palette.text),
-            ),
-          ),
-          body: SafeArea(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: _buildScreen(),
-            ),
+        body: SafeArea(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _buildScreen(),
           ),
         ),
       ),
@@ -917,19 +898,14 @@ class _DynamicVocabularyGameScreenState
         // Hero Card & Preview
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Palette.text, width: 3),
-            boxShadow: [
-              BoxShadow(color: Palette.text, offset: const Offset(0, 8)),
-            ],
+          decoration: _cardDecoration.copyWith(
+            borderRadius: BorderRadius.circular(24),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 child: AspectRatio(
                   aspectRatio: 16 / 9,
                   child: _buildCoverImage(),
@@ -943,28 +919,28 @@ class _DynamicVocabularyGameScreenState
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE5DFFF),
+                        color: _languageAccent,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(Icons.star_rounded,
-                              color: Palette.purple, size: 14),
+                              color: Colors.white, size: 14),
                           const SizedBox(width: 4),
                           Text(
-                            'VOICE QUEST',
+                            'Language',
                             style:
-                                AppTextStyles.label(11, color: Palette.purple),
+                                AppTextStyles.label(11, color: Colors.white),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Say the Word,\nWin the Stars! ⭐️',
+                      'Say the word,\nwin the stars!',
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.heading(28, color: Palette.text),
+                      style: AppTextStyles.heading(24, color: Palette.text),
                     ),
                   ],
                 ),
@@ -978,9 +954,16 @@ class _DynamicVocabularyGameScreenState
                   labelText: 'Choose Category',
                   labelStyle: AppTextStyles.label(14, color: Palette.deepGrey),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide:
-                        const BorderSide(color: Palette.deepGrey, width: 2),
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Palette.sky, width: 2),
                   ),
                 ),
                 items: _categories.map((c) {
@@ -1000,9 +983,16 @@ class _DynamicVocabularyGameScreenState
                   labelText: 'Choose Difficulty',
                   labelStyle: AppTextStyles.label(14, color: Palette.deepGrey),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide:
-                        const BorderSide(color: Palette.deepGrey, width: 2),
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Palette.sky, width: 2),
                   ),
                 ),
                 items: const [
@@ -1094,36 +1084,19 @@ class _DynamicVocabularyGameScreenState
           ),
 
         // Start Button
-        GestureDetector(
-          onTap: _isLoading ? null : _startGame,
-          child: Container(
-            height: 64,
-            decoration: BoxDecoration(
-              color: Palette.successAlt,
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Palette.text, width: 3),
-              boxShadow: [
-                BoxShadow(
-                    color: const Color(0xFF166534), offset: const Offset(0, 6)),
-              ],
-            ),
-            alignment: Alignment.center,
-            child: _isLoading
-                ? const CircularProgressIndicator(color: Colors.white)
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.play_arrow_rounded,
-                          color: Colors.white, size: 28),
-                      const SizedBox(width: 8),
-                      Text(
-                        'START QUEST',
-                        style: AppTextStyles.heading(20, color: Colors.white),
-                      ),
-                    ],
-                  ),
-          ),
-        ),
+        _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Palette.sky),
+              )
+            : GradientButton.success(
+                label: 'Start Quest',
+                icon: const Icon(Icons.play_arrow_rounded,
+                    color: Colors.white, size: 24),
+                onTap: _startGame,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                radius: 20,
+                fontSize: 18,
+              ),
       ],
     );
   }
@@ -1134,7 +1107,7 @@ class _DynamicVocabularyGameScreenState
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Palette.text, width: 2),
+        border: Border.all(color: Colors.grey.shade200, width: 1.5),
         boxShadow: Palette.softShadow,
       ),
       child: Row(
@@ -1174,12 +1147,12 @@ class _DynamicVocabularyGameScreenState
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE5DFFF),
+                  color: _languageAccent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
                   'Word ${_currentIndex + 1} of ${_words.length}',
-                  style: AppTextStyles.label(12, color: Palette.purple),
+                  style: AppTextStyles.label(12, color: _languageAccent),
                 ),
               ),
               Container(
@@ -1208,20 +1181,21 @@ class _DynamicVocabularyGameScreenState
 
           // Progress bar
           Container(
-            height: 16,
+            height: 14,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Palette.progressBg,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Palette.text, width: 2),
             ),
-            padding: const EdgeInsets.all(2),
-            alignment: Alignment.centerLeft,
-            child: FractionallySizedBox(
-              widthFactor: progress,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Palette.successAlt,
-                  borderRadius: BorderRadius.circular(8),
+            clipBehavior: Clip.antiAlias,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: progress,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: Palette.successGradient,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ),
@@ -1231,13 +1205,8 @@ class _DynamicVocabularyGameScreenState
           // Flashcard
           Expanded(
             child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: Palette.text, width: 3),
-                boxShadow: [
-                  BoxShadow(color: Palette.text, offset: const Offset(0, 8)),
-                ],
+              decoration: _cardDecoration.copyWith(
+                borderRadius: BorderRadius.circular(24),
               ),
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -1275,13 +1244,8 @@ class _DynamicVocabularyGameScreenState
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'SAY THE WORD:',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      color: Palette.successAlt,
-                      letterSpacing: 1.5,
-                    ),
+                    'Say the word:',
+                    style: AppTextStyles.label(13, color: Palette.sky),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -1296,28 +1260,26 @@ class _DynamicVocabularyGameScreenState
                   if (item.phonetic != null)
                     Text(
                       '(${item.phonetic})',
-                      style: AppTextStyles.body(15, color: Palette.purple),
+                      style: AppTextStyles.body(15, color: Palette.deepGrey),
                     ),
                   const SizedBox(height: 16),
 
                   // TTS pronouncer button
-                  ElevatedButton.icon(
+                  OutlinedButton.icon(
                     onPressed: () => _speakWord(item.word),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Palette.purple,
-                      elevation: 2,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Palette.sky,
+                      side: const BorderSide(color: Palette.sky, width: 1.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
-                        side: const BorderSide(color: Palette.purple, width: 3),
                       ),
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 12),
                     ),
-                    icon: const Icon(Icons.volume_up_rounded, size: 24),
+                    icon: const Icon(Icons.volume_up_rounded, size: 22),
                     label: Text(
-                      'Can you say \'${item.word.toUpperCase()}\'?',
-                      style: AppTextStyles.label(14, color: Palette.purple),
+                      'Listen: ${item.word}',
+                      style: AppTextStyles.label(14, color: Palette.sky),
                     ),
                   ),
                 ],
@@ -1366,18 +1328,11 @@ class _DynamicVocabularyGameScreenState
                             width: 106,
                             height: 106,
                             decoration: BoxDecoration(
-                              color: _isListening
-                                  ? const Color(0xFF166534)
-                                  : Palette.successAlt,
+                              gradient: _isListening
+                                  ? Palette.skyGradient
+                                  : Palette.successGradient,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 6),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Palette.text.withValues(alpha: 0.15),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
+                              boxShadow: Palette.buttonShadow,
                             ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -1386,13 +1341,10 @@ class _DynamicVocabularyGameScreenState
                                     color: Colors.white, size: 38),
                                 const SizedBox(height: 4),
                                 Text(
-                                  _isListening ? 'SPEAKING' : 'HOLD TO SPEAK',
+                                  _isListening ? 'Speaking' : 'Hold to speak',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                  style: AppTextStyles.label(9,
+                                      color: Colors.white),
                                 ),
                               ],
                             ),
@@ -1420,7 +1372,7 @@ class _DynamicVocabularyGameScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.star_rounded, color: Palette.purple, size: 48),
+          const Icon(Icons.star_rounded, color: _languageAccent, size: 48),
           const SizedBox(height: 8),
           Text(word, style: AppTextStyles.heading(24, color: Palette.text)),
         ],
@@ -1458,19 +1410,13 @@ class _DynamicVocabularyGameScreenState
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: isCorrect ? Palette.successAlt : Palette.warning,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Palette.text, width: 3),
-              boxShadow: [
-                BoxShadow(
-                  color: isCorrect
-                      ? const Color(0xFF166534)
-                      : const Offset(0, 6).dx == 0
-                          ? const Color(0xFFC2410C)
-                          : const Color(0xFFC2410C),
-                  offset: const Offset(0, 6),
-                ),
-              ],
+              gradient: isCorrect
+                  ? Palette.successGradient
+                  : LinearGradient(
+                      colors: [Palette.warningLight, Palette.warning],
+                    ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: Palette.cardShadow,
             ),
             child: Column(
               children: [
@@ -1494,13 +1440,8 @@ class _DynamicVocabularyGameScreenState
           // Speech matching details card
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Palette.text, width: 3),
-              boxShadow: [
-                BoxShadow(color: Palette.text, offset: const Offset(0, 8)),
-              ],
+            decoration: _cardDecoration.copyWith(
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
               children: [
@@ -1558,12 +1499,12 @@ class _DynamicVocabularyGameScreenState
                         : () => _playRecordedAudio(currentResult),
                     icon: const Icon(Icons.play_circle_outline_rounded),
                     label: Text(
-                      'Listen to Your Voice',
-                      style: AppTextStyles.label(13, color: Palette.purple),
+                      'Listen to your voice',
+                      style: AppTextStyles.label(13, color: Palette.sky),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: Palette.purple,
-                      side: const BorderSide(color: Palette.purple, width: 2),
+                      foregroundColor: Palette.sky,
+                      side: const BorderSide(color: Palette.sky, width: 1.5),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -1606,36 +1547,16 @@ class _DynamicVocabularyGameScreenState
           const SizedBox(height: 12),
 
           // Next / Finish Button
-          GestureDetector(
+          GradientButton.success(
+            label: _currentIndex + 1 >= _words.length ? 'Finish' : 'Next word',
             onTap: _nextWord,
-            child: Container(
-              height: 60,
-              decoration: BoxDecoration(
-                color: Palette.successAlt,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Palette.text, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                      color: const Color(0xFF166534),
-                      offset: const Offset(0, 6)),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _currentIndex + 1 >= _words.length ? 'Finish' : 'Next Word',
-                    style: AppTextStyles.heading(18, color: Colors.white),
-                  ),
-                  if (_currentIndex + 1 < _words.length) ...[
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward_rounded,
-                        color: Colors.white),
-                  ],
-                ],
-              ),
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            radius: 20,
+            fontSize: 18,
+            icon: _currentIndex + 1 < _words.length
+                ? const Icon(Icons.arrow_forward_rounded,
+                    color: Colors.white, size: 22)
+                : null,
           ),
           const SizedBox(height: 16),
         ],
@@ -1657,13 +1578,8 @@ class _DynamicVocabularyGameScreenState
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Palette.text, width: 3),
-              boxShadow: [
-                BoxShadow(color: Palette.text, offset: const Offset(0, 8)),
-              ],
+            decoration: _cardDecoration.copyWith(
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Column(
               children: [
