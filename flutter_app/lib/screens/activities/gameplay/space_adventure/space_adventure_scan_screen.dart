@@ -209,8 +209,11 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
   }
 
   void _startQuestWithObjects(List<String> objects) {
-    final availableObjects = List<String>.from(objects)
-      ..removeWhere((item) => item.trim().isEmpty);
+    final availableObjects = objects
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toSet()
+        .toList();
 
     if (availableObjects.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -431,110 +434,114 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                     boxShadow: Palette.cardShadow,
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      if (_roomImageBytes == null) ...[
-                        // Scanner HUD default
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                color: Palette.sky.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Palette.sky, width: 2),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt_outlined,
-                                color: Palette.sky,
-                                size: 40,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Text(
-                              'Scan your room',
-                              style: AppTextStyles.heading(18, color: Colors.black87),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Tap below to take a photo',
-                              style: AppTextStyles.body(13, color: Colors.black54),
-                            ),
-                          ],
-                        ),
-                      ] else ...[
-                        // Captured image
-                        Image.memory(
-                          _roomImageBytes!,
-                          width: double.infinity,
-                          height: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-
-                        // Scanning overlay
-                        if (_isScanning) ...[
-                          Container(
-                            color: Palette.sky.withOpacity(0.15),
-                          ),
-                          AnimatedBuilder(
-                            animation: _scanAnimationController,
-                            builder: (context, child) {
-                              return Positioned(
-                                top: _scanAnimationController.value * 350,
-                                left: 0,
-                                right: 0,
-                                child: Container(
-                                  height: 6,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (_roomImageBytes == null) ...[
+                            // Scanner HUD default
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 80,
+                                  height: 80,
                                   decoration: BoxDecoration(
+                                    color: Palette.sky.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Palette.sky, width: 2),
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt_outlined,
                                     color: Palette.sky,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Palette.sky.withOpacity(0.8),
-                                        blurRadius: 12,
-                                        spreadRadius: 3,
+                                    size: 40,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  'Scan your room',
+                                  style: AppTextStyles.heading(18, color: Colors.black87),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Tap below to take a photo',
+                                  style: AppTextStyles.body(13, color: Colors.black54),
+                                ),
+                              ],
+                            ),
+                          ] else ...[
+                            // Captured image
+                            Image.memory(
+                              _roomImageBytes!,
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+
+                            // Scanning overlay
+                            if (_isScanning) ...[
+                              Container(
+                                color: Palette.sky.withOpacity(0.15),
+                              ),
+                              AnimatedBuilder(
+                                animation: _scanAnimationController,
+                                builder: (context, child) {
+                                  return Positioned(
+                                    top: _scanAnimationController.value * constraints.maxHeight,
+                                    left: 0,
+                                    right: 0,
+                                    child: Container(
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: Palette.sky,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Palette.sky.withOpacity(0.8),
+                                            blurRadius: 12,
+                                            spreadRadius: 3,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              // Spinning loading indicator
+                              Positioned(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: Palette.sky.withOpacity(0.5)),
+                                    boxShadow: Palette.cardShadow,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          color: Palette.sky,
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'Scanning for items...',
+                                        style: AppTextStyles.label(13, color: Palette.sky),
                                       ),
                                     ],
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                          // Spinning loading indicator
-                          Positioned(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: Palette.sky.withOpacity(0.5)),
-                                boxShadow: Palette.cardShadow,
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Palette.sky,
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Scanning for items...',
-                                    style: AppTextStyles.label(13, color: Palette.sky),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                            ],
+                          ],
                         ],
-                      ],
-                    ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -604,39 +611,42 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
               ],
 
               // Action buttons
-              Row(
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Expanded(
-                    child: GradientButton.primary(
-                      label: _roomImageBytes == null ? 'Scan room' : 'Re-scan',
-                      onTap: _isScanning ? null : _captureRoom,
-                      fontSize: 14,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: GradientButton(
-                      label: 'View areas',
-                      gradient: LinearGradient(
-                        colors: [Palette.warningLight, Palette.warning],
-                      ),
-                      onTap: _isScanning ? null : _showAreasSheet,
-                      fontSize: 14,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                  ),
                   if (_roomImageBytes != null && _detectedObjects.isNotEmpty) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: GradientButton.success(
-                        label: 'Start quest',
-                        onTap: _isScanning ? null : _finishScanAndStartQuest,
-                        fontSize: 14,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
+                    GradientButton.success(
+                      label: 'Start quest',
+                      onTap: _isScanning ? null : _finishScanAndStartQuest,
+                      fontSize: 15,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
+                    const SizedBox(height: 12),
                   ],
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GradientButton.primary(
+                          label: _roomImageBytes == null ? 'Scan room' : 'Re-scan',
+                          onTap: _isScanning ? null : _captureRoom,
+                          fontSize: 14,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: GradientButton(
+                          label: 'View areas',
+                          gradient: LinearGradient(
+                            colors: [Palette.warningLight, Palette.warning],
+                          ),
+                          onTap: _isScanning ? null : _showAreasSheet,
+                          fontSize: 14,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ],

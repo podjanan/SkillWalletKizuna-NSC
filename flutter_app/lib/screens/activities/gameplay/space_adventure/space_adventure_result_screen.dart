@@ -23,6 +23,7 @@ class SpaceAdventureResultScreen extends StatefulWidget {
   final int timerLimit;
   final int currentIndex;
   final int totalItems;
+  final List<Map<String, dynamic>> completedItemsHistory;
 
   const SpaceAdventureResultScreen({
     super.key,
@@ -37,6 +38,7 @@ class SpaceAdventureResultScreen extends StatefulWidget {
     required this.timerLimit,
     required this.currentIndex,
     required this.totalItems,
+    this.completedItemsHistory = const [],
   });
 
   @override
@@ -106,6 +108,7 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
           currentScore: widget.currentScore,
           currentIndex: widget.currentIndex + 1,
           totalItems: widget.totalItems,
+          completedItemsHistory: widget.completedItemsHistory,
         ),
       ),
     );
@@ -113,7 +116,15 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
 
   Future<void> _submitScoreToLeaderboard(VoidCallback updateDialogState) async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your ranger name!'),
+          backgroundColor: Colors.orangeAccent,
+        ),
+      );
+      return;
+    }
     if (_saved || _isSaving) return;
 
     final userProvider = context.read<UserProvider>();
@@ -135,23 +146,13 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
 
     try {
       final maxScore = widget.totalItems * widget.scorePerItem;
-      final completedItems = [
-        {
-          'id': 'space_adventure_${widget.currentIndex}',
-          'text': widget.targetObject,
-          'maxScore': widget.pointsEarned,
-          'recognizedText': widget.isMatch ? widget.targetObject : '',
-          'match': widget.isMatch,
-          'reason': widget.reasonText,
-        }
-      ];
 
       await _spaceService.completeMission(
         childId: childId,
         totalScoreEarned: widget.currentScore,
         maxScore: maxScore,
         detectedObjects: widget.detectedObjects,
-        completedItems: completedItems,
+        completedItems: widget.completedItemsHistory,
         scorePerItem: widget.scorePerItem,
         timerLimit: widget.timerLimit,
       );

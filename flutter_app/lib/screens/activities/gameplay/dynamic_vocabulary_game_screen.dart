@@ -723,20 +723,20 @@ class _DynamicVocabularyGameScreenState
   Future<void> _finishQuest() async {
     if (_words.isEmpty || _isSavingScore) return;
 
-    final userProvider = context.read<UserProvider>();
-    final childId = userProvider.currentChildId;
-    final category = _selectedCategory ?? _categories.first.id;
-
-    await _saveHighScore(_score);
     _timer?.cancel();
-
-    if (!mounted) return;
-
     setState(() {
       _screen = _ScreenState.summaryScreen;
       _isSavingScore = true;
       _errorMessage = null;
     });
+
+    final userProvider = context.read<UserProvider>();
+    final childId = userProvider.currentChildId;
+    final category = _selectedCategory ?? _categories.first.id;
+
+    await _saveHighScore(_score);
+
+    if (!mounted) return;
 
     if (childId == null) {
       setState(() {
@@ -1466,7 +1466,7 @@ class _DynamicVocabularyGameScreenState
     final currentResult = _currentIndex < _wordResults.length
         ? _wordResults[_currentIndex]
         : null;
-    final isCorrect = cleanSpoken == cleanTarget;
+    final isCorrect = currentResult?.isCorrect ?? (cleanSpoken == cleanTarget);
     final isPerfect = isCorrect && _confidence >= 0.8;
 
     return Padding(
@@ -1762,6 +1762,20 @@ class _DynamicVocabularyGameScreenState
                           ],
                         ),
                       ),
+                      if (result != null &&
+                          (result.audioPath != null ||
+                              result.audioBytes != null))
+                        IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(
+                            Icons.play_circle_outline_rounded,
+                            color: Palette.sky,
+                            size: 24,
+                          ),
+                          onPressed: () => _playRecordedAudio(result),
+                        ),
+                      const SizedBox(width: 8),
                       Text(
                         '+$score',
                         style: AppTextStyles.heading(
@@ -1777,6 +1791,17 @@ class _DynamicVocabularyGameScreenState
             ),
           ),
           const SizedBox(height: 14),
+          if (!_scoreSaved && !_isSavingScore) ...[
+            GradientButton.success(
+              label: 'Retry Save Score',
+              icon: const Icon(Icons.cloud_upload_outlined, color: Colors.white),
+              onTap: _finishQuest,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              radius: 18,
+              fontSize: 15,
+            ),
+            const SizedBox(height: 12),
+          ],
           Row(
             children: [
               Expanded(
