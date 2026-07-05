@@ -264,7 +264,7 @@ export default function AiWordGamePage() {
   }
 
   async function suggestWord() {
-    setCreatorStatus('Asking Gemini for a word...');
+    setCreatorStatus('Asking AI for a word...');
     setPreview(null);
 
     const currentWordLower = creator.word.trim().toLowerCase();
@@ -283,7 +283,7 @@ export default function AiWordGamePage() {
       false,
     );
     if (result.error) {
-      setCreatorStatus(`Gemini failed: ${String(result.error)}`);
+      setCreatorStatus(`AI failed: ${String(result.error)}`);
       return;
     }
     const word = String(result.word ?? '');
@@ -314,7 +314,7 @@ export default function AiWordGamePage() {
       setSuggestedHistory((prev) => Array.from(new Set([...prev, word.trim().toLowerCase()])));
     }
 
-    setCreatorStatus(result.imageError ? `Gemini word ready (image lookup failed: ${result.imageError})` : 'Gemini suggestion and image ready.');
+    setCreatorStatus(result.imageError ? `AI word ready (image lookup failed: ${result.imageError})` : 'AI suggestion and image ready.');
   }
 
   async function previewWord() {
@@ -330,7 +330,7 @@ export default function AiWordGamePage() {
       false,
     );
     if (result.error) {
-      setCreatorStatus(`Gemini failed: ${String(result.error)}`);
+      setCreatorStatus(`AI failed: ${String(result.error)}`);
       return;
     }
     const nextPreview: PreviewWord = {
@@ -460,7 +460,7 @@ export default function AiWordGamePage() {
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="text-lg font-bold text-slate-900">1. Ideation & Transcription</h2>
-                    <p className="text-xs text-slate-500 mt-0.5">Choose a category and let Gemini brainstorm a unique word, or type it manually.</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Choose a category and let AI brainstorm a unique word, or type it manually.</p>
                   </div>
                   {creatorStatus && (
                     <span className="text-xs font-semibold bg-slate-50 border border-slate-100 text-slate-600 px-3 py-1 rounded-full flex items-center gap-1.5 animate-pulse">
@@ -760,7 +760,7 @@ export default function AiWordGamePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
                 <Checkbox label="Enable Gameplay Screen" checked={settings.enabled} onChange={(enabled) => setData({ ...data, settings: { ...settings, enabled } })} />
                 <Checkbox label="Show Card in Dashboard" checked={settings.showInApp} onChange={(showInApp) => setData({ ...data, settings: { ...settings, showInApp } })} />
-                <Checkbox label="Use Gemini (AI Mode)" checked={settings.useGemini} onChange={(useGemini) => setData({ ...data, settings: { ...settings, useGemini } })} />
+                <Checkbox label="Use AI Word Generation" checked={settings.useGemini} onChange={(useGemini) => setData({ ...data, settings: { ...settings, useGemini } })} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t border-slate-100 py-6">

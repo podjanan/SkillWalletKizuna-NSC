@@ -7,9 +7,11 @@ import {
   getAiWordFallbackWordsByDifficulty,
   getAiWordSettings,
   isBlockedWord,
+  callOllama,
 } from '@/lib/ai-word-game';
 import { prisma } from '@/lib/prisma';
 import { uploadToMinio } from '@/lib/minio';
+import { getLocalDictEntry, getCandidates } from '@/lib/ai-word-dictionary';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -99,61 +101,152 @@ async function generateWord(
   if (!settings.useGemini) {
     throw new Error('Gemini vocabulary generation is disabled in AI Word Game settings.');
   }
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is missing from env.');
-  }
-  if (!geminiModel) {
-    throw new Error('GEMINI_MODEL is missing from env.');
+
+  const useOllama = !!(process.env.OLLAMA_URL || process.env.WHISPER_MODE === 'local');
+  if (!useOllama) {
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is missing from env.');
+    }
+    if (!geminiModel) {
+      throw new Error('GEMINI_MODEL is missing from env.');
+    }
   }
 
   const existingWords = await getAiWordFallbackWords(category.id);
-  const excludeList = existingWords.map((w) => w.word.trim()).join(', ');
+  const existingWordSet = new Set(existingWords.map((w) => w.word.trim().toLowerCase()));
 
-  const prompt = settings.promptTemplate
-    .replaceAll('{{category}}', category.label)
-    .replaceAll('{{thaiLabel}}', category.thaiLabel || category.label)
-    .replaceAll('{{categorySlug}}', category.slug)
-    .replaceAll('{{difficulty}}', difficulty)
-    .replaceAll('{{excludeList}}', excludeList || 'none');
+  let lastError = '';
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.9,
-          maxOutputTokens: 140,
-        },
-      }),
-    },
-  );
+  const candidates = getCandidates(category.slug, difficulty);
+  const availableCandidates = candidates.filter(c => !existingWordSet.has(c.toLowerCase()));
+  const useCandidates = availableCandidates.length > 0;
 
-  if (!response.ok) {
-    const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
-    error.status = response.status;
-    throw error;
+  const candidateConstraint = useCandidates
+    ? `\n4. The word MUST be chosen from this Candidates list: ${availableCandidates.join(', ')}`
+    : '';
+
+  for (let attempts = 0; attempts < 4; attempts++) {
+    const excludeListStr = Array.from(existingWordSet).map(w => `- ${w}`).join('\n');
+    
+    // Append strict overrides for local model behavior (children under Grade 3 / ป.3, length constraint)
+    const basePrompt = settings.promptTemplate
+      .replaceAll('{{category}}', category.label)
+      .replaceAll('{{thaiLabel}}', category.thaiLabel || category.label)
+      .replaceAll('{{categorySlug}}', category.slug)
+      .replaceAll('{{difficulty}}', difficulty)
+      .replaceAll('{{excludeList}}', excludeListStr || '- none');
+
+    const prompt = basePrompt 
+      + `\n\nCRITICAL OVERRIDE CONSTRAINTS FOR CHILDREN (GRADE 3 / ป.3 MAXIMUM):`
+      + `\n1. The word must be simple and easily understood by children ages 4-9 (preschool to Grade 3). Do NOT generate advanced or academic words.`
+      + `\n2. The word MUST be strictly within character length for difficulty "${difficulty}":`
+      + (difficulty === 'easy' ? '\n   - 3 to 5 characters (e.g. dog, cat, sun, bird, fish, apple)' : difficulty === 'medium' ? '\n   - 5 to 7 characters (e.g. horse, tiger, carrot, train, pencil)' : '\n   - 7 to 10 characters (e.g. elephant, penguin, rainbow, bicycle)')
+      + `\n3. The "thaiMeaning" MUST be the exact, correct Thai translation of the English word (e.g. Kangaroo -> "จิงโจ้", Lion -> "สิงโต"). Do NOT guess or hallucinate.`
+      + candidateConstraint;
+
+    const finalPrompt = prompt + `\n\n[System Attempt ID: ${attempts + 1} - Random seed: ${Math.floor(Math.random() * 1000)}]`;
+    const currentTemp = 0.1 + attempts * 0.25; // 0.1, 0.35, 0.6, 0.85
+
+    try {
+      let text = '';
+      if (useOllama) {
+        text = await callOllama(finalPrompt, true, currentTemp);
+      } else {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
+              generationConfig: {
+                responseMimeType: 'application/json',
+                temperature: currentTemp,
+                maxOutputTokens: 140,
+              },
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
+          error.status = response.status;
+          throw error;
+        }
+
+        const data = (await response.json()) as GeminiResponse;
+        text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      }
+
+      const parsed = extractJson(text);
+      const word = parsed?.word ? String(parsed.word).trim() : '';
+      if (!word) {
+        lastError = 'AI did not return a vocabulary word.';
+        continue;
+      }
+
+      // Check duplicates
+      if (existingWordSet.has(word.toLowerCase())) {
+        lastError = `AI generated a duplicate word: ${word}`;
+        continue;
+      }
+
+      // Check blocked terms
+      if (await isBlockedWord(word)) {
+        existingWordSet.add(word.toLowerCase());
+        lastError = `AI returned a blocked word: ${word}`;
+        continue;
+      }
+
+      // Check strict length
+      const wordLen = word.length;
+      let isLengthValid = false;
+      if (difficulty === 'easy' && wordLen >= 3 && wordLen <= 5) isLengthValid = true;
+      else if (difficulty === 'medium' && wordLen >= 5 && wordLen <= 7) isLengthValid = true;
+      else if (difficulty === 'hard' && wordLen >= 7 && wordLen <= 10) isLengthValid = true;
+
+      if (!isLengthValid) {
+        existingWordSet.add(word.toLowerCase());
+        lastError = `AI returned word "${word}" (length ${wordLen}) which does not match "${difficulty}" length constraint.`;
+        continue;
+      }
+
+      const localEntry = getLocalDictEntry(word);
+
+      return {
+        word,
+        category: category.slug,
+        thaiMeaning: localEntry ? localEntry.thaiMeaning : (parsed?.thaiMeaning ? String(parsed.thaiMeaning).trim() : undefined),
+        phonetic: localEntry ? localEntry.phonetic : (parsed?.phonetic ? String(parsed.phonetic).trim() : undefined),
+        imageUrl: undefined,
+        wordSource: localEntry ? 'local_dictionary' : ((useOllama ? 'ollama' : 'gemini') as any),
+        difficulty,
+      };
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : 'AI word generation error.';
+      console.error('AI word generation attempt failed:', err);
+    }
   }
 
-  const data = (await response.json()) as GeminiResponse;
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-  const parsed = extractJson(text);
-  const word = parsed?.word ? String(parsed.word).trim() : '';
-  if (!word) throw new Error('Gemini did not return a vocabulary word.');
-  if (await isBlockedWord(word)) throw new Error(`Gemini returned a blocked word: ${word}`);
+  // Fallback to recycled candidate if AI failed
+  if (candidates.length > 0) {
+    const randomIndex = Math.floor(Math.random() * candidates.length);
+    const recycledWord = candidates[randomIndex];
+    const dictEntry = getLocalDictEntry(recycledWord);
+    if (dictEntry) {
+      return {
+        word: recycledWord,
+        category: category.slug,
+        thaiMeaning: dictEntry.thaiMeaning,
+        phonetic: dictEntry.phonetic,
+        imageUrl: undefined,
+        wordSource: 'local_dictionary',
+        difficulty,
+      };
+    }
+  }
 
-  return {
-    word,
-    category: category.slug,
-    thaiMeaning: parsed?.thaiMeaning ? String(parsed.thaiMeaning).trim() : undefined,
-    phonetic: parsed?.phonetic ? String(parsed.phonetic).trim() : undefined,
-    imageUrl: undefined,
-    wordSource: 'gemini' as const,
-    difficulty,
-  };
+  throw new Error(lastError || 'AI could not generate a valid vocabulary word matching children constraints.');
 }
 async function getDuckDuckGoImages(query: string) {
   try {
@@ -315,23 +408,49 @@ export async function POST(request: NextRequest) {
     // 1. Always load DB fallback words filtered by category + difficulty
     const dbWords = await getAiWordFallbackWordsByDifficulty(category.id, difficulty);
 
-    // 2. Try Gemini if enabled — wrap in try/catch so a failure just skips Gemini
+    // 2. Try Gemini if enabled — wrap in try/catch and enforce a strict timeout to prevent client timeout
     let geminiPayload: VocabularyPayload | null = null;
     if (settings.useGemini) {
       try {
-        const generated = await generateWord(category, difficulty);
-        const query = `${generated.word} ${settings.imageQuerySuffix}`.trim();
-        const image = generated.imageUrl
-          ? { imageUrl: undefined, imageSource: undefined }
-          : await fetchImage(generated.word);
-        geminiPayload = {
-          ...generated,
-          query,
-          imageUrl: generated.imageUrl ?? image.imageUrl,
-          imageSource: generated.imageUrl ? 'admin' : image.imageSource,
-        };
+        const generatedPromise = (async () => {
+          const generated = await generateWord(category, difficulty);
+          
+          let imageUrl: string | undefined = generated.imageUrl;
+          let imageSource: string | undefined = generated.imageUrl ? 'admin' : undefined;
+          
+          if (!imageUrl) {
+            try {
+              // 3-second timeout limit for image fetch
+              const imageResult = await Promise.race([
+                fetchImage(generated.word),
+                new Promise<{ imageUrl?: string; imageSource?: string }>((_, reject) => 
+                  setTimeout(() => reject(new Error('Image fetch timeout')), 3000)
+                )
+              ]);
+              imageUrl = imageResult.imageUrl;
+              imageSource = imageResult.imageSource;
+            } catch (imgErr) {
+              console.warn('Image fetch timed out or failed:', imgErr);
+            }
+          }
+          
+          return {
+            ...generated,
+            query: `${generated.word} ${settings.imageQuerySuffix}`.trim(),
+            imageUrl,
+            imageSource: generated.imageUrl ? 'admin' : imageSource,
+          };
+        })();
+
+        // 8-second strict timeout limit for the entire AI word generation
+        geminiPayload = await Promise.race([
+          generatedPromise,
+          new Promise<null>((_, reject) => 
+            setTimeout(() => reject(new Error('AI generation timeout')), 8000)
+          )
+        ]);
       } catch (geminiErr) {
-        console.warn('Gemini word generation failed, using DB fallback only:', geminiErr);
+        console.warn('AI word generation timed out or failed, using DB fallback only:', geminiErr);
       }
     }
 

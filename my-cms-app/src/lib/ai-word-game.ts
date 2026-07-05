@@ -835,3 +835,63 @@ export async function getTopScores(limit = 10) {
   `;
 }
 
+export async function callOllama(prompt: string, formatJson: boolean = false, temperature: number = 0.1): Promise<string> {
+  const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
+  const model = process.env.OLLAMA_MODEL || 'qwen2.5:3b';
+
+  async function checkAndPullModel() {
+    try {
+      console.log(`Checking/Pulling model ${model} from Ollama registry...`);
+      const pullRes = await fetch(`${ollamaUrl}/api/pull`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: model, stream: false }),
+      });
+      if (!pullRes.ok) {
+        console.error(`Failed to pull model ${model}: ${await pullRes.text()}`);
+      } else {
+        console.log(`Successfully pulled model ${model}`);
+      }
+    } catch (e) {
+      console.error(`Ollama pull exception for ${model}:`, e);
+    }
+  }
+
+  async function makeRequest() {
+    return await fetch(`${ollamaUrl}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model,
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
+        format: formatJson ? 'json' : undefined,
+        options: {
+          temperature: temperature,
+        }
+      }),
+    });
+  }
+
+  try {
+    let response = await makeRequest();
+    
+    // If model is not found, pull it and try again
+    if (response.status === 404) {
+      console.log(`Model ${model} not found in Ollama, attempting to pull...`);
+      await checkAndPullModel();
+      response = await makeRequest();
+    }
+
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.status} ${await response.text()}`);
+    }
+
+    const data = await response.json();
+    return data.message?.content || '';
+  } catch (e) {
+    console.error('Ollama connection failed:', e);
+    throw e;
+  }
+}
+
