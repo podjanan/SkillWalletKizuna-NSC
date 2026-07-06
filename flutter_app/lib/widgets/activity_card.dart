@@ -8,6 +8,7 @@ import '../services/draft_service.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/palette.dart';
 import '../utils/youtube_helper.dart';
+import 'game_activity_cover.dart';
 
 class ActivityCard extends StatelessWidget {
   const ActivityCard({
@@ -101,13 +102,21 @@ class ActivityCard extends StatelessWidget {
 
     Future<void> navigate() async {
       if (activity.isAiWordGame) {
-        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame);
+        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame, arguments: activity);
         return;
       }
 
       final userProvider = context.read<UserProvider>();
       if (userProvider.currentChildId == null) {
         showSelectChildDialog();
+        return;
+      }
+
+      if (activity.id == 'space-adventure' ||
+          activity.content == 'Space Adventure' ||
+          activity.content == 'space_adventure' ||
+          activity.content == 'space-adventure') {
+        Navigator.pushNamed(context, AppRoutes.spaceAdventure, arguments: activity);
         return;
       }
 
@@ -245,11 +254,26 @@ class ActivityCard extends StatelessWidget {
     required bool hasYouTubeVideo,
     String? youtubeThumbnailUrl,
   }) {
-    if (activity.isAiWordGame ||
-        (activity.thumbnailUrl?.startsWith('asset:') ?? false)) {
+    if (activity.id == 'space-adventure' ||
+        activity.content == 'Space Adventure' ||
+        activity.content == 'space_adventure' ||
+        activity.content == 'space-adventure') {
+      return const GameActivityCover(
+        type: GameCoverType.spaceAdventure,
+        compact: true,
+      );
+    }
+
+    if (activity.isAiWordGame) {
+      return const GameActivityCover(
+        type: GameCoverType.voiceQuest,
+        compact: true,
+      );
+    }
+
+    if (activity.thumbnailUrl?.startsWith('asset:') ?? false) {
       return Image.asset(
-        (activity.thumbnailUrl ?? 'asset:assets/images/voice_quest_cover.png')
-            .replaceFirst('asset:', ''),
+        activity.thumbnailUrl!.replaceFirst('asset:', ''),
         width: double.infinity,
         height: double.infinity,
         fit: BoxFit.cover,

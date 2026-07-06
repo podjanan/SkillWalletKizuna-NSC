@@ -32,7 +32,27 @@ export async function GET(request: NextRequest, context: RouteContext) {
           ? (record.evidence as Record<string, unknown>)
           : null;
 
-      if (record.activity || evidence?.type !== 'voice_quest') {
+      if (record.activity) {
+        return record;
+      }
+
+      if (evidence?.type === 'space_adventure') {
+        const maxScore =
+          typeof evidence.maxScore === 'number'
+            ? evidence.maxScore
+            : Number(evidence.maxScore ?? 0) || 100;
+
+        return {
+          ...record,
+          activity: {
+            name_activity: 'SPACE ADVENTURE',
+            category: 'LANGUAGE',
+            maxscore: maxScore,
+          },
+        };
+      }
+
+      if (evidence?.type !== 'voice_quest') {
         return record;
       }
 

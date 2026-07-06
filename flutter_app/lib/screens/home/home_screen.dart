@@ -16,6 +16,7 @@ import '../../widgets/child_avatar.dart';
 import '../../widgets/draft_banner.dart';
 import '../../widgets/scrollable_activity_list.dart';
 import '../../widgets/main_bottom_nav.dart';
+import '../../widgets/game_activity_cover.dart';
 import '../profile/profile_screen.dart';
 import '../activities/create_activity_screen.dart';
 import '../child/add_child_screen.dart';
@@ -565,9 +566,16 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       onTap: () {
-        // ✅ ตรวจสอบว่าเลือกเด็กแล้วหรือยัง
         if (activity.isAiWordGame) {
-          Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame);
+          Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame, arguments: activity);
+          return;
+        }
+
+        if (activity.id == 'space-adventure' ||
+            activity.content == 'Space Adventure' ||
+            activity.content == 'space_adventure' ||
+            activity.content == 'space-adventure') {
+          Navigator.pushNamed(context, AppRoutes.spaceAdventure, arguments: activity);
           return;
         }
 
@@ -597,12 +605,16 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            if (activity.isAiWordGame ||
-                (activity.thumbnailUrl?.startsWith('asset:') ?? false))
+            if (activity.isAiWordGame)
+              const GameActivityCover(type: GameCoverType.voiceQuest)
+            else if (activity.id == 'space-adventure' ||
+                activity.content == 'Space Adventure' ||
+                activity.content == 'space_adventure' ||
+                activity.content == 'space-adventure')
+              const GameActivityCover(type: GameCoverType.spaceAdventure)
+            else if (activity.thumbnailUrl?.startsWith('asset:') ?? false)
               Image.asset(
-                (activity.thumbnailUrl ??
-                        'asset:assets/images/voice_quest_cover.png')
-                    .replaceFirst('asset:', ''),
+                activity.thumbnailUrl!.replaceFirst('asset:', ''),
                 fit: BoxFit.cover,
               )
             else if (thumbnailUrl != null && hasYouTubeVideo)
@@ -1133,6 +1145,91 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               );
             },
+          ),
+        ),
+        const SizedBox(height: 30),
+
+        // Space Adventure — featured card matching app activity style
+        GestureDetector(
+          onTap: () => Navigator.pushNamed(context, AppRoutes.spaceAdventure),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: Palette.cardShadow,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SizedBox(
+                    width: 110,
+                    child: GameActivityCover(
+                      type: GameCoverType.spaceAdventure,
+                      compact: true,
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Palette.teal,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'NEW',
+                              style: AppTextStyles.label(10, color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Space Adventure',
+                            style: AppTextStyles.heading(16, color: Palette.text),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Scan your room and find hidden items!',
+                            style: AppTextStyles.body(12, color: Palette.deepGrey),
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.star_rounded,
+                                size: 14,
+                                color: Palette.pink,
+                              ),
+                              const SizedBox(width: 3),
+                              Text(
+                                '100',
+                                style: AppTextStyles.label(12, color: Palette.pink),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.only(right: 14),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: Palette.sky,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 30),

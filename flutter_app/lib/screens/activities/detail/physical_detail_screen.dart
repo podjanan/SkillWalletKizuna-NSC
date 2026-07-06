@@ -269,6 +269,8 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
   Future<void> _handleSubmit() async {
     final String? childId = context.read<UserProvider>().currentChildId;
 
+    if (_isSubmitting) return;
+
     final bool isEvidenceAttached = _videoPath != null || _imagePath != null;
 
     if (!isEvidenceAttached) {
@@ -363,7 +365,7 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
 
   Widget _removeBtn(VoidCallback onTap) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: _isSubmitting ? null : onTap,
       child: Container(
         width: 26,
         height: 26,
@@ -813,6 +815,7 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
                       ),
                       child: TextField(
                         controller: _descriptionController,
+                        enabled: !_isSubmitting,
                         decoration: InputDecoration(
                             hintText: AppLocalizations.of(context)!
                                 .physical_diaryHint,
@@ -841,7 +844,7 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
                         // Image picker
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => _handleMediaSelection(isVideo: false),
+                            onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: false),
                             child: Container(
                               height: 120,
                               decoration: BoxDecoration(
@@ -882,7 +885,7 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
                         // Video picker
                         Expanded(
                           child: GestureDetector(
-                            onTap: () => _handleMediaSelection(isVideo: true),
+                            onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: true),
                             child: Container(
                               height: 120,
                               decoration: BoxDecoration(

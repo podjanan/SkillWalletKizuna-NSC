@@ -11,6 +11,7 @@ import '../../services/activity_service.dart';
 import '../../theme/palette.dart';
 import '../../theme/app_text_styles.dart';
 import '../activities/edit_activity_screen.dart';
+import '../../services/child_service.dart';
 import 'settings/setting_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -24,12 +25,15 @@ class ProfileScreen extends StatefulWidget {
 
 class ProfileScreenState extends State<ProfileScreen> {
   final ActivityService _activityService = ActivityService();
+  final ChildService _childService = ChildService();
   List<Activity> _myActivities = [];
+  List<Map<String, dynamic>> _activityHistory = [];
   bool _loading = true;
   bool _isEditMode = false;
   bool _uploading = false;
   UserProvider? _userProvider;
   String? _lastParentId;
+  String? _lastChildId;
 
   @override
   void initState() {
@@ -37,6 +41,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _userProvider = context.read<UserProvider>();
       _lastParentId = _userProvider?.currentParentId;
+      _lastChildId = _userProvider?.currentChildId;
       _userProvider!.addListener(_onProviderChanged);
       _loadActivities();
     });
@@ -44,9 +49,11 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   void _onProviderChanged() {
     final parentId = _userProvider?.currentParentId;
-    // Only reload when parentId actually changes (account switch)
-    if (parentId != _lastParentId) {
+    final childId = _userProvider?.currentChildId;
+    // Reload when parentId or childId changes
+    if (parentId != _lastParentId || childId != _lastChildId) {
       _lastParentId = parentId;
+      _lastChildId = childId;
       if (mounted) {
         setState(() {
           _myActivities = [];
@@ -145,6 +152,8 @@ class ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadActivities() async {
     final parentId =
         Provider.of<UserProvider>(context, listen: false).currentParentId;
+    final childId =
+        Provider.of<UserProvider>(context, listen: false).currentChildId;
     if (parentId == null || parentId.isEmpty) {
       if (mounted) setState(() => _loading = false);
       return;
@@ -152,9 +161,15 @@ class ProfileScreenState extends State<ProfileScreen> {
 
     setState(() => _loading = true);
     final activities = await _activityService.fetchMyActivities(parentId);
+    List<Map<String, dynamic>> history = [];
+    if (childId != null && childId.isNotEmpty) {
+      history = await _childService.getActivityHistory(childId);
+    }
+
     if (mounted) {
       setState(() {
         _myActivities = activities;
+        _activityHistory = history;
         _loading = false;
       });
     }
@@ -460,6 +475,9 @@ class ProfileScreenState extends State<ProfileScreen> {
   Widget _buildActivityCard(Activity activity, AppLocalizations l) {
     final accent = _categoryAccent(activity.category);
     final icon = _categoryIcon(activity.category);
+    final minMax = _getMinMaxScores(activity);
+    final minScore = minMax['min'];
+    final maxScore = minMax['max'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -523,6 +541,9 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 _chipLabel(
                                     '★ ${activity.maxScore}',
                                     Palette.successAlt),
+                                _chipLabel(
+                                    'Min-Max: ${minScore != null ? '$minScore - $maxScore' : '-'}',
+                                    Palette.teal),
                               ],
                             ),
                           ],
@@ -557,6 +578,56 @@ class ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Map<String, int?> _getMinMaxScores(Activity activity) {
+    final records = _activityHistory.where((record) {
+      final act = record['activity'];
+      final actId = act is Map
+          ? (act['activity_id'] ?? act['id'])?.toString()
+          : null;
+      if (actId == activity.id) return true;
+
+      if (activity.isAiWordGame) {
+        final evidence = record['evidence'];
+        if (evidence is Map && evidence['type']?.toString() == 'voice_quest') {
+          return true;
+        }
+        final activityName = act is Map
+            ? act['name_activity']?.toString().trim().toUpperCase()
+            : null;
+        if (activityName == 'VOICE QUEST') return true;
+      }
+
+      if (activity.id == 'space-adventure' || activity.name.toUpperCase() == 'SPACE ADVENTURE') {
+        final evidence = record['evidence'];
+        if (evidence is Map && evidence['type']?.toString() == 'space_adventure') {
+          return true;
+        }
+        final activityName = act is Map
+            ? act['name_activity']?.toString().trim().toUpperCase()
+            : null;
+        if (activityName == 'SPACE ADVENTURE') return true;
+      }
+
+      return false;
+    }).toList();
+
+    if (records.isEmpty) {
+      return {'min': null, 'max': null};
+    }
+
+    final scores = records.map((r) {
+      final val = r['point'];
+      if (val is int) return val;
+      if (val is num) return val.toInt();
+      return int.tryParse(val?.toString() ?? '') ?? 0;
+    }).toList();
+
+    final minScore = scores.reduce((a, b) => a < b ? a : b);
+    final maxScore = scores.reduce((a, b) => a > b ? a : b);
+
+    return {'min': minScore, 'max': maxScore};
   }
 
   Widget _chipLabel(String text, Color color) {

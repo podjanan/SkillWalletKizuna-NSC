@@ -7,9 +7,11 @@ import {
   getAiWordSettings,
   getBlockedTerms,
   isBlockedWord,
+  callOllama,
 } from '@/lib/ai-word-game';
 import { prisma } from '@/lib/prisma';
 import { uploadToMinio } from '@/lib/minio';
+import { fallbackMetadata, getLocalDictEntry, getCandidates } from '@/lib/ai-word-dictionary';
 
 type AdminAction =
   | 'createCategory'
@@ -51,88 +53,6 @@ function extractJson(text: string): Record<string, unknown> | null {
   }
 }
 
-const fallbackMetadata: Record<string, { thaiMeaning: string; phonetic: string }> = {
-  bed: { thaiMeaning: 'เตียงนอน', phonetic: 'BED' },
-  blanket: { thaiMeaning: 'ผ้าห่ม', phonetic: 'BLANG-kit' },
-  pillow: { thaiMeaning: 'หมอน', phonetic: 'PIL-oh' },
-  lamp: { thaiMeaning: 'โคมไฟ', phonetic: 'LAMP' },
-  clock: { thaiMeaning: 'นาฬิกา', phonetic: 'KLOK' },
-  toy: { thaiMeaning: 'ของเล่น', phonetic: 'TOY' },
-  pencil: { thaiMeaning: 'ดินสอ', phonetic: 'PEN-sul' },
-  ruler: { thaiMeaning: 'ไม้บรรทัด', phonetic: 'ROO-ler' },
-  desk: { thaiMeaning: 'โต๊ะเขียนหนังสือ', phonetic: 'DESK' },
-  chair: { thaiMeaning: 'เก้าอี้', phonetic: 'CHAIR' },
-  bag: { thaiMeaning: 'กระเป๋า', phonetic: 'BAG' },
-  eraser: { thaiMeaning: 'ยางลบ', phonetic: 'ih-RAY-ser' },
-  apple: { thaiMeaning: 'แอปเปิล', phonetic: 'AP-pul' },
-  airplane: { thaiMeaning: 'เครื่องบิน', phonetic: 'AIR-playn' },
-  banana: { thaiMeaning: 'กล้วย', phonetic: 'buh-NA-nuh' },
-  bear: { thaiMeaning: 'หมี', phonetic: 'BAIR' },
-  bee: { thaiMeaning: 'ผึ้ง', phonetic: 'BEE' },
-  bicycle: { thaiMeaning: 'จักรยาน', phonetic: 'BY-sih-kul' },
-  bird: { thaiMeaning: 'นก', phonetic: 'BERD' },
-  boat: { thaiMeaning: 'เรือ', phonetic: 'BOHT' },
-  book: { thaiMeaning: 'หนังสือ', phonetic: 'BUK' },
-  bread: { thaiMeaning: 'ขนมปัง', phonetic: 'BRED' },
-  bus: { thaiMeaning: 'รถบัส', phonetic: 'BUS' },
-  butterfly: { thaiMeaning: 'ผีเสื้อ', phonetic: 'BUT-er-fly' },
-  cake: { thaiMeaning: 'เค้ก', phonetic: 'KAYK' },
-  car: { thaiMeaning: 'รถยนต์', phonetic: 'KAHR' },
-  carrot: { thaiMeaning: 'แครอท', phonetic: 'KAIR-uht' },
-  cat: { thaiMeaning: 'แมว', phonetic: 'KAT' },
-  cheese: { thaiMeaning: 'เนยแข็ง', phonetic: 'CHEEZ' },
-  chicken: { thaiMeaning: 'ไก่', phonetic: 'CHIK-in' },
-  cloud: { thaiMeaning: 'เมฆ', phonetic: 'KLOWD' },
-  cookie: { thaiMeaning: 'คุกกี้', phonetic: 'KUH-kee' },
-  cow: { thaiMeaning: 'วัว', phonetic: 'KOW' },
-  crab: { thaiMeaning: 'ปู', phonetic: 'KRAB' },
-  dog: { thaiMeaning: 'สุนัข', phonetic: 'DAWG' },
-  dolphin: { thaiMeaning: 'โลมา', phonetic: 'DOL-fin' },
-  duck: { thaiMeaning: 'เป็ด', phonetic: 'DUK' },
-  egg: { thaiMeaning: 'ไข่', phonetic: 'EG' },
-  elephant: { thaiMeaning: 'ช้าง', phonetic: 'EL-uh-funt' },
-  fish: { thaiMeaning: 'ปลา', phonetic: 'FISH' },
-  flower: { thaiMeaning: 'ดอกไม้', phonetic: 'FLOW-er' },
-  frog: { thaiMeaning: 'กบ', phonetic: 'FRAWG' },
-  giraffe: { thaiMeaning: 'ยีราฟ', phonetic: 'juh-RAF' },
-  grass: { thaiMeaning: 'หญ้า', phonetic: 'GRAS' },
-  helicopter: { thaiMeaning: 'เฮลิคอปเตอร์', phonetic: 'HEL-ih-kop-ter' },
-  horse: { thaiMeaning: 'ม้า', phonetic: 'HORS' },
-  icecream: { thaiMeaning: 'ไอศกรีม', phonetic: 'YS-KREEM' },
-  juice: { thaiMeaning: 'น้ำผลไม้', phonetic: 'JOOS' },
-  lion: { thaiMeaning: 'สิงโต', phonetic: 'LYE-un' },
-  milk: { thaiMeaning: 'นม', phonetic: 'MILK' },
-  monkey: { thaiMeaning: 'ลิง', phonetic: 'MUN-kee' },
-  moon: { thaiMeaning: 'ดวงจันทร์', phonetic: 'MOON' },
-  mountain: { thaiMeaning: 'ภูเขา', phonetic: 'MOWN-tin' },
-  octopus: { thaiMeaning: 'ปลาหมึกยักษ์', phonetic: 'OK-tuh-pus' },
-  orange: { thaiMeaning: 'ส้ม', phonetic: 'OR-inj' },
-  owl: { thaiMeaning: 'นกฮูก', phonetic: 'OWL' },
-  penguin: { thaiMeaning: 'เพนกวิน', phonetic: 'PEN-gwin' },
-  pig: { thaiMeaning: 'หมู', phonetic: 'PIG' },
-  pizza: { thaiMeaning: 'พิซซ่า', phonetic: 'PEET-suh' },
-  rabbit: { thaiMeaning: 'กระต่าย', phonetic: 'RAB-it' },
-  rain: { thaiMeaning: 'ฝน', phonetic: 'RAYN' },
-  rainbow: { thaiMeaning: 'สายรุ้ง', phonetic: 'RAYN-boh' },
-  rice: { thaiMeaning: 'ข้าว', phonetic: 'RYS' },
-  rocket: { thaiMeaning: 'จรวด', phonetic: 'ROK-it' },
-  shark: { thaiMeaning: 'ฉลาม', phonetic: 'SHAHRK' },
-  sheep: { thaiMeaning: 'แกะ', phonetic: 'SHEEP' },
-  sky: { thaiMeaning: 'ท้องฟ้า', phonetic: 'SKY' },
-  snow: { thaiMeaning: 'หิมะ', phonetic: 'SNOH' },
-  spider: { thaiMeaning: 'แมงมุม', phonetic: 'SPY-der' },
-  star: { thaiMeaning: 'ดาว', phonetic: 'STAHR' },
-  submarine: { thaiMeaning: 'เรือดำน้ำ', phonetic: 'sub-muh-REEN' },
-  sun: { thaiMeaning: 'ดวงอาทิตย์', phonetic: 'SUN' },
-  tiger: { thaiMeaning: 'เสือ', phonetic: 'TY-ger' },
-  train: { thaiMeaning: 'รถไฟ', phonetic: 'TRAYN' },
-  tree: { thaiMeaning: 'ต้นไม้', phonetic: 'TREE' },
-  truck: { thaiMeaning: 'รถบรรทุก', phonetic: 'TRUK' },
-  turtle: { thaiMeaning: 'เต่า', phonetic: 'TER-tul' },
-  whale: { thaiMeaning: 'วาฬ', phonetic: 'WAYL' },
-  wind: { thaiMeaning: 'ลม', phonetic: 'WIND' },
-  zebra: { thaiMeaning: 'ม้าลาย', phonetic: 'ZEE-bruh' },
-};
 
 function simplePhonetic(word: string) {
   return word
@@ -181,11 +101,15 @@ async function generateSuggestion(
   if (!settings.useGemini) {
     throw new Error('Gemini suggestion is disabled in AI Word Game settings.');
   }
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is missing from env.');
-  }
-  if (!geminiModel) {
-    throw new Error('GEMINI_MODEL is missing from env.');
+
+  const useOllama = !!(process.env.OLLAMA_URL || process.env.WHISPER_MODE === 'local');
+  if (!useOllama) {
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is missing from env.');
+    }
+    if (!geminiModel) {
+      throw new Error('GEMINI_MODEL is missing from env.');
+    }
   }
 
   // Fetch existing words to exclude them from suggestions
@@ -197,9 +121,18 @@ async function generateSuggestion(
 
   let lastError = '';
 
-  for (let attempts = 0; attempts < 3; attempts++) {
-    const excludeList = Array.from(existingWordSet).join(', ');
-    const prompt = `You are an expert children's English vocabulary teacher. Generate exactly one simple English vocabulary word for kids ages 4-9 that belongs STRICTLY and directly to the category: ${category.label} (Thai concept: ${category.thaiLabel || ''}).
+  const candidates = getCandidates(category.slug, difficulty);
+  const availableCandidates = candidates.filter(c => !existingWordSet.has(c.toLowerCase()));
+  const useCandidates = availableCandidates.length > 0;
+
+  const candidateConstraint = useCandidates
+    ? `Choose exactly one English word from this Candidates list: ${availableCandidates.join(', ')}`
+    : `Generate exactly one simple English vocabulary word for kids ages 4-9 (preschool to Grade 3/ป.3 maximum).`;
+
+  for (let attempts = 0; attempts < 4; attempts++) {
+    const excludeListStr = Array.from(existingWordSet).map(w => `- ${w}`).join('\n');
+    const prompt = `You are an expert children's English vocabulary teacher.
+The word MUST belong STRICTLY and directly to the category: ${category.label} (Thai concept: ${category.thaiLabel || ''}).
 Selected difficulty: ${difficulty}.
 
 Category Guidelines:
@@ -207,88 +140,142 @@ Category Guidelines:
 - Food (อาหาร): Must be a direct edible food, fruit, vegetable, snack, or drink (e.g., apple, banana, cookie, bread, carrot, pizza, milk). Do NOT suggest animals or tools.
 - Vehicles (ยานพาหนะ): Must be a direct mode of transport (e.g., car, train, rocket, bicycle, boat, plane, tractor). Do NOT suggest roads, places, or jobs.
 - Nature (ธรรมชาติ): Must be a direct nature element, plant, flower, weather, or celestial body (e.g., tree, flower, rainbow, star, mountain, cloud, rain, sun). Do NOT suggest man-made items.
-- Bedroom (ห้องนอน): Must be a typical item found in a child's bedroom (e.g., bed, pillow, blanket, lamp, toy, clock).
-- School (โรงเรียน) / Classroom: Must be a typical item found in a classroom or school (e.g., book, pencil, ruler, desk, chair, bag).
 
 CRITICAL CONSTRAINTS:
-1. The word MUST belong strictly to the category "${category.label}". Do NOT suggest words from other categories under any circumstances.
-2. The word MUST NOT be in this list of already existing words (case-insensitive): ${excludeList}.
-3. The word must be a simple, concrete noun that a young child can understand and can be easily drawn in a kid-friendly cartoon illustration.
-4. Difficulty guidance:
-   - easy: 3-5 letters (e.g. cat, sun, apple)
-   - medium: 5-7 letters (e.g. rabbit, carrot, rocket, flower)
-   - hard: 7+ letters (e.g. elephant, butterfly, mountain)
+1. ${candidateConstraint}
+2. The word MUST NOT be in this list of already existing words (case-insensitive):
+${excludeListStr || '- none'}
+3. The word must be a simple, concrete noun that a young child under Grade 3 (ages 4-9) knows and can easily recognize. Avoid advanced or abstract words.
+4. Difficulty guidance (strict character length):
+   - easy: 3-5 letters (e.g. cat, dog, sun, pig, bird, fish)
+   - medium: 5-7 letters (e.g. horse, tiger, carrot, melon, rocket, train, pencil)
+   - hard: 7-10 letters max (e.g. elephant, penguin, mountain, rainbow, bicycle, notebook, umbrella)
+5. The "thaiMeaning" MUST be the exact, correct Thai translation of the generated English word (e.g. if the word is "Kangaroo", the thaiMeaning must be "จิงโจ้", if the word is "Lion", the thaiMeaning must be "สิงโต"). Do NOT hallucinate, guess, or mismatch the translation.
 
 Return the result in JSON format ONLY:
 {
   "word": "EnglishWord",
-  "thaiMeaning": "คำแปลภาษาไทยสั้นๆ ที่เข้าใจง่ายสำหรับเด็ก",
+  "thaiMeaning": "คำแปลภาษาไทยสั้นๆ ที่ถูกต้องตามหลักความเป็นจริงและเข้าใจง่ายสำหรับเด็ก",
   "phonetic": "คำสะกดเสียงพจนานุกรม เช่น AP-pul หรือ ZEE-bruh"
 }`;
 
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: {
-              responseMimeType: 'application/json',
-              temperature: 0.7,
-              maxOutputTokens: 1024,
-              thinkingConfig: { thinkingBudget: 0 },
-            },
-          }),
-        },
-      );
+    const finalPrompt = prompt + `\n\n[System Attempt ID: ${attempts + 1} - Random seed: ${Math.floor(Math.random() * 1000)}]`;
+    const currentTemp = 0.1 + attempts * 0.25; // 0.1, 0.35, 0.6, 0.85
 
-      if (!response.ok) {
-        const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
-        error.status = response.status;
-        throw error;
+    try {
+      let text = '';
+      if (useOllama) {
+        text = await callOllama(finalPrompt, true, currentTemp);
+      } else {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
+              generationConfig: {
+                responseMimeType: 'application/json',
+                temperature: currentTemp,
+                maxOutputTokens: 1024,
+                thinkingConfig: { thinkingBudget: 0 },
+              },
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
+          error.status = response.status;
+          throw error;
+        }
+
+        const data = await response.json();
+        const candidate = data?.candidates?.[0];
+        text = candidate?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join('') ?? '';
       }
 
-      const data = await response.json();
-      const candidate = data?.candidates?.[0];
-      const text = candidate?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join('') ?? '';
       const parsed = extractJson(text);
       const word = parsed?.word ? String(parsed.word).trim() : '';
       const thaiMeaning = parsed?.thaiMeaning ? String(parsed.thaiMeaning).trim() : '';
       const phonetic = parsed?.phonetic ? String(parsed.phonetic).trim() : '';
 
       if (!word) {
-        lastError = candidate?.finishReason === 'MAX_TOKENS'
-          ? 'Gemini response was truncated before it returned a vocabulary word.'
+        lastError = useOllama 
+          ? 'Ollama did not return a vocabulary word.'
           : 'Gemini did not return a vocabulary word.';
         continue;
       }
+
+      // 1. Check for duplicates in DB and active exclude list
       if (existingWordSet.has(word.toLowerCase())) {
-        lastError = `Gemini returned a duplicate word: ${word}`;
-        continue;
-      }
-      if (await isBlockedWord(word)) {
-        lastError = `Gemini returned a blocked word: ${word}`;
+        lastError = `AI returned a duplicate word: ${word}`;
         continue;
       }
 
+      // 2. Check for blocked terms
+      if (await isBlockedWord(word)) {
+        existingWordSet.add(word.toLowerCase());
+        lastError = `AI returned a blocked word: ${word}`;
+        continue;
+      }
+
+      // 3. Programmatic length filter based on difficulty
+      const wordLen = word.length;
+      let isLengthValid = false;
+      if (difficulty === 'easy' && wordLen >= 3 && wordLen <= 5) isLengthValid = true;
+      else if (difficulty === 'medium' && wordLen >= 5 && wordLen <= 7) isLengthValid = true;
+      else if (difficulty === 'hard' && wordLen >= 7 && wordLen <= 10) isLengthValid = true;
+
+      if (!isLengthValid) {
+        existingWordSet.add(word.toLowerCase());
+        lastError = `AI returned "${word}" (length ${wordLen}) which does not match "${difficulty}" length constraint.`;
+        continue;
+      }
+
+      const localEntry = getLocalDictEntry(word);
       return {
         word,
-        thaiMeaning: thaiMeaning || getFallbackMetadata(word).thaiMeaning,
-        phonetic: phonetic || getFallbackMetadata(word).phonetic,
-        source: 'gemini',
+        thaiMeaning: localEntry ? localEntry.thaiMeaning : (thaiMeaning || getFallbackMetadata(word).thaiMeaning),
+        phonetic: localEntry ? localEntry.phonetic : (phonetic || getFallbackMetadata(word).phonetic),
+        source: localEntry ? 'local_dictionary' : (useOllama ? 'ollama' : 'gemini'),
       };
     } catch (e) {
-      lastError = e instanceof Error ? e.message : 'Gemini suggestion failed.';
-      console.error('Gemini suggest exception:', e);
+      lastError = e instanceof Error ? e.message : 'AI suggestion failed.';
+      console.error('AI suggest exception:', e);
     }
   }
 
-  throw new Error(lastError || 'Gemini could not generate a vocabulary word.');
+  // If we reach here, it means we exhausted all 4 attempts (usually because of duplicate/length constraint failures)
+  // Let's fall back to a recycled candidate from our high-quality list!
+  if (candidates.length > 0) {
+    const randomIndex = Math.floor(Math.random() * candidates.length);
+    const recycledWord = candidates[randomIndex];
+    const dictEntry = getLocalDictEntry(recycledWord);
+    if (dictEntry) {
+      return {
+        word: recycledWord,
+        thaiMeaning: dictEntry.thaiMeaning,
+        phonetic: dictEntry.phonetic,
+        source: 'local_dictionary',
+      };
+    }
+  }
+
+  throw new Error(lastError || 'AI could not generate a vocabulary word matching constraints.');
 }
 
 async function enrichWord(word: string, category: AiWordCategory, difficulty: 'easy' | 'medium' | 'hard') {
+  const localEntry = getLocalDictEntry(word);
+  if (localEntry) {
+    return {
+      word: word.trim(),
+      thaiMeaning: localEntry.thaiMeaning,
+      phonetic: localEntry.phonetic,
+      source: 'local_dictionary',
+    };
+  }
+
   const settings = await getAiWordSettings();
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
   const geminiModel = process.env.GEMINI_MODEL;
@@ -296,52 +283,69 @@ async function enrichWord(word: string, category: AiWordCategory, difficulty: 'e
   if (!settings.useGemini) {
     throw new Error('Gemini metadata generation is disabled in AI Word Game settings.');
   }
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is missing from env.');
-  }
-  if (!geminiModel) {
-    throw new Error('GEMINI_MODEL is missing from env.');
+
+  const useOllama = !!(process.env.OLLAMA_URL || process.env.WHISPER_MODE === 'local');
+  if (!useOllama) {
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY is missing from env.');
+    }
+    if (!geminiModel) {
+      throw new Error('GEMINI_MODEL is missing from env.');
+    }
   }
 
-  const prompt = [
-    'Create metadata for an English vocabulary game for Thai children.',
-    `Word: ${word}`,
-    `Category: ${category.label}`,
-    `Difficulty: ${difficulty}`,
-    'Return only JSON with keys: word, thaiMeaning, phonetic.',
-    'Phonetic should be simple kid-friendly English syllables.',
-  ].join('\n');
+  const prompt = `You are a children's English vocabulary teacher. Create accurate metadata for the English word "${word}".
+Word: "${word}"
+Category: "${category.label}" (Thai concept: ${category.thaiLabel || ''})
+Difficulty: "${difficulty}"
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.4,
-          maxOutputTokens: 1024,
-          thinkingConfig: { thinkingBudget: 0 },
-        },
-      }),
-    },
-  );
+Instructions:
+1. Translate the English word "${word}" into Thai accurately. The translation MUST be the correct, simple, and direct meaning of "${word}" in Thai suitable for children (e.g., "Kangaroo" translates to "จิงโจ้", "Cat" to "แมว", "Apple" to "แอปเปิล"). Do NOT hallucinate or make up a translation.
+2. Provide a simple kid-friendly phonetic pronunciation guide in English syllables (e.g., "KAHN-guh-roo", "AP-pul").
 
-  if (!response.ok) {
-    const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
-    error.status = response.status;
-    throw error;
+Return ONLY valid JSON format:
+{
+  "word": "${word}",
+  "thaiMeaning": "คำแปลภาษาไทยที่ถูกต้องและเข้าใจง่ายสั้นๆ",
+  "phonetic": "simple English phonetic guide"
+}`;
+
+  let text = '';
+  if (useOllama) {
+    text = await callOllama(prompt, true);
+  } else {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.4,
+            maxOutputTokens: 1024,
+            thinkingConfig: { thinkingBudget: 0 },
+          },
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
+      error.status = response.status;
+      throw error;
+    }
+    const data = await response.json();
+    text = data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join('') ?? '';
   }
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join('') ?? '';
+
   const parsed = extractJson(text);
   return {
     word: parsed?.word ? String(parsed.word).trim() : word,
     thaiMeaning: parsed?.thaiMeaning ? String(parsed.thaiMeaning).trim() : fallback.thaiMeaning,
     phonetic: parsed?.phonetic ? String(parsed.phonetic).trim() : fallback.phonetic,
-    source: 'gemini',
+    source: useOllama ? 'ollama' : 'gemini',
   };
 }
 
@@ -560,17 +564,37 @@ export async function POST(request: NextRequest) {
       DELETE FROM ai_word_category WHERE id = ${String(body.id)}
     `;
   } else if (action === 'createWord') {
-    await prisma.$executeRaw`
-      INSERT INTO ai_word_fallback_word
-        (id, category_id, word, thai_meaning, phonetic, image_url, difficulty, active, updated_at)
-      VALUES
-        (${crypto.randomUUID()}, ${String(body.categoryId)}, ${String(body.word ?? '')},
-         ${body.thaiMeaning ? String(body.thaiMeaning) : null},
-         ${body.phonetic ? String(body.phonetic) : null},
-         ${body.imageUrl ? String(body.imageUrl) : null},
-         ${toDifficulty(body.difficulty)},
-         ${toBool(body.active)}, CURRENT_TIMESTAMP)
+    const wordClean = String(body.word ?? '').trim();
+    const categoryId = String(body.categoryId);
+    const existing = await prisma.$queryRaw<any[]>`
+      SELECT id FROM ai_word_fallback_word 
+      WHERE category_id = ${categoryId} AND LOWER(word) = ${wordClean.toLowerCase()}
     `;
+
+    if (existing.length > 0) {
+      await prisma.$executeRaw`
+        UPDATE ai_word_fallback_word
+        SET thai_meaning = ${body.thaiMeaning ? String(body.thaiMeaning) : null},
+            phonetic = ${body.phonetic ? String(body.phonetic) : null},
+            image_url = ${body.imageUrl ? String(body.imageUrl) : null},
+            difficulty = ${toDifficulty(body.difficulty)},
+            active = ${toBool(body.active)},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${existing[0].id}
+      `;
+    } else {
+      await prisma.$executeRaw`
+        INSERT INTO ai_word_fallback_word
+          (id, category_id, word, thai_meaning, phonetic, image_url, difficulty, active, updated_at)
+        VALUES
+          (${crypto.randomUUID()}, ${categoryId}, ${wordClean},
+           ${body.thaiMeaning ? String(body.thaiMeaning) : null},
+           ${body.phonetic ? String(body.phonetic) : null},
+           ${body.imageUrl ? String(body.imageUrl) : null},
+           ${toDifficulty(body.difficulty)},
+           ${toBool(body.active)}, CURRENT_TIMESTAMP)
+      `;
+    }
   } else if (action === 'updateWord') {
     await prisma.$executeRaw`
       UPDATE ai_word_fallback_word

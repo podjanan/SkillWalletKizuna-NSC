@@ -448,7 +448,7 @@ class ActivityService {
     required int maxScore,
     String? description,
     String? videoUrl,
-    List<Map<String, dynamic>>? segments,
+    dynamic segments,
     bool isPublic = true,
   }) async {
     final payload = {
@@ -494,7 +494,7 @@ class ActivityService {
     int? maxScore,
     String? description,
     String? videoUrl,
-    List<Map<String, dynamic>>? segments,
+    dynamic segments,
   }) async {
     final payload = <String, dynamic>{};
     if (name != null) payload['name'] = name;

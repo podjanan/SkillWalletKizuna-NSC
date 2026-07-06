@@ -190,6 +190,8 @@ services:
       - NODE_ENV=production
       - WHISPER_MODE=local
       - WHISPER_LOCAL_URL=http://whisper:8000
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=qwen2.5:3b
 
     depends_on:
       whisper:
@@ -264,7 +266,17 @@ services:
       "
     restart: "no"
 
+  ollama:
+    container_name: swk-ollama
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - swk_ollama_data:/root/.ollama
+    restart: unless-stopped
+
 volumes:
   swk_postgres_data:
   swk_pgadmin_data:
   swk_minio_data:
+  swk_ollama_data:
