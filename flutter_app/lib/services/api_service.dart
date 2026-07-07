@@ -99,7 +99,11 @@ class ApiService {
         'API Error: Expected Map response, but received List/null.');
   }
 
-  Future<Map<String, dynamic>> post(String path, dynamic body) async {
+  Future<Map<String, dynamic>> post(
+    String path,
+    dynamic body, {
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
     final headers = await _getHeaders();
     final response = await http
         .post(
@@ -107,7 +111,7 @@ class ApiService {
           headers: headers,
           body: jsonEncode(body),
         )
-        .timeout(const Duration(seconds: 15));
+        .timeout(timeout);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return {};

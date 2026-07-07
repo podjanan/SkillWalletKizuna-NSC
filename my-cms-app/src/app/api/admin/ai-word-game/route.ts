@@ -23,6 +23,7 @@ type AdminAction =
   | 'suggestWord'
   | 'previewWord'
   | 'refreshImage'
+  | 'uploadImage'
   | 'createBlockedTerm'
   | 'updateBlockedTerm'
   | 'deleteBlockedTerm';
@@ -75,41 +76,14 @@ async function getCategoryById(categoryId: string) {
   return categories.find((category) => category.id === categoryId) ?? categories[0];
 }
 
-async function getGeminiErrorMessage(response: Response) {
-  const errorText = await response.text().catch(() => '');
-  console.error('Gemini API error:', response.status, errorText);
-
-  if (response.status === 429) {
-    if (errorText.includes('PerDay') || errorText.includes('daily requests') || errorText.includes('quota exceeded')) {
-      return 'Gemini quota exhausted (\u0e42\u0e04\u0e27\u0e15\u0e49\u0e32\u0e2b\u0e21\u0e14). Please wait for quota reset or check API billing.';
-    }
-    return 'Gemini rate limit or temporary quota reached (\u0e42\u0e04\u0e27\u0e15\u0e49\u0e32\u0e2b\u0e21\u0e14). Please try again later.';
-  }
-
-  if (response.status === 403) return 'GEMINI_API_KEY is not allowed to use this model.';
-  if (response.status === 400) return 'Gemini request is invalid. Please check the model or prompt.';
-  return `Gemini request failed (HTTP ${response.status})`;
-}
 async function generateSuggestion(
   category: AiWordCategory,
   difficulty: 'easy' | 'medium' | 'hard',
   excludeWords: string[] = []
 ) {
   const settings = await getAiWordSettings();
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL;
   if (!settings.useGemini) {
-    throw new Error('Gemini suggestion is disabled in AI Word Game settings.');
-  }
-
-  const useOllama = !!(process.env.OLLAMA_URL || process.env.WHISPER_MODE === 'local');
-  if (!useOllama) {
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is missing from env.');
-    }
-    if (!geminiModel) {
-      throw new Error('GEMINI_MODEL is missing from env.');
-    }
+    throw new Error('AI suggestion is disabled in AI Word Game settings.');
   }
 
   // Fetch existing words to exclude them from suggestions
@@ -163,37 +137,7 @@ Return the result in JSON format ONLY:
     const currentTemp = 0.1 + attempts * 0.25; // 0.1, 0.35, 0.6, 0.85
 
     try {
-      let text = '';
-      if (useOllama) {
-        text = await callOllama(finalPrompt, true, currentTemp);
-      } else {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
-              generationConfig: {
-                responseMimeType: 'application/json',
-                temperature: currentTemp,
-                maxOutputTokens: 1024,
-                thinkingConfig: { thinkingBudget: 0 },
-              },
-            }),
-          },
-        );
-
-        if (!response.ok) {
-          const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
-          error.status = response.status;
-          throw error;
-        }
-
-        const data = await response.json();
-        const candidate = data?.candidates?.[0];
-        text = candidate?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join('') ?? '';
-      }
+      const text = await callOllama(finalPrompt, true, currentTemp);
 
       const parsed = extractJson(text);
       const word = parsed?.word ? String(parsed.word).trim() : '';
@@ -201,9 +145,7 @@ Return the result in JSON format ONLY:
       const phonetic = parsed?.phonetic ? String(parsed.phonetic).trim() : '';
 
       if (!word) {
-        lastError = useOllama 
-          ? 'Ollama did not return a vocabulary word.'
-          : 'Gemini did not return a vocabulary word.';
+        lastError = 'Ollama did not return a vocabulary word.';
         continue;
       }
 
@@ -238,7 +180,7 @@ Return the result in JSON format ONLY:
         word,
         thaiMeaning: localEntry ? localEntry.thaiMeaning : (thaiMeaning || getFallbackMetadata(word).thaiMeaning),
         phonetic: localEntry ? localEntry.phonetic : (phonetic || getFallbackMetadata(word).phonetic),
-        source: localEntry ? 'local_dictionary' : (useOllama ? 'ollama' : 'gemini'),
+        source: localEntry ? 'local_dictionary' : 'ollama',
       };
     } catch (e) {
       lastError = e instanceof Error ? e.message : 'AI suggestion failed.';
@@ -277,21 +219,9 @@ async function enrichWord(word: string, category: AiWordCategory, difficulty: 'e
   }
 
   const settings = await getAiWordSettings();
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL;
   const fallback = getFallbackMetadata(word);
   if (!settings.useGemini) {
-    throw new Error('Gemini metadata generation is disabled in AI Word Game settings.');
-  }
-
-  const useOllama = !!(process.env.OLLAMA_URL || process.env.WHISPER_MODE === 'local');
-  if (!useOllama) {
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is missing from env.');
-    }
-    if (!geminiModel) {
-      throw new Error('GEMINI_MODEL is missing from env.');
-    }
+    throw new Error('AI metadata generation is disabled in AI Word Game settings.');
   }
 
   const prompt = `You are a children's English vocabulary teacher. Create accurate metadata for the English word "${word}".
@@ -310,42 +240,14 @@ Return ONLY valid JSON format:
   "phonetic": "simple English phonetic guide"
 }`;
 
-  let text = '';
-  if (useOllama) {
-    text = await callOllama(prompt, true);
-  } else {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            temperature: 0.4,
-            maxOutputTokens: 1024,
-            thinkingConfig: { thinkingBudget: 0 },
-          },
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
-      error.status = response.status;
-      throw error;
-    }
-    const data = await response.json();
-    text = data?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? '').join('') ?? '';
-  }
+  const text = await callOllama(prompt, true);
 
   const parsed = extractJson(text);
   return {
     word: parsed?.word ? String(parsed.word).trim() : word,
     thaiMeaning: parsed?.thaiMeaning ? String(parsed.thaiMeaning).trim() : fallback.thaiMeaning,
     phonetic: parsed?.phonetic ? String(parsed.phonetic).trim() : fallback.phonetic,
-    source: useOllama ? 'ollama' : 'gemini',
+    source: 'ollama',
   };
 }
 
@@ -442,6 +344,37 @@ async function fetchPreviewImage(word: string) {
     error: imageResult.error,
   };
 }
+
+async function uploadManualImage(word: string, imageDataUrl: string) {
+  const match = imageDataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/);
+  if (!match) {
+    throw new Error('Image must be uploaded as a base64 data URL.');
+  }
+
+  const contentType = match[1];
+  const base64 = match[2];
+  const buffer = Uint8Array.from(Buffer.from(base64, 'base64'));
+  const extension = contentType.includes('jpeg') || contentType.includes('jpg')
+    ? 'jpg'
+    : contentType.includes('webp')
+      ? 'webp'
+      : contentType.includes('gif')
+        ? 'gif'
+        : 'png';
+  const cleanWord = (word || 'manual')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, '_')
+    .replace(/^_+|_+$/g, '') || 'manual';
+  const key = `ai-word-game/manual/${cleanWord}-${Date.now()}.${extension}`;
+  const imageUrl = await uploadToMinio(key, buffer, contentType);
+
+  return {
+    imageUrl,
+    imageSource: 'manual_upload',
+  };
+}
+
 async function getLogs() {
   return prisma.$queryRaw`
     SELECT id, category_slug AS "categorySlug", word, thai_meaning AS "thaiMeaning",
@@ -566,7 +499,7 @@ export async function POST(request: NextRequest) {
   } else if (action === 'createWord') {
     const wordClean = String(body.word ?? '').trim();
     const categoryId = String(body.categoryId);
-    const existing = await prisma.$queryRaw<any[]>`
+    const existing = await prisma.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM ai_word_fallback_word 
       WHERE category_id = ${categoryId} AND LOWER(word) = ${wordClean.toLowerCase()}
     `;
@@ -631,9 +564,9 @@ export async function POST(request: NextRequest) {
         source: suggestion.source,
       });
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Gemini suggestion failed.';
+      const message = e instanceof Error ? e.message : 'Ollama suggestion failed.';
       const status = e instanceof Error && 'status' in e && e.status === 429 ? 429 : 502;
-      return NextResponse.json({ error: message, source: 'gemini' }, { status });
+      return NextResponse.json({ error: message, source: 'ollama' }, { status });
     }
   } else if (action === 'previewWord') {
     const category = await getCategoryById(String(body.categoryId ?? ''));
@@ -651,9 +584,9 @@ export async function POST(request: NextRequest) {
         difficulty: toDifficulty(body.difficulty),
       });
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Gemini metadata generation failed.';
+      const message = e instanceof Error ? e.message : 'Ollama metadata generation failed.';
       const status = e instanceof Error && 'status' in e && e.status === 429 ? 429 : 502;
-      return NextResponse.json({ error: message, source: 'gemini' }, { status });
+      return NextResponse.json({ error: message, source: 'ollama' }, { status });
     }
   } else if (action === 'refreshImage') {
     const word = String(body.word ?? '').trim();
@@ -663,6 +596,12 @@ export async function POST(request: NextRequest) {
       ...imageInfo,
       imageError: imageInfo.error,
     });
+  } else if (action === 'uploadImage') {
+    const word = String(body.word ?? '').trim();
+    const imageDataUrl = String(body.imageDataUrl ?? '');
+    if (!imageDataUrl) return NextResponse.json({ error: 'Image file is required' }, { status: 400 });
+    const imageInfo = await uploadManualImage(word, imageDataUrl);
+    return NextResponse.json(imageInfo);
   } else if (action === 'createBlockedTerm') {
     await prisma.$executeRaw`
       INSERT INTO ai_word_blocked_term (id, term, active)

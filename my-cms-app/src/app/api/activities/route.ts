@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import {
+  shouldInjectAiWordActivity,
+  shouldInjectSpaceAdventure,
+} from '@/lib/ai-word-game';
 
 // Helper function to safely serialize JSON fields
 function safeJsonSerialize(value: any) {
@@ -167,7 +171,14 @@ export async function GET(request: Request) {
       }
     });
 
-    const data = [...activitiesResponse];
+    const virtualActivities = await Promise.all([
+      shouldInjectAiWordActivity(category, ownedBy),
+      shouldInjectSpaceAdventure(category, ownedBy),
+    ]);
+    const data = [
+      ...virtualActivities.filter((activity): activity is NonNullable<typeof activity> => activity !== null),
+      ...activitiesResponse,
+    ];
 
     // Return with proper structure (match frontend expectations)
     const response = {

@@ -24,6 +24,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
   Uint8List? _roomImageBytes;
   bool _isScanning = false;
   bool _isLoadingAreas = true;
+  bool _usePresetMode = false;
   List<String> _detectedObjects = [];
   List<SpaceAdventureArea> _areas = [];
   String? _scanError;
@@ -244,114 +245,162 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
     );
   }
 
-  void _showAreasSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Choose a play area',
-                  style: AppTextStyles.heading(18, color: Colors.black87),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                if (_isLoadingAreas)
-                  const Center(child: CircularProgressIndicator(color: Palette.sky))
-                else if (_areas.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Text(
-                      'No areas are available yet. Please add one in Space Adventure CMS.',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.body(14, color: Palette.deepGrey),
-                    ),
-                  )
-                else
-                  SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.55,
-                    child: ListView.separated(
-                      itemCount: _areas.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final area = _areas[index];
-                        return InkWell(
-                          borderRadius: BorderRadius.circular(18),
-                          onTap: () {
-                            Navigator.pop(context);
-                            _startQuestWithObjects(area.items);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Palette.sky.withOpacity(0.06),
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: Palette.sky.withOpacity(0.2)),
-                            ),
-                            child: Row(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(14),
-                                  child: area.imageUrl.isNotEmpty
-                                      ? Image.network(
-                                          area.imageUrl,
-                                          width: 76,
-                                          height: 76,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => _areaPlaceholder(),
-                                        )
-                                      : _areaPlaceholder(),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        area.name.toUpperCase(),
-                                        style: AppTextStyles.label(14, color: Colors.black87),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        area.items.join(', '),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AppTextStyles.body(12, color: Palette.deepGrey),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(Icons.arrow_forward_ios, size: 16, color: Palette.sky),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _areaPlaceholder() {
     return Container(
       width: 76,
       height: 76,
       color: Palette.sky.withOpacity(0.12),
       child: const Icon(Icons.meeting_room_outlined, color: Palette.sky, size: 34),
+    );
+  }
+
+  Widget _modeButton({
+    required bool selected,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: _isScanning ? null : onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: selected ? Palette.sky.withOpacity(0.12) : Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected ? Palette.sky : Palette.divider,
+              width: selected ? 2 : 1.5,
+            ),
+            boxShadow: selected ? Palette.softShadow : null,
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: selected ? Palette.sky : Colors.black45, size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.label(
+                        12,
+                        color: selected ? Palette.skyDark : Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.body(10, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPresetAreaPanel() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Palette.divider, width: 2),
+        boxShadow: Palette.cardShadow,
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Choose preset area',
+            style: AppTextStyles.heading(18, color: Colors.black87),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Use target items managed in Space Adventure CMS.',
+            style: AppTextStyles.body(12, color: Colors.black54),
+          ),
+          const SizedBox(height: 14),
+          Expanded(
+            child: _isLoadingAreas
+                ? const Center(child: CircularProgressIndicator(color: Palette.sky))
+                : _areas.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No preset areas are available yet.\nPlease add one in Space Adventure CMS.',
+                          textAlign: TextAlign.center,
+                          style: AppTextStyles.body(14, color: Palette.deepGrey),
+                        ),
+                      )
+                    : ListView.separated(
+                        itemCount: _areas.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final area = _areas[index];
+                          return InkWell(
+                            borderRadius: BorderRadius.circular(18),
+                            onTap: () => _startQuestWithObjects(area.items),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Palette.sky.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: Palette.sky.withOpacity(0.2)),
+                              ),
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: area.imageUrl.isNotEmpty
+                                        ? Image.network(
+                                            area.imageUrl,
+                                            width: 76,
+                                            height: 76,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => _areaPlaceholder(),
+                                          )
+                                        : _areaPlaceholder(),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          area.name.toUpperCase(),
+                                          style: AppTextStyles.label(14, color: Colors.black87),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          area.items.join(', '),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: AppTextStyles.body(12, color: Palette.deepGrey),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.play_arrow_rounded, size: 24, color: Palette.sky),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -421,9 +470,32 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
               ),
               const SizedBox(height: 24),
 
+              Row(
+                children: [
+                  _modeButton(
+                    selected: !_usePresetMode,
+                    icon: Icons.center_focus_strong_rounded,
+                    title: 'Scan room',
+                    subtitle: 'AI finds items',
+                    onTap: () => setState(() => _usePresetMode = false),
+                  ),
+                  const SizedBox(width: 12),
+                  _modeButton(
+                    selected: _usePresetMode,
+                    icon: Icons.list_alt_rounded,
+                    title: 'Use preset',
+                    subtitle: 'CMS item list',
+                    onTap: () => setState(() => _usePresetMode = true),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+
               // Viewfinder / Room image container
               Expanded(
-                child: Container(
+                child: _usePresetMode
+                    ? _buildPresetAreaPanel()
+                    : Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(28),
@@ -547,7 +619,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
               ),
               const SizedBox(height: 24),
 
-              if (_scanError != null && !_isScanning) ...[
+              if (!_usePresetMode && _scanError != null && !_isScanning) ...[
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -573,7 +645,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
               ],
 
               // Scanned items output tag view
-              if (_detectedObjects.isNotEmpty && !_isScanning) ...[
+              if (!_usePresetMode && _detectedObjects.isNotEmpty && !_isScanning) ...[
                 Text(
                   'Items detected:',
                   style: AppTextStyles.label(12, color: Colors.black54),
@@ -610,45 +682,27 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                 const SizedBox(height: 20),
               ],
 
-              // Action buttons
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_roomImageBytes != null && _detectedObjects.isNotEmpty) ...[
-                    GradientButton.success(
-                      label: 'Start quest',
-                      onTap: _isScanning ? null : _finishScanAndStartQuest,
-                      fontSize: 15,
+              if (!_usePresetMode)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_roomImageBytes != null && _detectedObjects.isNotEmpty) ...[
+                      GradientButton.success(
+                        label: 'Start quest',
+                        onTap: _isScanning ? null : _finishScanAndStartQuest,
+                        fontSize: 15,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    GradientButton.primary(
+                      label: _roomImageBytes == null ? 'Scan room' : 'Re-scan',
+                      onTap: _isScanning ? null : _captureRoom,
+                      fontSize: 14,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    const SizedBox(height: 12),
                   ],
-                  Row(
-                    children: [
-                      Expanded(
-                        child: GradientButton.primary(
-                          label: _roomImageBytes == null ? 'Scan room' : 'Re-scan',
-                          onTap: _isScanning ? null : _captureRoom,
-                          fontSize: 14,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: GradientButton(
-                          label: 'View areas',
-                          gradient: LinearGradient(
-                            colors: [Palette.warningLight, Palette.warning],
-                          ),
-                          onTap: _isScanning ? null : _showAreasSheet,
-                          fontSize: 14,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
             ],
           ),
         ),

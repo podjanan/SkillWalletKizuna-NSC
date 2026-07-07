@@ -119,6 +119,97 @@ function extractGeminiJson(text: string, kind: 'array' | 'object'): unknown | nu
   }
 }
 
+function normalizeObjectLabel(label: string): string {
+  const aliases: Record<string, string> = {
+    couch: 'sofa',
+    'dining table': 'table',
+    tv: 'television',
+    'cell phone': 'phone',
+  };
+  const normalized = label
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9 _-]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return aliases[normalized] ?? normalized.replace(/s$/, '');
+}
+
+function objectLabelsMatch(detected: string, target: string): boolean {
+  const detectedLabel = normalizeObjectLabel(detected);
+  const targetLabel = normalizeObjectLabel(target);
+  return detectedLabel === targetLabel ||
+    detectedLabel.includes(targetLabel) ||
+    targetLabel.includes(detectedLabel);
+}
+
+function normalizeDetectedObjects(parsed: unknown, minConfidence = 0): string[] {
+  const rawList = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === 'object'
+      ? ((parsed as Record<string, unknown>).objects ??
+          (parsed as Record<string, unknown>).items ??
+          (parsed as Record<string, unknown>).detectedObjects ??
+          (parsed as Record<string, unknown>).detections)
+      : null;
+
+  if (!Array.isArray(rawList)) return [];
+
+  return rawList
+    .filter((item: unknown) => {
+      if (!minConfidence || !item || typeof item !== 'object') return true;
+      const record = item as Record<string, unknown>;
+      const confidence = Number(
+        record.confidence ?? record.score ?? record.probability ?? record.conf
+      );
+      return !Number.isFinite(confidence) || confidence >= minConfidence;
+    })
+    .map((item: unknown) => {
+      if (item && typeof item === 'object') {
+        const record = item as Record<string, unknown>;
+        return String(
+          record.label ?? record.name ?? record.class ?? record.object ?? record.category ?? ''
+        );
+      }
+      return String(item);
+    })
+    .map(normalizeObjectLabel)
+    .filter(Boolean)
+    .filter((item, index, list) => list.indexOf(item) === index)
+    .slice(0, 10);
+}
+
+async function callObjectDetectionService(base64Image: string): Promise<string[]> {
+  const detectorUrl = process.env.OBJECT_DETECTION_URL?.trim();
+  if (!detectorUrl) return [];
+
+  const timeoutMs = Number(process.env.OBJECT_DETECTION_TIMEOUT_MS || 20000);
+  const minConfidence = Number(process.env.OBJECT_DETECTION_MIN_CONFIDENCE || 0.25);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(detectorUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64Image, imageBase64: base64Image }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Object detector returned HTTP ${response.status}`);
+    }
+
+    const result = await response.json();
+    return normalizeDetectedObjects(result, minConfidence);
+  } catch (error) {
+    console.warn('Object detection service failed, falling back to Ollama:', error);
+    return [];
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function normalizeSpaceAdventureItems(items: unknown): string[] {
   const rawItems = Array.isArray(items)
     ? items
@@ -650,89 +741,65 @@ export async function deleteSpaceAdventureArea(id: string) {
   `;
 }
 
-export async function scanRoomImage(base64Image: string): Promise<{ objects: string[]; source: 'gemini'; fallback: false } | { objects: string[]; source: 'none'; fallback: true; reason: string }> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-  if (!apiKey) {
-    return {
-      objects: [],
-      source: 'none',
-      fallback: true,
-      reason: 'GEMINI_API_KEY is missing from environment.'
-    };
+export async function scanRoomImage(base64Image: string): Promise<{ objects: string[]; source: 'object_detection' | 'ollama'; fallback: false } | { objects: string[]; source: 'none'; fallback: true; reason: string }> {
+  const detectorObjects = await callObjectDetectionService(base64Image);
+  if (detectorObjects.length > 0) {
+    return { objects: detectorObjects, source: 'object_detection', fallback: false };
   }
 
-  const prompt = `You are an AI spatial scanner for a children's adventure game called 'Space Adventure'. Analyze this room photo. Detect 5-10 common everyday objects (like bed, pillow, chair, desk, toy, book, shoe, window, curtain, keyboard, monitor, blanket, cup, bag) that a child can easily find and take a close-up photo of. Return a JSON array of strings representing these objects in simple, concrete English terms (e.g. ["pillow", "chair", "bed", "book"]). Respond ONLY with JSON, no markdown blocks or other text.`;
+  const prompt = `You are an object detector for a children's scavenger hunt game called "Space Adventure".
+Analyze this room photo and detect 5-10 common everyday objects that a child can easily find and photograph close-up.
+Use simple concrete English nouns only, such as chair, desk, book, bag, window, door, light, bottle, cup, pencil, pillow, bed, toy.
+
+Return ONLY valid JSON in this exact shape:
+{
+  "objects": ["chair", "desk", "window"]
+}`;
 
   const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: cleanBase64
-                }
-              }
-            ]
-          }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'ARRAY',
-              items: { type: 'STRING' }
-            },
-            temperature: 0.4,
-            maxOutputTokens: 512
-          }
-        })
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Gemini API error (${response.status}): ${errorText}`);
-    }
-
-    const result = await response.json();
-    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const parsed = extractGeminiJson(text, 'array');
-    if (Array.isArray(parsed)) {
-      const objects = parsed
-        .map((item: unknown) => String(item).trim().toLowerCase())
-        .filter(Boolean);
-      if (objects.length > 0) return { objects, source: 'gemini', fallback: false };
-    }
+    const text = await callOllama(prompt, true, 0.2, {
+      model: process.env.OLLAMA_VISION_MODEL || 'gemma3:4b',
+      images: [cleanBase64],
+    });
+    const parsed = extractGeminiJson(text, 'object') ?? extractGeminiJson(text, 'array');
+    const objects = normalizeDetectedObjects(parsed);
+    if (objects.length > 0) return { objects, source: 'ollama', fallback: false };
     return {
       objects: [],
       source: 'none',
       fallback: true,
-      reason: 'Gemini did not return a valid list of room objects.'
+      reason: 'Ollama did not return a valid list of room objects.'
     };
   } catch (e) {
-    console.error('Failed to scan room image with Gemini:', e);
+    console.error('Failed to scan room image with Ollama:', e);
     return {
       objects: [],
       source: 'none',
       fallback: true,
-      reason: e instanceof Error ? e.message : 'Unknown Gemini scan error.'
+      reason: e instanceof Error ? e.message : 'Unknown Ollama scan error.'
     };
   }
 }
 
 export async function verifyTargetItem(base64Image: string, targetObject: string): Promise<{ match: boolean; confidence: number; reason: string }> {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is missing from environment.');
+  const detectorObjects = await callObjectDetectionService(base64Image);
+  if (detectorObjects.length > 0) {
+    const matchedLabel = detectorObjects.find((item) => objectLabelsMatch(item, targetObject));
+    if (matchedLabel) {
+      return {
+        match: true,
+        confidence: 0.9,
+        reason: `Great job! YOLO detected ${matchedLabel}.`,
+      };
+    }
+
+    return {
+      match: false,
+      confidence: 0.25,
+      reason: `Almost there! I detected ${detectorObjects.slice(0, 3).join(', ')}, but not ${normalizeObjectLabel(targetObject)}.`,
+    };
   }
 
   const prompt = `You are the referee AI for the 'Space Adventure' game. A child was asked to find the object: "${targetObject}". Verify if the uploaded image represents a close-up or clear shot of this target object. It doesn't have to be perfect, but it must be clearly identifiable as the target object. Respond in JSON format ONLY:
@@ -745,58 +812,20 @@ export async function verifyTargetItem(base64Image: string, targetObject: string
   const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  mimeType: 'image/jpeg',
-                  data: cleanBase64
-                }
-              }
-            ]
-          }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'OBJECT',
-              properties: {
-                match: { type: 'BOOLEAN' },
-                confidence: { type: 'NUMBER' },
-                reason: { type: 'STRING' }
-              },
-              required: ['match', 'confidence', 'reason']
-            },
-            temperature: 0.4,
-            maxOutputTokens: 512
-          }
-        })
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Gemini API error (${response.status}): ${errorText}`);
-    }
-
-    const result = await response.json();
-    const text = result.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = await callOllama(prompt, true, 0.2, {
+      model: process.env.OLLAMA_VISION_MODEL || 'gemma3:4b',
+      images: [cleanBase64],
+    });
     const parsed = extractGeminiJson(text, 'object') as Record<string, unknown> | null;
-    if (!parsed) throw new Error('Gemini did not return valid verification JSON.');
+    if (!parsed) throw new Error('Ollama did not return valid verification JSON.');
     return {
       match: Boolean(parsed.match),
       confidence: Number(parsed.confidence ?? 0.8),
       reason: String(parsed.reason ?? 'Very Good!')
     };
   } catch (e) {
-    console.error('Failed to verify item with Gemini:', e);
-    const reason = e instanceof Error ? e.message : 'Unknown Gemini verification error.';
+    console.error('Failed to verify item with Ollama:', e);
+    const reason = e instanceof Error ? e.message : 'Unknown Ollama verification error.';
     return {
       match: false,
       confidence: 0,
@@ -835,9 +864,15 @@ export async function getTopScores(limit = 10) {
   `;
 }
 
-export async function callOllama(prompt: string, formatJson: boolean = false, temperature: number = 0.1): Promise<string> {
+type OllamaCallOptions = {
+  model?: string;
+  images?: string[];
+};
+
+export async function callOllama(prompt: string, formatJson: boolean = false, temperature: number = 0.1, options: OllamaCallOptions = {}): Promise<string> {
   const ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:11434';
-  const model = process.env.OLLAMA_MODEL || 'qwen2.5:3b';
+  const model = options.model || process.env.OLLAMA_MODEL || 'qwen2.5:3b';
+  const keepAlive = process.env.OLLAMA_KEEP_ALIVE || '1m';
 
   async function checkAndPullModel() {
     try {
@@ -863,8 +898,13 @@ export async function callOllama(prompt: string, formatJson: boolean = false, te
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: model,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{
+          role: 'user',
+          content: prompt,
+          ...(options.images?.length ? { images: options.images } : {}),
+        }],
         stream: false,
+        keep_alive: keepAlive,
         format: formatJson ? 'json' : undefined,
         options: {
           temperature: temperature,

@@ -269,7 +269,10 @@ class _DynamicVocabularyGameScreenState
         if (coverImageUrl != null && coverImageUrl.isNotEmpty) {
           _coverImageUrl = coverImageUrl;
         }
-        _isCustomActivity = activity != null;
+        _isCustomActivity = activity != null &&
+            activity.id != 'ai-word-game' &&
+            activity.content != 'AI Word Game' &&
+            activity.content != 'ai-word-game';
         _isLoadingCategories = false;
       });
     } catch (_) {

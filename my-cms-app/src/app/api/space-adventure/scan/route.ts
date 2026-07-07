@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
         success: false,
         fallback: true,
         objects: scan.objects,
-        error: 'Unable to scan room image with Gemini.',
+        error: 'Unable to scan room image.',
         reason: scan.reason,
       });
     }

@@ -9,6 +9,7 @@ import {
   Search,
   Sparkles,
   Trash2,
+  Upload,
   BookOpen,
   Sliders,
   Check,
@@ -167,6 +168,15 @@ function normalizeCategoryIcon(category: Category): Category {
     ...category,
     icon: emojiForCategoryIcon(category.icon, category.slug),
   };
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.onerror = () => reject(reader.error ?? new Error('Unable to read image file.'));
+    reader.readAsDataURL(file);
+  });
 }
 
 const defaultPromptTemplate = `You are an expert children's English vocabulary teacher. Generate exactly one simple English vocabulary word for kids ages 4-9 that belongs STRICTLY and directly to the category: {{category}} (Thai label/concept: {{thaiLabel}}).
@@ -364,6 +374,21 @@ export default function AiWordGamePage() {
     setPreview((prev) => prev ? { ...prev, imageUrl, imageError, imageSource: String(result.imageSource ?? ''), query: String(result.query ?? '') } : prev);
     setCreator((prev) => ({ ...prev, imageUrl }));
     setCreatorStatus(result.imageError ? `Image refresh failed: ${result.imageError}` : 'Image refreshed.');
+  }
+
+  async function uploadPreviewImage(file: File) {
+    const word = preview?.word || creator.word;
+    setCreatorStatus('Uploading image...');
+    const imageDataUrl = await readFileAsDataUrl(file);
+    const result = await runAction({ action: 'uploadImage', word, imageDataUrl }, false);
+    if (result.error) {
+      setCreatorStatus(`Image upload failed: ${String(result.error)}`);
+      return;
+    }
+    const imageUrl = String(result.imageUrl ?? '');
+    setPreview((prev) => prev ? { ...prev, imageUrl, imageError: undefined, imageSource: String(result.imageSource ?? 'manual_upload') } : prev);
+    setCreator((prev) => ({ ...prev, imageUrl }));
+    setCreatorStatus('Image uploaded.');
   }
 
   async function saveCreatorWord() {
@@ -572,6 +597,7 @@ export default function AiWordGamePage() {
                 category={selectedCategory}
                 creator={creator}
                 onRefresh={refreshPreviewImage}
+                onUpload={uploadPreviewImage}
                 onSave={saveCreatorWord}
                 creatorStatus={creatorStatus}
               />
@@ -644,6 +670,15 @@ export default function AiWordGamePage() {
                             onSave={(next) => runAction({ action: 'updateWord', ...next })}
                             onFindImage={async (next) => {
                               const result = await runAction({ action: 'refreshImage', word: next.word }, false);
+                              const imageUrl = String(result.imageUrl ?? '');
+                              if (imageUrl) {
+                                await runAction({ action: 'updateWord', ...next, imageUrl });
+                              }
+                              return imageUrl;
+                            }}
+                            onUploadImage={async (next, file) => {
+                              const imageDataUrl = await readFileAsDataUrl(file);
+                              const result = await runAction({ action: 'uploadImage', word: next.word, imageDataUrl }, false);
                               const imageUrl = String(result.imageUrl ?? '');
                               if (imageUrl) {
                                 await runAction({ action: 'updateWord', ...next, imageUrl });
@@ -936,6 +971,7 @@ function PreviewCard({
   category,
   creator,
   onRefresh,
+  onUpload,
   onSave,
   creatorStatus
 }: {
@@ -943,13 +979,25 @@ function PreviewCard({
   category?: Category;
   creator: FallbackWord;
   onRefresh: () => void;
+  onUpload: (file: File) => Promise<void>;
   onSave: () => void;
   creatorStatus?: string;
 }) {
+  const [uploading, setUploading] = useState(false);
   const shadowColor = category?.color ? `${category.color}15` : '#6366F115';
   const themeColor = category?.color ?? '#4F46E5';
 
-  const isGenerating = creatorStatus === 'Creating preview...' || creatorStatus === 'Refreshing image...';
+  const isGenerating = creatorStatus === 'Creating preview...' || creatorStatus === 'Refreshing image...' || creatorStatus === 'Uploading image...';
+
+  async function handleUpload(file: File | undefined) {
+    if (!file || uploading) return;
+    setUploading(true);
+    try {
+      await onUpload(file);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   return (
     <div
@@ -1016,7 +1064,7 @@ function PreviewCard({
           <p className="font-semibold text-slate-800 text-sm">{preview?.thaiMeaning || creator.thaiMeaning || 'Waiting translation...'}</p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <button
             onClick={onRefresh}
             disabled={!preview?.word && !creator.word.trim()}
@@ -1025,11 +1073,26 @@ function PreviewCard({
             <RefreshCcw size={14} />
             Refresh Image
           </button>
+
+          <label className={`btn-white flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold shadow-sm hover:shadow-slate-100 transition-all duration-200 ${uploading ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`}>
+            {uploading ? <RefreshCcw size={14} className="animate-spin" /> : <Upload size={14} />}
+            Upload Image
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              disabled={uploading}
+              onChange={(e) => {
+                void handleUpload(e.target.files?.[0]);
+                e.currentTarget.value = '';
+              }}
+            />
+          </label>
           
           <button
             onClick={onSave}
             disabled={!creator.word.trim()}
-            className="btn-primary flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-extrabold text-white shadow-md hover:shadow-indigo-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary col-span-2 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-extrabold text-white shadow-md hover:shadow-indigo-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: themeColor, borderColor: themeColor }}
           >
             <Check size={14} />
@@ -1078,16 +1141,19 @@ function WordRow({
   categories,
   onSave,
   onFindImage,
+  onUploadImage,
   onDelete
 }: {
   word: FallbackWord;
   categories: Category[];
   onSave: (word: FallbackWord) => void;
   onFindImage: (word: FallbackWord) => Promise<string>;
+  onUploadImage: (word: FallbackWord, file: File) => Promise<string>;
   onDelete: () => void;
 }) {
   const [draft, setDraft] = useState(word);
   const [findingImage, setFindingImage] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   async function findStickerImage() {
     if (!draft.word.trim() || findingImage) return;
@@ -1097,6 +1163,17 @@ function WordRow({
       if (imageUrl) setDraft((prev) => ({ ...prev, imageUrl }));
     } finally {
       setFindingImage(false);
+    }
+  }
+
+  async function uploadStickerImage(file: File | undefined) {
+    if (!file || uploadingImage) return;
+    setUploadingImage(true);
+    try {
+      const imageUrl = await onUploadImage(draft, file);
+      if (imageUrl) setDraft((prev) => ({ ...prev, imageUrl }));
+    } finally {
+      setUploadingImage(false);
     }
   }
   
@@ -1134,20 +1211,36 @@ function WordRow({
           <input value={draft.thaiMeaning ?? ''} onChange={(e) => setDraft({ ...draft, thaiMeaning: e.target.value })} placeholder="Thai translation" className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium focus:border-indigo-500 outline-none" />
           <input value={draft.phonetic ?? ''} onChange={(e) => setDraft({ ...draft, phonetic: e.target.value })} placeholder="Phonetics guide" className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-mono font-medium focus:border-indigo-500 outline-none" />
           <input value={draft.imageUrl ?? ''} onChange={(e) => setDraft({ ...draft, imageUrl: e.target.value })} placeholder="Image base64 URL" className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-mono font-medium focus:border-indigo-500 outline-none" />
-          <button
-            type="button"
-            onClick={findStickerImage}
-            disabled={!draft.word.trim() || findingImage}
-            className="w-full rounded-lg border border-indigo-100 bg-indigo-50 px-2 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-150 flex items-center justify-center gap-1.5"
-            title={draft.imageUrl ? 'Refresh sticker image' : 'Find sticker image'}
-          >
-            {findingImage ? (
-              <RefreshCcw size={13} className="animate-spin" />
-            ) : (
-              <Search size={13} />
-            )}
-            {findingImage ? 'Finding...' : draft.imageUrl ? 'Refresh Sticker Image' : 'Find Sticker Image'}
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={findStickerImage}
+              disabled={!draft.word.trim() || findingImage}
+              className="rounded-lg border border-indigo-100 bg-indigo-50 px-2 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-150 flex items-center justify-center gap-1.5"
+              title={draft.imageUrl ? 'Refresh sticker image' : 'Find sticker image'}
+            >
+              {findingImage ? (
+                <RefreshCcw size={13} className="animate-spin" />
+              ) : (
+                <Search size={13} />
+              )}
+              {findingImage ? 'Finding...' : 'Refresh'}
+            </button>
+            <label className={`rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all duration-150 flex items-center justify-center gap-1.5 ${uploadingImage ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`}>
+              {uploadingImage ? <RefreshCcw size={13} className="animate-spin" /> : <Upload size={13} />}
+              Upload
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                disabled={uploadingImage}
+                onChange={(e) => {
+                  void uploadStickerImage(e.target.files?.[0]);
+                  e.currentTarget.value = '';
+                }}
+              />
+            </label>
+          </div>
         </div>
       </div>
 

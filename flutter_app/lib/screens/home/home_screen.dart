@@ -295,24 +295,27 @@ class _HomeScreenState extends State<HomeScreen> {
               final id = child['child_id'] as String?;
               final name = child['name_surname'] as String? ?? '—';
               final isSelected = id == userProvider.currentChildId;
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                leading: ChildAvatar(
-                  photoUrl: child['photo_url'] as String?,
-                  name: name,
-                  radius: 20,
-                  fontSize: 16,
+              return Material(
+                type: MaterialType.transparency,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  leading: ChildAvatar(
+                    photoUrl: child['photo_url'] as String?,
+                    name: name,
+                    radius: 20,
+                    fontSize: 16,
+                  ),
+                  title: Text(name, style: AppTextStyles.body(16)),
+                  trailing: isSelected
+                      ? const Icon(Icons.check_circle, color: Palette.sky)
+                      : null,
+                  onTap: () {
+                    if (id != null && !isSelected) {
+                      context.read<UserProvider>().selectChild(id);
+                    }
+                    Navigator.pop(ctx);
+                  },
                 ),
-                title: Text(name, style: AppTextStyles.body(16)),
-                trailing: isSelected
-                    ? const Icon(Icons.check_circle, color: Palette.sky)
-                    : null,
-                onTap: () {
-                  if (id != null && !isSelected) {
-                    context.read<UserProvider>().selectChild(id);
-                  }
-                  Navigator.pop(ctx);
-                },
               );
             }),
           ],

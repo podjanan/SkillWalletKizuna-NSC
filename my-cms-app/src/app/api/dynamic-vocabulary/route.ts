@@ -28,16 +28,8 @@ type VocabularyPayload = {
   imageUrl?: string;
   imageSource?: string;
   query: string;
-  wordSource: 'gemini' | 'fallback';
+  wordSource: 'ollama' | 'local_dictionary' | 'fallback';
   difficulty: 'easy' | 'medium' | 'hard';
-};
-
-type GeminiResponse = {
-  candidates?: Array<{
-    content?: {
-      parts?: Array<{ text?: string }>;
-    };
-  }>;
 };
 
 function extractJson(text: string): Record<string, unknown> | null {
@@ -76,40 +68,13 @@ function getSessionCount(
   return settings.wordsPerSessionEasy;
 }
 
-async function getGeminiErrorMessage(response: Response) {
-  const errorText = await response.text().catch(() => '');
-  console.error('Gemini API error:', response.status, errorText);
-
-  if (response.status === 429) {
-    if (errorText.includes('PerDay') || errorText.includes('daily requests') || errorText.includes('quota exceeded')) {
-      return 'Gemini quota exhausted (\u0e42\u0e04\u0e27\u0e15\u0e49\u0e32\u0e2b\u0e21\u0e14). Please wait for quota reset or check API billing.';
-    }
-    return 'Gemini rate limit or temporary quota reached (\u0e42\u0e04\u0e27\u0e15\u0e49\u0e32\u0e2b\u0e21\u0e14). Please try again later.';
-  }
-
-  if (response.status === 403) return 'GEMINI_API_KEY is not allowed to use this model.';
-  if (response.status === 400) return 'Gemini request is invalid. Please check the model or prompt.';
-  return `Gemini request failed (HTTP ${response.status})`;
-}
 async function generateWord(
   category: AiWordCategory,
   difficulty: 'easy' | 'medium' | 'hard',
 ) {
   const settings = await getAiWordSettings();
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-  const geminiModel = process.env.GEMINI_MODEL;
   if (!settings.useGemini) {
-    throw new Error('Gemini vocabulary generation is disabled in AI Word Game settings.');
-  }
-
-  const useOllama = !!(process.env.OLLAMA_URL || process.env.WHISPER_MODE === 'local');
-  if (!useOllama) {
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is missing from env.');
-    }
-    if (!geminiModel) {
-      throw new Error('GEMINI_MODEL is missing from env.');
-    }
+    throw new Error('AI vocabulary generation is disabled in AI Word Game settings.');
   }
 
   const existingWords = await getAiWordFallbackWords(category.id);
@@ -149,34 +114,7 @@ async function generateWord(
 
     try {
       let text = '';
-      if (useOllama) {
-        text = await callOllama(finalPrompt, true, currentTemp);
-      } else {
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
-              generationConfig: {
-                responseMimeType: 'application/json',
-                temperature: currentTemp,
-                maxOutputTokens: 140,
-              },
-            }),
-          },
-        );
-
-        if (!response.ok) {
-          const error = new Error(await getGeminiErrorMessage(response)) as Error & { status?: number };
-          error.status = response.status;
-          throw error;
-        }
-
-        const data = (await response.json()) as GeminiResponse;
-        text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-      }
+      text = await callOllama(finalPrompt, true, currentTemp);
 
       const parsed = extractJson(text);
       const word = parsed?.word ? String(parsed.word).trim() : '';
@@ -219,7 +157,7 @@ async function generateWord(
         thaiMeaning: localEntry ? localEntry.thaiMeaning : (parsed?.thaiMeaning ? String(parsed.thaiMeaning).trim() : undefined),
         phonetic: localEntry ? localEntry.phonetic : (parsed?.phonetic ? String(parsed.phonetic).trim() : undefined),
         imageUrl: undefined,
-        wordSource: localEntry ? 'local_dictionary' : ((useOllama ? 'ollama' : 'gemini') as any),
+        wordSource: localEntry ? ('local_dictionary' as const) : ('ollama' as const),
         difficulty,
       };
     } catch (err) {
@@ -240,7 +178,7 @@ async function generateWord(
         thaiMeaning: dictEntry.thaiMeaning,
         phonetic: dictEntry.phonetic,
         imageUrl: undefined,
-        wordSource: 'local_dictionary',
+        wordSource: 'local_dictionary' as const,
         difficulty,
       };
     }
@@ -409,7 +347,7 @@ export async function POST(request: NextRequest) {
     const dbWords = await getAiWordFallbackWordsByDifficulty(category.id, difficulty);
 
     // 2. Try Gemini if enabled — wrap in try/catch and enforce a strict timeout to prevent client timeout
-    let geminiPayload: VocabularyPayload | null = null;
+    let aiPayload: VocabularyPayload | null = null;
     if (settings.useGemini) {
       try {
         const generatedPromise = (async () => {
@@ -443,14 +381,14 @@ export async function POST(request: NextRequest) {
         })();
 
         // 8-second strict timeout limit for the entire AI word generation
-        geminiPayload = await Promise.race([
+        aiPayload = await Promise.race([
           generatedPromise,
           new Promise<null>((_, reject) => 
             setTimeout(() => reject(new Error('AI generation timeout')), 8000)
           )
         ]);
-      } catch (geminiErr) {
-        console.warn('AI word generation timed out or failed, using DB fallback only:', geminiErr);
+      } catch (aiErr) {
+        console.warn('AI word generation timed out or failed, using DB fallback only:', aiErr);
       }
     }
 
@@ -476,7 +414,7 @@ export async function POST(request: NextRequest) {
     // Combine: Gemini word + DB words, deduplicate by word (case-insensitive)
     const seen = new Set<string>();
     const allPayloads: VocabularyPayload[] = [];
-    for (const p of geminiPayload ? [geminiPayload, ...dbPayloads] : dbPayloads) {
+    for (const p of aiPayload ? [aiPayload, ...dbPayloads] : dbPayloads) {
       const key = p.word.trim().toLowerCase();
       if (!seen.has(key)) {
         seen.add(key);
@@ -496,8 +434,8 @@ export async function POST(request: NextRequest) {
     const sessionItems = allPayloads.slice(0, count);
 
     // Log only the Gemini-generated word if present
-    if (geminiPayload) {
-      await writeLog({ category, item: geminiPayload, status: 'success' });
+    if (aiPayload) {
+      await writeLog({ category, item: aiPayload, status: 'success' });
     }
 
     if (sessionMode) {

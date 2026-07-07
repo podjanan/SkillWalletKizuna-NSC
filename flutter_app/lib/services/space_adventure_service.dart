@@ -72,9 +72,11 @@ class SpaceAdventureService {
 
   Future<SpaceAdventureScanResult> scanRoom(String base64Image) async {
     try {
-      final res = await _apiService.post('/space-adventure/scan', {
-        'image': base64Image,
-      });
+      final res = await _apiService.post(
+        '/space-adventure/scan',
+        {'image': base64Image},
+        timeout: const Duration(seconds: 60),
+      );
       if (res['success'] == true && res['objects'] is List) {
         return SpaceAdventureScanResult(
           success: true,
@@ -100,10 +102,14 @@ class SpaceAdventureService {
 
   Future<Map<String, dynamic>> verifyObject(String base64Image, String target) async {
     try {
-      final res = await _apiService.post('/space-adventure/verify', {
-        'image': base64Image,
-        'target': target,
-      });
+      final res = await _apiService.post(
+        '/space-adventure/verify',
+        {
+          'image': base64Image,
+          'target': target,
+        },
+        timeout: const Duration(seconds: 60),
+      );
       if (res['success'] == true) {
         return {
           'match': res['match'] ?? false,
@@ -117,7 +123,7 @@ class SpaceAdventureService {
     return {
       'match': false,
       'confidence': 0.0,
-      'reason': 'Error calling vision AI check. Try again!',
+      'reason': 'Detection service is not ready. Please try again.',
     };
   }
 
