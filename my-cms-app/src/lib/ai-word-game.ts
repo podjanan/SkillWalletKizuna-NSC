@@ -743,7 +743,7 @@ export async function deleteSpaceAdventureArea(id: string) {
 
 export async function scanRoomImage(base64Image: string): Promise<{ objects: string[]; source: 'object_detection' | 'ollama'; fallback: false } | { objects: string[]; source: 'none'; fallback: true; reason: string }> {
   const detectorObjects = await callObjectDetectionService(base64Image);
-  if (detectorObjects.length > 0) {
+  if (detectorObjects.length >= 3) {
     return { objects: detectorObjects, source: 'object_detection', fallback: false };
   }
 

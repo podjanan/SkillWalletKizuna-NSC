@@ -75,7 +75,7 @@ class SpaceAdventureService {
       final res = await _apiService.post(
         '/space-adventure/scan',
         {'image': base64Image},
-        timeout: const Duration(seconds: 60),
+        timeout: const Duration(seconds: 180),
       );
       if (res['success'] == true && res['objects'] is List) {
         return SpaceAdventureScanResult(
@@ -108,7 +108,7 @@ class SpaceAdventureService {
           'image': base64Image,
           'target': target,
         },
-        timeout: const Duration(seconds: 60),
+        timeout: const Duration(seconds: 180),
       );
       if (res['success'] == true) {
         return {

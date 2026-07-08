@@ -83,6 +83,8 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
     final XFile? image = await picker.pickImage(
       source: ImageSource.camera,
       imageQuality: 65,
+      maxWidth: 800,
+      maxHeight: 800,
     );
     if (image == null) return;
 

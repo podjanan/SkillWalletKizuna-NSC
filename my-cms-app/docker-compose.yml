@@ -191,8 +191,8 @@ services:
       - WHISPER_MODE=local
       - WHISPER_LOCAL_URL=http://whisper:8000
       - OLLAMA_URL=http://ollama:11434
-      - OLLAMA_MODEL=qwen2.5:3b
-      - OLLAMA_VISION_MODEL=gemma3:4b
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
+      - OLLAMA_VISION_MODEL=${OLLAMA_VISION_MODEL:-gemma3:4b}
       - OLLAMA_KEEP_ALIVE=1m
       - OBJECT_DETECTION_URL=http://yolo-detector:8000/detect
       - OBJECT_DETECTION_MIN_CONFIDENCE=${OBJECT_DETECTION_MIN_CONFIDENCE:-0.25}

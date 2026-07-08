@@ -96,6 +96,8 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
       final XFile? image = await picker.pickImage(
         source: source,
         imageQuality: 65,
+        maxWidth: 800,
+        maxHeight: 800,
       );
       if (image == null) return;
 
