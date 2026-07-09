@@ -133,6 +133,7 @@ export default function SpaceAdventureAdminPage() {
     if (!file) return;
     setImageUploadStatus('uploading');
     setAreaError('');
+    setAreaStatus('idle');
     try {
       const formData = new FormData();
       formData.append('image', file);
@@ -144,7 +145,20 @@ export default function SpaceAdventureAdminPage() {
       if (!data.success || !data.imageUrl) {
         throw new Error(data.error || 'Failed to upload image.');
       }
-      setAreaForm((current) => ({ ...current, imageUrl: data.imageUrl }));
+      const detectedItems = Array.isArray(data.objects)
+        ? data.objects.map((item: unknown) => String(item).trim()).filter(Boolean)
+        : [];
+      setAreaForm((current) => ({
+        ...current,
+        imageUrl: data.imageUrl,
+        itemsText: detectedItems.join(', '),
+      }));
+      if (detectedItems.length === 0) {
+        setAreaError(data.detectionReason || 'No objects were detected in this image. Please try another preset image.');
+        setAreaStatus('error');
+      } else {
+        setAreaStatus('idle');
+      }
       setImageUploadStatus('idle');
     } catch (error: unknown) {
       setAreaError(error instanceof Error ? error.message : 'Failed to upload image.');
@@ -367,7 +381,7 @@ export default function SpaceAdventureAdminPage() {
                       )}
                       <span className="inline-flex items-center gap-2 text-sm font-semibold text-purple">
                         <Upload className="w-4 h-4" />
-                        {imageUploadStatus === 'uploading' ? 'Uploading to MinIO...' : 'Upload image from computer'}
+                        {imageUploadStatus === 'uploading' ? 'Uploading and scanning...' : 'Upload image from computer'}
                       </span>
                       <input
                         type="file"
@@ -383,7 +397,7 @@ export default function SpaceAdventureAdminPage() {
                     {areaForm.imageUrl && (
                       <button
                         type="button"
-                        onClick={() => setAreaForm({ ...areaForm, imageUrl: '' })}
+                        onClick={() => setAreaForm({ ...areaForm, imageUrl: '', itemsText: '' })}
                         className="mt-2 text-xs font-semibold text-red hover:underline"
                       >
                         Remove image
@@ -392,35 +406,31 @@ export default function SpaceAdventureAdminPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-primary--text mb-2">
-                      Items in this area
-                    </label>
-                    <textarea
-                      value={areaForm.itemsText}
-                      onChange={(e) => setAreaForm({ ...areaForm, itemsText: e.target.value })}
-                      placeholder="pillow, chair, bed, book, toy, bottle, cup"
-                      rows={4}
-                      className="w-full px-4 py-3 rounded-xl border border-gray4 focus:outline-none focus:ring-2 focus:ring-purple text-dark"
-                      required
-                    />
-                    <p className="text-xs text-secondary--text mt-1.5">
-                      Separate each target word with a comma. These words appear when a child chooses this area.
-                    </p>
+                    <div className="flex items-center justify-between gap-3">
+                      <label className="block text-sm font-semibold text-primary--text">
+                        Detected items
+                      </label>
+                      {imageUploadStatus === 'uploading' && (
+                        <span className="text-xs font-semibold text-purple">Scanning...</span>
+                      )}
+                    </div>
+                    {areaForm.itemsText ? (
+                      <div className="mt-2 flex flex-wrap gap-2 rounded-xl border border-gray4 bg-gray--light1 p-3">
+                        {areaForm.itemsText.split(',').map((item) => item.trim()).filter(Boolean).map((item) => (
+                          <span key={item} className="px-2.5 py-1 rounded-full bg-white border border-purple--light4 text-purple text-xs font-bold">
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-2 rounded-xl border border-dashed border-gray4 bg-gray--light1 p-3 text-sm text-secondary--text">
+                        Upload an area image and YOLO will detect the target items automatically.
+                      </div>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-semibold text-primary--text mb-2">
-                        Sort order
-                      </label>
-                      <input
-                        type="number"
-                        value={areaForm.sortOrder}
-                        onChange={(e) => setAreaForm({ ...areaForm, sortOrder: Number(e.target.value) || 0 })}
-                        className="w-full px-4 py-3 rounded-xl border border-gray4 focus:outline-none focus:ring-2 focus:ring-purple text-dark"
-                      />
-                    </div>
-                    <label className="flex items-center gap-3 mt-8 text-sm font-semibold text-primary--text">
+                  <div>
+                    <label className="flex items-center gap-3 text-sm font-semibold text-primary--text">
                       <input
                         type="checkbox"
                         checked={areaForm.active}
@@ -434,7 +444,7 @@ export default function SpaceAdventureAdminPage() {
                   <div className="flex gap-3">
                     <button
                       type="submit"
-                      disabled={areaStatus === 'saving'}
+                      disabled={areaStatus === 'saving' || imageUploadStatus === 'uploading'}
                       className="flex-1 flex items-center justify-center gap-2 bg-purple hover:bg-purple--dark text-white font-semibold py-3 px-4 rounded-xl transition disabled:opacity-50"
                     >
                       {areaForm.id ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
@@ -469,7 +479,7 @@ export default function SpaceAdventureAdminPage() {
                     <div className="p-10 text-center text-secondary--text border border-dashed border-gray4 rounded-2xl">
                       <ImageIcon className="w-12 h-12 mx-auto mb-3 text-gray6" />
                       <p className="font-bold">No areas yet</p>
-                      <p className="text-sm mt-1">Add any space children can explore, then choose target items for that area.</p>
+                      <p className="text-sm mt-1">Add any space children can explore. Target items will be detected from the preset image.</p>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -492,7 +502,6 @@ export default function SpaceAdventureAdminPage() {
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <h3 className="font-extrabold text-dark">{area.name}</h3>
-                                <p className="text-xs text-secondary--text mt-1">Sort order: {area.sortOrder}</p>
                               </div>
                               <div className="flex gap-2">
                                 <button

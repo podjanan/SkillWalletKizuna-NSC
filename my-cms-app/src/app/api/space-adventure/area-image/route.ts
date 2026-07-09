@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadToMinio } from '@/lib/minio';
+import { scanRoomImage } from '@/lib/ai-word-game';
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Unexpected error';
@@ -34,10 +35,19 @@ export async function POST(request: NextRequest) {
     }
 
     const bytes = new Uint8Array(await file.arrayBuffer());
+    const base64Image = `data:${file.type};base64,${Buffer.from(bytes).toString('base64')}`;
+    const scan = await scanRoomImage(base64Image);
     const key = `space-adventure/areas/${crypto.randomUUID()}.${getExtension(file.type)}`;
     const imageUrl = await uploadToMinio(key, bytes, file.type);
 
-    return NextResponse.json({ success: true, imageUrl });
+    return NextResponse.json({
+      success: true,
+      imageUrl,
+      objects: scan.objects,
+      detectionSource: scan.source,
+      detectionFallback: scan.fallback,
+      detectionReason: scan.fallback ? scan.reason : undefined,
+    });
   } catch (e: unknown) {
     console.error('Space Adventure area image upload error:', e);
     return NextResponse.json({ success: false, error: getErrorMessage(e) }, { status: 500 });
