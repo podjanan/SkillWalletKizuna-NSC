@@ -24,11 +24,12 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
   Uint8List? _roomImageBytes;
   bool _isScanning = false;
   bool _isLoadingAreas = true;
-  bool _usePresetMode = false;
+  bool _usePresetMode = true;
   List<String> _detectedObjects = [];
   List<SpaceAdventureArea> _areas = [];
   String? _scanError;
   Map<String, dynamic> _gameSettings = {'scorePerItem': 10, 'timerLimit': 60};
+  Activity? _activity;
 
   bool _settingsLoaded = false;
 
@@ -52,6 +53,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
     if (_settingsLoaded) return;
     final activity = ModalRoute.of(context)?.settings.arguments as Activity?;
     if (activity != null) {
+      _activity = activity;
       _settingsLoaded = true;
       int timerLimit = 60;
       int scorePerItem = 10;
@@ -242,6 +244,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
           currentScore: 0,
           currentIndex: 1,
           totalItems: availableObjects.length,
+          activity: _activity,
         ),
       ),
     );
@@ -475,19 +478,19 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
               Row(
                 children: [
                   _modeButton(
-                    selected: !_usePresetMode,
-                    icon: Icons.center_focus_strong_rounded,
-                    title: 'Scan room',
-                    subtitle: 'AI finds items',
-                    onTap: () => setState(() => _usePresetMode = false),
-                  ),
-                  const SizedBox(width: 12),
-                  _modeButton(
                     selected: _usePresetMode,
                     icon: Icons.list_alt_rounded,
                     title: 'Use preset',
                     subtitle: 'CMS item list',
                     onTap: () => setState(() => _usePresetMode = true),
+                  ),
+                  const SizedBox(width: 12),
+                  _modeButton(
+                    selected: !_usePresetMode,
+                    icon: Icons.center_focus_strong_rounded,
+                    title: 'Scan room',
+                    subtitle: 'Find items in photo',
+                    onTap: () => setState(() => _usePresetMode = false),
                   ),
                 ],
               ),

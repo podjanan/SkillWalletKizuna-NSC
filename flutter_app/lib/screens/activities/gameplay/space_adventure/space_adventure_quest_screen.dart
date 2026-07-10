@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'space_adventure_result_screen.dart';
+import '../../../../models/activity.dart';
 import '../../../../services/space_adventure_service.dart';
 import '../../../../theme/palette.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -18,6 +19,7 @@ class SpaceAdventureQuestScreen extends StatefulWidget {
   final int currentIndex;
   final int totalItems;
   final List<Map<String, dynamic>> completedItemsHistory;
+  final Activity? activity;
 
   const SpaceAdventureQuestScreen({
     super.key,
@@ -29,6 +31,7 @@ class SpaceAdventureQuestScreen extends StatefulWidget {
     required this.currentIndex,
     required this.totalItems,
     this.completedItemsHistory = const [],
+    this.activity,
   });
 
   @override
@@ -155,6 +158,7 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
           currentIndex: widget.currentIndex,
           totalItems: widget.totalItems,
           completedItemsHistory: updatedHistory,
+          activity: widget.activity,
         ),
       ),
     );

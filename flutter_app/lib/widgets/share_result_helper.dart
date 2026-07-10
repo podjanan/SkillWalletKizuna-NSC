@@ -2,8 +2,10 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:skill_wallet_kizuna/l10n/app_localizations.dart';
 
@@ -33,6 +35,7 @@ class ShareResultData {
 
   /// Check if evidence image exists on disk
   bool get hasEvidenceImage =>
+      !kIsWeb &&
       evidenceImagePath != null &&
       evidenceImagePath!.isNotEmpty &&
       File(evidenceImagePath!).existsSync();
@@ -146,6 +149,14 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
     } finally {
       if (mounted) setState(() => _isSharing = false);
     }
+  }
+
+  Future<void> _copyShareText() async {
+    await Clipboard.setData(ClipboardData(text: _buildShareText()));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Copied share text')),
+    );
   }
 
   @override
@@ -301,12 +312,21 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
 
           // Share button
           _ShareOptionButton(
-            icon: Icons.share_rounded,
-            label: l.share_title,
+            icon: kIsWeb ? Icons.download_rounded : Icons.share_rounded,
+            label: kIsWeb ? 'Share / Download image' : l.share_title,
             color: Palette.sky,
             onTap: _share,
             isLoading: _isSharing,
           ),
+          if (kIsWeb) ...[
+            const SizedBox(height: 10),
+            _ShareOptionButton(
+              icon: Icons.copy_rounded,
+              label: 'Copy share text',
+              color: Palette.successAlt,
+              onTap: _copyShareText,
+            ),
+          ],
         ],
       ),
     );

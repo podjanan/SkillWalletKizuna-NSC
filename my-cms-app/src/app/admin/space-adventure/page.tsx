@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Edit2, ImageIcon, Map, Plus, Rocket, Save, Trash2, Trophy, RefreshCw, Settings, Upload } from 'lucide-react';
+import { Edit2, ImageIcon, Map, Plus, Rocket, Save, Trash2, RefreshCw, Settings, Upload } from 'lucide-react';
 import UserProfile from '@/components/UserProfile';
 
 interface GameSetting {
@@ -9,13 +9,6 @@ interface GameSetting {
   scorePerItem: number;
   timerLimit: number;
   updatedAt: string;
-}
-
-interface GameScore {
-  id: string;
-  playerName: string;
-  score: number;
-  createdAt: string;
 }
 
 interface SpaceAdventureArea {
@@ -38,7 +31,6 @@ const emptyAreaForm = {
 
 export default function SpaceAdventureAdminPage() {
   const [settings, setSettings] = useState<GameSetting | null>(null);
-  const [scores, setScores] = useState<GameScore[]>([]);
   const [areas, setAreas] = useState<SpaceAdventureArea[]>([]);
   const [areaForm, setAreaForm] = useState(emptyAreaForm);
   const [scorePerItemInput, setScorePerItemInput] = useState<number>(10);
@@ -62,12 +54,6 @@ export default function SpaceAdventureAdminPage() {
         setSettings(settingsData.data);
         setScorePerItemInput(settingsData.data.scorePerItem);
         setTimerLimitInput(settingsData.data.timerLimit);
-      }
-
-      const scoresRes = await fetch('/api/space-adventure/score');
-      const scoresData = await scoresRes.json();
-      if (scoresData.success && scoresData.scores) {
-        setScores(scoresData.scores);
       }
 
       const areasRes = await fetch('/api/space-adventure/areas');
@@ -220,7 +206,7 @@ export default function SpaceAdventureAdminPage() {
             </div>
             <div>
               <h1 className="text-3xl font-extrabold text-dark tracking-tight">Space Adventure</h1>
-              <p className="text-sm text-secondary--text mt-1">Manage AI vision object scavenger hunt configuration and leaderboard.</p>
+              <p className="text-sm text-secondary--text mt-1">Manage AI vision object scavenger hunt configuration.</p>
             </div>
           </div>
         </div>
@@ -538,78 +524,6 @@ export default function SpaceAdventureAdminPage() {
               </div>
             </div>
 
-            {/* Leaderboard Section */}
-            <div className="bg-white rounded-2xl border border-gray4 shadow-sm overflow-hidden">
-              <div className="p-5 border-b border-gray4 flex items-center justify-between bg-gray--light1">
-                <div className="flex items-center gap-2.5">
-                  <Trophy className="w-5 h-5 text-yellow--light" />
-                  <h2 className="text-lg font-bold text-dark">Space Adventure Leaderboard</h2>
-                </div>
-                <span className="text-xs font-semibold text-secondary--text bg-gray4 px-3 py-1 rounded-full">
-                  Top {scores.length} Players
-                </span>
-              </div>
-
-              {scores.length === 0 ? (
-                <div className="p-12 text-center text-secondary--text">
-                  <Trophy className="w-16 h-16 mx-auto mb-4 text-gray6" />
-                  <p className="text-base font-bold">No scores recorded yet</p>
-                  <p className="text-sm mt-1">Play the game on the mobile app to populate the leaderboard!</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-gray4 text-xs font-bold text-secondary--text bg-gray--light1/50 uppercase">
-                        <th className="p-4 pl-6 w-16">Rank</th>
-                        <th className="p-4">Player Name</th>
-                        <th className="p-4">Score</th>
-                        <th className="p-4 pr-6 text-right">Date Played</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {scores.map((score, index) => {
-                        const rankColors = [
-                          'bg-yellow--light3 text-yellow-800 border-yellow-300',
-                          'bg-slate-100 text-slate-700 border-slate-300',
-                          'bg-amber-100 text-amber-800 border-amber-300'
-                        ];
-                        const rankLabel = index < 3 ? (
-                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs border ${rankColors[index]}`}>
-                            {index + 1}
-                          </span>
-                        ) : (
-                          <span className="text-secondary--text font-medium text-sm pl-2">
-                            {index + 1}
-                          </span>
-                        );
-                        
-                        return (
-                          <tr key={score.id} className="border-b border-gray4 hover:bg-gray--light1/50 transition">
-                            <td className="p-4 pl-6">{rankLabel}</td>
-                            <td className="p-4 font-bold text-dark">{score.playerName}</td>
-                            <td className="p-4">
-                              <span className="inline-block px-3 py-1 bg-purple--light5 text-purple font-bold text-sm rounded-lg border border-purple--light4">
-                                {score.score} pts
-                              </span>
-                            </td>
-                            <td className="p-4 pr-6 text-right text-xs text-secondary--text">
-                              {new Date(score.createdAt).toLocaleDateString(undefined, {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}

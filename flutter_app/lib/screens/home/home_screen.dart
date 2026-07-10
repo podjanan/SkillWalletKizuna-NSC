@@ -574,17 +574,17 @@ class _HomeScreenState extends State<HomeScreen> {
           return;
         }
 
+        final userProvider = context.read<UserProvider>();
+        if (userProvider.currentChildId == null) {
+          _showSelectChildDialog();
+          return;
+        }
+
         if (activity.id == 'space-adventure' ||
             activity.content == 'Space Adventure' ||
             activity.content == 'space_adventure' ||
             activity.content == 'space-adventure') {
           Navigator.pushNamed(context, AppRoutes.spaceAdventure, arguments: activity);
-          return;
-        }
-
-        final userProvider = context.read<UserProvider>();
-        if (userProvider.currentChildId == null) {
-          _showSelectChildDialog();
           return;
         }
 

@@ -7,6 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { childId, activityId, totalScoreEarned, segmentResults, evidence, timeSpent } = body;
+    const isSpaceAdventure = activityId === 'space-adventure';
 
     if (!childId || !activityId) {
       return NextResponse.json(
@@ -50,7 +51,10 @@ export async function POST(request: NextRequest) {
         data: {
           parent_id: parent.parent_id,
           child_id: childId,
-          activity_id: activityId,
+          // Space Adventure is a virtual activity and does not have a UUID row
+          // in the activity table. Keep the relation empty and identify it via
+          // the evidence payload instead.
+          activity_id: isSpaceAdventure ? null : activityId,
           point: scoreToAdd,
           time_spent: timeSpent || null,
           date: new Date(),
@@ -68,10 +72,12 @@ export async function POST(request: NextRequest) {
       });
 
       // Increment play count on the activity
-      await tx.activity.update({
-        where: { activity_id: activityId },
-        data: { play_count: { increment: 1 } },
-      }).catch(() => { /* ignore if activity not found */ });
+      if (!isSpaceAdventure) {
+        await tx.activity.update({
+          where: { activity_id: activityId },
+          data: { play_count: { increment: 1 } },
+        }).catch(() => { /* ignore if activity not found */ });
+      }
 
       return record;
     });

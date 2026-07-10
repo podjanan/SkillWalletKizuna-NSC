@@ -2,8 +2,12 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'space_adventure_quest_screen.dart';
+import '../../../../models/activity.dart';
+import '../../../../providers/user_provider.dart';
+import '../../../../services/activity_service.dart';
 import '../../../../theme/palette.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../widgets/ui.dart';
@@ -21,6 +25,7 @@ class SpaceAdventureResultScreen extends StatefulWidget {
   final int currentIndex;
   final int totalItems;
   final List<Map<String, dynamic>> completedItemsHistory;
+  final Activity? activity;
 
   const SpaceAdventureResultScreen({
     super.key,
@@ -36,6 +41,7 @@ class SpaceAdventureResultScreen extends StatefulWidget {
     required this.currentIndex,
     required this.totalItems,
     this.completedItemsHistory = const [],
+    this.activity,
   });
 
   @override
@@ -43,6 +49,9 @@ class SpaceAdventureResultScreen extends StatefulWidget {
 }
 
 class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen> {
+  final ActivityService _activityService = ActivityService();
+  bool _isFinishing = false;
+
   void _sharePhoto() async {
     if (kIsWeb) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -74,7 +83,7 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
       ..remove(widget.targetObject);
 
     if (remainingObjects.isEmpty) {
-      _showGameOverDialog();
+      _finishMission();
       return;
     }
 
@@ -94,61 +103,159 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
           currentIndex: widget.currentIndex + 1,
           totalItems: widget.totalItems,
           completedItemsHistory: widget.completedItemsHistory,
+          activity: widget.activity,
         ),
       ),
     );
   }
 
-  void _showGameOverDialog() {
-    showDialog(
+  Future<void> _finishMission() async {
+    if (_isFinishing) return;
+
+    if (widget.currentScore <= 0) {
+      await _showCompletionDialog();
+      return;
+    }
+
+    final childId = context.read<UserProvider>().currentChildId;
+    final activity = widget.activity;
+    if (childId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a child profile before saving the score.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isFinishing = true);
+    final results = widget.completedItemsHistory
+        .map(
+          (item) => SegmentResult(
+            id: item['id']?.toString() ?? '',
+            text: item['text']?.toString() ?? '',
+            maxScore: (item['scoreEarned'] as num?)?.toInt() ?? 0,
+            status: SegmentStatus.done,
+            recognizedText: item['recognizedText']?.toString(),
+          ),
+        )
+        .toList();
+
+    try {
+      await _activityService.finalizeQuest(
+        childId: childId,
+        activityId: activity?.id ?? 'space-adventure',
+        segmentResults: results,
+        activityMaxScore: (activity?.maxScore ?? 0) > 0
+            ? activity!.maxScore
+            : widget.totalItems * widget.scorePerItem,
+        parentScore: widget.currentScore,
+        useDirectScore: true,
+        evidence: {
+          'type': 'space_adventure',
+          'completedItems': results.length,
+          'totalItems': widget.totalItems,
+        },
+      );
+      if (mounted) {
+        await context.read<UserProvider>().fetchChildrenData();
+      }
+      if (mounted) {
+        setState(() => _isFinishing = false);
+        await _showCompletionDialog();
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isFinishing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save your score. Please try again.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  Future<void> _showCompletionDialog() async {
+    if (!mounted) return;
+    await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => PopScope(
-          canPop: false,
-          child: AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-            backgroundColor: Colors.white,
-            title: Text(
-              'Mission completed!',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.heading(20, color: Colors.black87),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.stars, color: Palette.yellow, size: 64),
-                const SizedBox(height: 12),
-                Text(
-                  'You scanned all items! Awesome work, Space Ranger!',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.body(14, color: Palette.deepGrey),
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          backgroundColor: Colors.white,
+          title: Text(
+            'Mission completed!',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.heading(20, color: Colors.black87),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.stars_rounded, color: Palette.yellow, size: 64),
+              const SizedBox(height: 12),
+              Text(
+                widget.currentScore > 0
+                    ? 'Your score has been saved.'
+                    : 'Mission finished. Keep exploring next time!',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body(14, color: Palette.deepGrey),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: Palette.sky.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Total score: ${widget.currentScore}',
-                  style: AppTextStyles.heading(18, color: Palette.skyDark),
-                ),
-              ],
-            ),
-            actionsAlignment: MainAxisAlignment.center,
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Palette.successAlt,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: const Text(
-                    'EXIT',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
+                child: Column(
+                  children: [
+                    Text(
+                      'YOU EARNED',
+                      style: AppTextStyles.label(12, color: Palette.deepGrey),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${widget.currentScore} POINTS',
+                      style: AppTextStyles.heading(28, color: Palette.skyDark),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  Navigator.popUntil(context, (route) => route.isFirst);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Palette.successAlt,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
         ),
+      ),
     );
   }
 
@@ -238,7 +345,9 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.reasonText,
+                      widget.isMatch
+                          ? 'You found the correct item: ${widget.targetObject}!'
+                          : 'This photo does not match ${widget.targetObject} yet. Please try again.',
                       textAlign: TextAlign.center,
                       style: AppTextStyles.body(13, color: Colors.black87),
                     ),
@@ -279,9 +388,9 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                   Expanded(
                     child: GradientButton.success(
                       label: (widget.detectedObjects.length <= 1)
-                          ? 'Finish mission'
+                          ? (_isFinishing ? 'Saving score...' : 'Finish mission')
                           : 'Next quest',
-                      onTap: _nextQuest,
+                      onTap: _isFinishing ? null : _nextQuest,
                       fontSize: 14,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
@@ -290,9 +399,9 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
               ),
               const SizedBox(height: 10),
               TextButton(
-                onPressed: _showGameOverDialog,
+                onPressed: _isFinishing ? null : _finishMission,
                 child: Text(
-                  'Finish mission',
+                  _isFinishing ? 'Saving score...' : 'Finish mission',
                   style: AppTextStyles.label(12, color: Palette.deepGrey),
                 ),
               )
