@@ -3343,6 +3343,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use a Facebook profile picture'**
   String get profile_facebook;
+
+  /// No description provided for @math_simulation_scanBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Answer Sheet'**
+  String get math_simulation_scanBtn;
+
+  /// No description provided for @math_simulation_manualCheckBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual Grading (No Camera)'**
+  String get math_simulation_manualCheckBtn;
+
+  /// No description provided for @math_simulation_retakeBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Retake Answer Sheet Photo'**
+  String get math_simulation_retakeBtn;
+
+  /// No description provided for @math_simulation_detectedHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected all {count} answers'**
+  String math_simulation_detectedHeader(int count);
+
+  /// No description provided for @math_simulation_detectedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap pencil icon to edit if AI conversion is inaccurate'**
+  String get math_simulation_detectedHint;
+
+  /// No description provided for @math_simulation_sectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'DETECTED ANSWERS'**
+  String get math_simulation_sectionTitle;
+
+  /// No description provided for @math_simulation_ocrLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanned Answer: '**
+  String get math_simulation_ocrLabel;
+
+  /// No description provided for @math_simulation_noData.
+  ///
+  /// In en, this message translates to:
+  /// **'No scan data (Manual grade)'**
+  String get math_simulation_noData;
+
+  /// No description provided for @math_simulation_editTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Answer for Question {index}'**
+  String math_simulation_editTitle(int index);
+
+  /// No description provided for @math_simulation_editHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type correct mathematical answer...'**
+  String get math_simulation_editHint;
+
+  /// No description provided for @math_simulation_questionPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Question: {question}'**
+  String math_simulation_questionPrefix(String question);
+
+  /// No description provided for @math_simulation_correctAnswerPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected Answer: {answer}'**
+  String math_simulation_correctAnswerPrefix(String answer);
+
+  /// No description provided for @math_simulation_prevBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'PREVIOUS'**
+  String get math_simulation_prevBtn;
+
+  /// No description provided for @math_simulation_nextBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'NEXT'**
+  String get math_simulation_nextBtn;
 }
 
 class _AppLocalizationsDelegate

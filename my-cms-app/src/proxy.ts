@@ -61,6 +61,7 @@ export async function proxy(req: NextRequest) {
     pathname === '/api/health' ||
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/dynamic-vocabulary') ||
+    pathname === '/api/activities/generate-math-question' ||
     pathname.startsWith('/_next') ||
     pathname === '/favicon.ico'
   ) {

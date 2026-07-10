@@ -21,6 +21,9 @@ import '../../../theme/app_text_styles.dart';
 import '../../../theme/palette.dart';
 import '../../../widgets/game_activity_cover.dart';
 import '../../../widgets/ui.dart';
+import '../../../widgets/share_result_helper.dart';
+import 'package:skill_wallet_kizuna/l10n/app_localizations.dart';
+import '../../../utils/activity_l10n.dart';
 
 enum _ScreenState { startScreen, gameplayScreen, resultScreen, summaryScreen }
 
@@ -878,6 +881,9 @@ class _DynamicVocabularyGameScreenState
 
   @override
   Widget build(BuildContext context) {
+    final activity = ModalRoute.of(context)?.settings.arguments as Activity?;
+    final isSummary = _screen == _ScreenState.summaryScreen;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
@@ -890,14 +896,38 @@ class _DynamicVocabularyGameScreenState
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
+            icon: Icon(
+              isSummary ? Icons.close : Icons.arrow_back_ios_new,
+              color: Colors.black87,
+            ),
             onPressed: _handleBackPressed,
           ),
           centerTitle: true,
           title: Text(
-            'Voice Quest',
+            isSummary
+                ? ActivityL10n.localizedActivityType(context, activity?.category ?? 'ด้านภาษา')
+                : 'Voice Quest',
             style: AppTextStyles.heading(20, color: Palette.text),
           ),
+          actions: [
+            if (isSummary)
+              IconButton(
+                icon: const Icon(Icons.share, color: Palette.sky),
+                onPressed: () {
+                  showShareBottomSheet(
+                    context,
+                    ShareResultData(
+                      activityName: activity?.name ?? 'Voice Quest',
+                      score: _score,
+                      maxScore: _maxScore,
+                      timeSpentSeconds: 0,
+                      category: activity?.category,
+                      evidenceImagePath: null,
+                    ),
+                  );
+                },
+              ),
+          ],
         ),
         body: SafeArea(
           child: AnimatedSwitcher(
@@ -1637,6 +1667,7 @@ class _DynamicVocabularyGameScreenState
   }
 
   Widget _buildSummaryScreen() {
+    final l = AppLocalizations.of(context)!;
     final childName =
         context.watch<UserProvider>().currentChildName ?? 'Selected child';
     final savedText = _scoreSaved
@@ -1805,56 +1836,54 @@ class _DynamicVocabularyGameScreenState
             ),
             const SizedBox(height: 12),
           ],
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    AppRoutes.home,
-                    (route) => false,
-                  ),
-                  icon: const Icon(Icons.home_outlined),
-                  label: const Text('Home'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Palette.sky,
-                    side: const BorderSide(color: Palette.sky, width: 2),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                ),
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton.icon(
+              onPressed: _isSavingScore
+                  ? null
+                  : () => setState(() {
+                        _screen = _ScreenState.startScreen;
+                        _words = [];
+                        _wordResults = [];
+                        _wordScores = [];
+                        _score = 0;
+                      }),
+              icon: const Icon(Icons.replay, color: Colors.white, size: 22),
+              label: Text(
+                l.result_playAgainBtn,
+                style: AppTextStyles.heading(18, color: Palette.white),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _isSavingScore
-                      ? null
-                      : () => setState(() {
-                            _screen = _ScreenState.startScreen;
-                            _words = [];
-                            _wordResults = [];
-                            _wordScores = [];
-                            _score = 0;
-                          }),
-                  icon: const Icon(Icons.replay_rounded, color: Colors.white),
-                  label: Text(
-                    'Play Again',
-                    style: AppTextStyles.heading(15, color: Colors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Palette.successAlt,
-                    disabledBackgroundColor:
-                        Palette.successAlt.withValues(alpha: 0.45),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Palette.bluePill,
+                disabledBackgroundColor:
+                    Palette.bluePill.withValues(alpha: 0.5),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15)),
               ),
-            ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.home,
+                (route) => false,
+              ),
+              icon: Icon(Icons.home_outlined, color: Palette.sky, size: 22),
+              label: Text(
+                l.result_backToActivitiesBtn,
+                style: AppTextStyles.heading(18, color: Palette.sky),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Palette.sky, width: 2),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15)),
+              ),
+            ),
           ),
         ],
       ),

@@ -218,6 +218,9 @@ class _ActivityGridCard extends StatelessWidget {
       } else if (shouldGoToVideoDetail) {
         Navigator.pushNamed(context, AppRoutes.videoDetail,
             arguments: activity);
+      } else if (activity.content == 'math_simulation') {
+        Navigator.pushNamed(context, AppRoutes.mathSimulationActivity,
+            arguments: activity);
       } else if (category == 'ด้านคำนวณ') {
         Navigator.pushNamed(context, AppRoutes.calculateActivity,
             arguments: activity);

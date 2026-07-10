@@ -774,5 +774,39 @@
 
   "profile_gallery" : "เลือกรูปจากคลัง / Gallery",
   "profile_google" : "ใช้รูปโปรไฟล์ Google",
-  "profile_facebook" : "ใช้รูปโปลไฟล์ Facebook"
+  "profile_facebook" : "ใช้รูปโปลไฟล์ Facebook",
+  "math_simulation_scanBtn": "สแกนคำตอบตรวจการเขียนคำตอบคณิต",
+  "math_simulation_manualCheckBtn": "ตรวจคำตอบด้วยตนเอง (ไม่ถ่ายภาพ)",
+  "math_simulation_retakeBtn": "ถ่ายภาพกระดาษคำตอบใหม่อีกครั้ง",
+  "math_simulation_detectedHeader": "ตรวจพบข้อคำตอบทั้งหมด {count} ข้อ",
+  "@math_simulation_detectedHeader": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "math_simulation_detectedHint": "กดไอคอนดินสอ เพื่อแก้ไขคำตอบหาก AI แปลงผลคลาดเคลื่อน",
+  "math_simulation_sectionTitle": "คำตอบที่ระบบอ่านได้ (DETECTED ANSWERS)",
+  "math_simulation_ocrLabel": "คำตอบที่อ่านได้: ",
+  "math_simulation_noData": "ไม่มีข้อมูล (ตรวจด้วยตนเอง)",
+  "math_simulation_editTitle": "แก้ไขคำตอบข้อที่ {index}",
+  "@math_simulation_editTitle": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "math_simulation_editHint": "พิมพ์คำตอบคณิตศาสตร์ที่ถูกต้อง...",
+  "math_simulation_questionPrefix": "โจทย์: {question}",
+  "@math_simulation_questionPrefix": {
+    "placeholders": {
+      "question": { "type": "String" }
+    }
+  },
+  "math_simulation_correctAnswerPrefix": "คำตอบที่ถูกต้อง: {answer}",
+  "@math_simulation_correctAnswerPrefix": {
+    "placeholders": {
+      "answer": { "type": "String" }
+    }
+  },
+  "math_simulation_prevBtn": "ข้อก่อนหน้า",
+  "math_simulation_nextBtn": "ถัดไป"
 }

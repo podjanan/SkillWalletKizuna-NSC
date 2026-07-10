@@ -1732,4 +1732,57 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get profile_facebook => 'ใช้รูปโปลไฟล์ Facebook';
+
+  @override
+  String get math_simulation_scanBtn => 'สแกนคำตอบตรวจการเขียนคำตอบคณิต';
+
+  @override
+  String get math_simulation_manualCheckBtn =>
+      'ตรวจคำตอบด้วยตนเอง (ไม่ถ่ายภาพ)';
+
+  @override
+  String get math_simulation_retakeBtn => 'ถ่ายภาพกระดาษคำตอบใหม่อีกครั้ง';
+
+  @override
+  String math_simulation_detectedHeader(int count) {
+    return 'ตรวจพบข้อคำตอบทั้งหมด $count ข้อ';
+  }
+
+  @override
+  String get math_simulation_detectedHint =>
+      'กดไอคอนดินสอ เพื่อแก้ไขคำตอบหาก AI แปลงผลคลาดเคลื่อน';
+
+  @override
+  String get math_simulation_sectionTitle =>
+      'คำตอบที่ระบบอ่านได้ (DETECTED ANSWERS)';
+
+  @override
+  String get math_simulation_ocrLabel => 'คำตอบที่อ่านได้: ';
+
+  @override
+  String get math_simulation_noData => 'ไม่มีข้อมูล (ตรวจด้วยตนเอง)';
+
+  @override
+  String math_simulation_editTitle(int index) {
+    return 'แก้ไขคำตอบข้อที่ $index';
+  }
+
+  @override
+  String get math_simulation_editHint => 'พิมพ์คำตอบคณิตศาสตร์ที่ถูกต้อง...';
+
+  @override
+  String math_simulation_questionPrefix(String question) {
+    return 'โจทย์: $question';
+  }
+
+  @override
+  String math_simulation_correctAnswerPrefix(String answer) {
+    return 'คำตอบที่ถูกต้อง: $answer';
+  }
+
+  @override
+  String get math_simulation_prevBtn => 'ข้อก่อนหน้า';
+
+  @override
+  String get math_simulation_nextBtn => 'ถัดไป';
 }

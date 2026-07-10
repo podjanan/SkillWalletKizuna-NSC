@@ -1738,4 +1738,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profile_facebook => 'Use a Facebook profile picture';
+
+  @override
+  String get math_simulation_scanBtn => 'Scan Answer Sheet';
+
+  @override
+  String get math_simulation_manualCheckBtn => 'Manual Grading (No Camera)';
+
+  @override
+  String get math_simulation_retakeBtn => 'Retake Answer Sheet Photo';
+
+  @override
+  String math_simulation_detectedHeader(int count) {
+    return 'Detected all $count answers';
+  }
+
+  @override
+  String get math_simulation_detectedHint =>
+      'Tap pencil icon to edit if AI conversion is inaccurate';
+
+  @override
+  String get math_simulation_sectionTitle => 'DETECTED ANSWERS';
+
+  @override
+  String get math_simulation_ocrLabel => 'Scanned Answer: ';
+
+  @override
+  String get math_simulation_noData => 'No scan data (Manual grade)';
+
+  @override
+  String math_simulation_editTitle(int index) {
+    return 'Edit Answer for Question $index';
+  }
+
+  @override
+  String get math_simulation_editHint => 'Type correct mathematical answer...';
+
+  @override
+  String math_simulation_questionPrefix(String question) {
+    return 'Question: $question';
+  }
+
+  @override
+  String math_simulation_correctAnswerPrefix(String answer) {
+    return 'Expected Answer: $answer';
+  }
+
+  @override
+  String get math_simulation_prevBtn => 'PREVIOUS';
+
+  @override
+  String get math_simulation_nextBtn => 'NEXT';
 }

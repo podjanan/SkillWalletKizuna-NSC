@@ -199,6 +199,8 @@ class ProfileScreenState extends State<ProfileScreen> {
       routeName = AppRoutes.languageDetail;
     } else if (category == 'ด้านร่างกาย' && activity.videoUrl != null) {
       routeName = AppRoutes.videoDetail;
+    } else if (activity.content == 'math_simulation') {
+      routeName = AppRoutes.mathSimulationActivity;
     } else if (category == 'ด้านคำนวณ') {
       routeName = AppRoutes.calculateActivity;
     } else {

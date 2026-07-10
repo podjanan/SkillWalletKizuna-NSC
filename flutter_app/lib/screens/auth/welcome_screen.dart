@@ -70,63 +70,76 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         child: Stack(
           children: [
             // ── Main layout (ปุ่มอยู่เดิมเสมอ) ──
-            Column(
-              children: [
-                // Logo
-                Expanded(
-                  flex: 2,
-                  child: Center(
-                    child:
-                        Image.asset('assets/images/SWK_home.png', height: 260),
-                  ),
-                ),
-
-                // OAuth buttons
-                Expanded(
-                  flex: 1,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          _oauthButton(
-                            icon: Icons.email_outlined,
-                            text: l10n.email_loginWithEmail,
-                            color: Colors.grey.shade700,
-                            onTap: isLoading
-                                ? () {}
-                                : () => Navigator.pushNamed(
-                                    context, AppRoutes.emailLogin),
+                          // Logo
+                          Expanded(
+                            flex: 2,
+                            child: Center(
+                              child:
+                                  Image.asset('assets/images/SWK_home.png', height: 260),
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          _oauthButton(
-                            icon: Icons.facebook,
-                            text: l10n.login_facebookBtn,
-                            color: Palette.facebook,
-                            onTap: isLoading
-                                ? () {}
-                                : () => _handleOAuth('facebook'),
+
+                          // OAuth buttons
+                          Expanded(
+                            flex: 1,
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _oauthButton(
+                                      icon: Icons.email_outlined,
+                                      text: l10n.email_loginWithEmail,
+                                      color: Colors.grey.shade700,
+                                      onTap: isLoading
+                                          ? () {}
+                                          : () => Navigator.pushNamed(
+                                              context, AppRoutes.emailLogin),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _oauthButton(
+                                      icon: Icons.facebook,
+                                      text: l10n.login_facebookBtn,
+                                      color: Palette.facebook,
+                                      onTap: isLoading
+                                          ? () {}
+                                          : () => _handleOAuth('facebook'),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _googleButton(
+                                      text: l10n.login_googleBtn,
+                                      onTap: isLoading
+                                          ? () {}
+                                          : () => _handleOAuth('google'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          _googleButton(
-                            text: l10n.login_googleBtn,
-                            onTap: isLoading
-                                ? () {}
-                                : () => _handleOAuth('google'),
+
+                          // Terms
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
+                            child: _buildTermsCheckbox(l10n),
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
-
-                // Terms
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
-                  child: _buildTermsCheckbox(l10n),
-                ),
-              ],
+                );
+              }
             ),
 
             // ── Loading overlay (ลอยอยู่บนทุกอย่าง) ──

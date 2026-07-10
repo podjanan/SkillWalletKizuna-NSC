@@ -22,6 +22,7 @@ import '../../../widgets/sticky_bottom_button.dart';
 import 'package:skill_wallet_kizuna/l10n/app_localizations.dart';
 import '../../../utils/activity_l10n.dart';
 import '../../../utils/math_op_detector.dart';
+import '../../../widgets/share_result_helper.dart';
 
 enum _Phase { ready, running, scanning, reviewing, summary }
 
@@ -388,24 +389,25 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   }
 
   void _showEditOcrDialog(int index) {
+    final l = AppLocalizations.of(context)!;
     final textCtrl = TextEditingController(text: _segmentResults[index].recognizedText);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('แก้ไขคำตอบข้อที่ ${index + 1}', style: AppTextStyles.heading(18)),
+        title: Text(l.math_simulation_editTitle(index + 1), style: AppTextStyles.heading(18)),
         content: TextField(
           controller: textCtrl,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'พิมพ์คำตอบคณิตศาสตร์ที่ถูกต้อง...',
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            hintText: l.math_simulation_editHint,
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(AppLocalizations.of(ctx)!.common_cancel),
+            child: Text(l.common_cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -423,7 +425,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               Navigator.pop(ctx);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Palette.sky),
-            child: const Text('บันทึก', style: TextStyle(color: Colors.white)),
+            child: Text(l.profile_save, style: const TextStyle(color: Colors.white)),
           )
         ],
       ),
@@ -573,6 +575,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final elapsedSeconds = _elapsedSeconds;
 
     return PopScope(
@@ -588,22 +591,49 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFFFFDF6), // warm cream background
-        appBar: _phase != _Phase.scanning && _phase != _Phase.summary
+        appBar: _phase != _Phase.scanning
             ? AppBar(
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black, size: 28),
+                  icon: Icon(_phase == _Phase.summary ? Icons.close : Icons.arrow_back, color: Colors.black, size: 28),
                   onPressed: () async {
+                    if (_phase == _Phase.summary) {
+                      Navigator.pop(context);
+                      return;
+                    }
                     final shouldPop = await _onWillPop();
                     if (shouldPop && mounted) Navigator.pop(context);
                   },
                 ),
                 centerTitle: true,
                 title: Text(
-                  _phase == _Phase.reviewing ? 'ผลการสแกนการตรวจคำตอบ' : 'กิจกรรมคณิตศาสตร์ตามสถานการณ์จำลอง',
+                  _phase == _Phase.summary
+                      ? ActivityL10n.localizedActivityType(context, widget.activity.category)
+                      : _phase == _Phase.reviewing
+                          ? 'ผลการสแกนการตรวจคำตอบ'
+                          : 'กิจกรรมคณิตศาสตร์ตามสถานการณ์จำลอง',
                   style: AppTextStyles.heading(20, color: Colors.black),
                 ),
+                actions: [
+                  if (_phase == _Phase.summary)
+                    IconButton(
+                      icon: const Icon(Icons.share, color: Palette.sky),
+                      onPressed: () {
+                        showShareBottomSheet(
+                          context,
+                          ShareResultData(
+                            activityName: widget.activity.name,
+                            score: _totalScoreEarned,
+                            maxScore: _segments.length * 10,
+                            timeSpentSeconds: _elapsedSeconds,
+                            category: widget.activity.category,
+                            evidenceImagePath: _imagePath,
+                          ),
+                        );
+                      },
+                    ),
+                ],
               )
             : null,
         body: _segments.isEmpty
@@ -715,6 +745,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   // ── Screen: Running (Gameplay) Phase ───────────────────
 
   Widget _buildRunningScreen(int elapsedSeconds) {
+    final l = AppLocalizations.of(context)!;
     final segment = _segments[_currentQuestionIndex];
     final totalQuestions = _segments.length;
     
@@ -850,15 +881,15 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Scan Answer Button (Only on the last question)
+                // Scan Answer / Manual Check Button (Only on the last question)
                 if (_currentQuestionIndex == totalQuestions - 1) ...[
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
+                    height: 50,
                     child: ElevatedButton.icon(
                       onPressed: _scanAnswerSheet,
                       icon: const Icon(Icons.camera_alt, color: Colors.white),
-                      label: const Text('สแกนคำตอบตรวจการเขียนคำตอบคณิต', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      label: Text(l.math_simulation_scanBtn, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1B5E20), // Dark green
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -867,6 +898,29 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                     ),
                   ),
                   const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _imagePath = null;
+                          _phase = _Phase.reviewing;
+                        });
+                      },
+                      icon: Icon(Icons.fact_check_outlined, color: Palette.sky),
+                      label: Text(
+                        l.math_simulation_manualCheckBtn,
+                        style: AppTextStyles.heading(15, color: Palette.sky),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Palette.sky, width: 1.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                 ],
 
                 // Prev / Next actions
@@ -881,7 +935,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: Text('ข้อก่อนหน้า', style: AppTextStyles.heading(14, color: Palette.sky)),
+                          child: Text(l.math_simulation_prevBtn, style: AppTextStyles.heading(14, color: Palette.sky)),
                         ),
                       ),
                     if (_currentQuestionIndex > 0 && _currentQuestionIndex < totalQuestions - 1)
@@ -895,7 +949,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: const Text('ถัดไป', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                          child: Text(l.math_simulation_nextBtn, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
                         ),
                       ),
                   ],
@@ -996,6 +1050,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   // ── Screen: Reviewing Phase ────────────────────────────
 
   Widget _buildReviewingScreen() {
+    final l = AppLocalizations.of(context)!;
     return Column(
       children: [
         // Detected answers header banner
@@ -1011,12 +1066,12 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ตรวจพบข้อคำตอบทั้งหมด ${_segments.length} ข้อ',
+                      l.math_simulation_detectedHeader(_segments.length),
                       style: AppTextStyles.heading(15, color: Palette.sky),
                     ),
-                    const Text(
-                      'กดไอคอนดินสอ เพื่อแก้ไขคำตอบหาก AI แปลงผลคลาดเคลื่อน',
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
+                    Text(
+                      l.math_simulation_detectedHint,
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
                     ),
                   ],
                 ),
@@ -1032,74 +1087,225 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // List of question cards
-                Text('คำตอบที่ระบบอ่านได้ (DETECTED ANSWERS)', style: AppTextStyles.heading(15, color: Colors.black54)),
+                Text(l.math_simulation_sectionTitle, style: AppTextStyles.heading(15, color: Colors.black54)),
                 const SizedBox(height: 10),
                 
                 ...List.generate(_segments.length, (index) {
                   final segment = _segments[index];
                   final ocrText = _segmentResults[index].recognizedText ?? '';
-                  final isCorrect = _answerStatus[index] == true;
+                  final status = _answerStatus[index]; // bool? (true, false, null)
+                  final isCorrect = status == true;
+                  final isIncorrect = status == false;
 
-                  return Card(
+                  final Color accentColor = status == true
+                      ? Palette.success
+                      : status == false
+                          ? Palette.pink
+                          : Palette.sky;
+
+                  return Container(
                     margin: const EdgeInsets.only(bottom: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: status != null ? Palette.buttonShadow : Palette.cardShadow,
+                    ),
+                    clipBehavior: Clip.hardEdge,
+                    child: IntrinsicHeight(
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          // Number circle
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: isCorrect ? Palette.success.withValues(alpha: 0.1) : Palette.pink.withValues(alpha: 0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              '${index + 1}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: isCorrect ? Palette.success : Palette.pink,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
+                          // Left accent strip
+                          Container(width: 4, color: accentColor),
 
-                          // Text block
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'โจทย์: ${segment['question']}',
-                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  ocrText.isNotEmpty ? ocrText : 'ไม่พบข้อมูลการสแกนคำตอบ',
-                                  style: AppTextStyles.body(15, weight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                          ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      // Number circle
+                                      Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          color: accentColor.withValues(alpha: 0.12),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '${index + 1}',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: accentColor,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
 
-                          // Status indicator & actions
-                          Row(
-                            children: [
-                              Icon(
-                                isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                                color: isCorrect ? Palette.success : Palette.pink,
-                                size: 22,
+                                      // Text block
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              l.math_simulation_questionPrefix(segment['question']?.toString() ?? ''),
+                                              style: AppTextStyles.body(14, weight: FontWeight.w600),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              l.math_simulation_correctAnswerPrefix(segment['answer']?.toString() ?? ''),
+                                              style: AppTextStyles.label(12, color: Palette.success),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      
+                                      // Edit button
+                                      IconButton(
+                                        icon: Icon(Icons.edit, color: Palette.sky, size: 20),
+                                        onPressed: () => _showEditOcrDialog(index),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  
+                                  // Scanned/Typed answer display
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade50,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: Colors.grey.shade200),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Text(l.math_simulation_ocrLabel, style: AppTextStyles.body(13, color: Colors.grey.shade600)),
+                                        Expanded(
+                                          child: Text(
+                                            ocrText.isNotEmpty ? ocrText : l.math_simulation_noData,
+                                            style: AppTextStyles.body(14, weight: FontWeight.bold),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+
+                                  // Correct / Incorrect toggle buttons
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () => setState(() {
+                                            _answerStatus[index] = true;
+                                            _segmentResults[index] =
+                                                _segmentResults[index].copyWith(
+                                                    maxScore: _originalScores[index] ?? 10);
+                                          }),
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                            decoration: BoxDecoration(
+                                              color: isCorrect
+                                                  ? Palette.success
+                                                  : Colors.white,
+                                              borderRadius: BorderRadius.circular(14),
+                                              border: Border.all(
+                                                  color: Palette.success,
+                                                  width: isCorrect ? 0 : 1.5),
+                                              boxShadow: isCorrect
+                                                  ? [
+                                                      BoxShadow(
+                                                        color: Palette.success.withValues(alpha: 0.3),
+                                                        blurRadius: 6,
+                                                        offset: const Offset(0, 2),
+                                                      )
+                                                    ]
+                                                  : [],
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(Icons.check_circle_rounded,
+                                                    size: 20,
+                                                    color: isCorrect
+                                                        ? Colors.white
+                                                        : Palette.success),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  l.calculate_correct,
+                                                  style: AppTextStyles.heading(14,
+                                                      color: isCorrect
+                                                          ? Colors.white
+                                                          : Palette.success),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () => setState(() {
+                                            _answerStatus[index] = false;
+                                            _segmentResults[index] =
+                                                _segmentResults[index].copyWith(maxScore: 0);
+                                          }),
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 200),
+                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                            decoration: BoxDecoration(
+                                              color: isIncorrect
+                                                  ? Palette.pink
+                                                  : Colors.white,
+                                              borderRadius: BorderRadius.circular(14),
+                                              border: Border.all(
+                                                  color: Palette.pink,
+                                                  width: isIncorrect ? 0 : 1.5),
+                                              boxShadow: isIncorrect
+                                                  ? [
+                                                      BoxShadow(
+                                                        color: Palette.pink.withValues(alpha: 0.3),
+                                                        blurRadius: 6,
+                                                        offset: const Offset(0, 2),
+                                                      )
+                                                    ]
+                                                  : [],
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(Icons.cancel_rounded,
+                                                    size: 20,
+                                                    color: isIncorrect
+                                                        ? Colors.white
+                                                        : Palette.pink),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  l.calculate_incorrect,
+                                                  style: AppTextStyles.heading(14,
+                                                      color: isIncorrect
+                                                          ? Colors.white
+                                                          : Palette.pink),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 6),
-                              IconButton(
-                                icon: Icon(Icons.edit, color: Palette.sky, size: 20),
-                                onPressed: () => _showEditOcrDialog(index),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
@@ -1115,7 +1321,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                   child: OutlinedButton.icon(
                     onPressed: _scanAnswerSheet,
                     icon: const Icon(Icons.camera_alt_outlined),
-                    label: const Text('ถ่ายภาพกระดาษคำตอบใหม่อีกครั้ง'),
+                    label: Text(l.math_simulation_retakeBtn),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: Palette.sky, width: 1.5),
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1127,8 +1333,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                 const SizedBox(height: 30),
                 
                 // Evidence Attachments block
-                Text('หลักฐานและบันทึกเพิ่มเติม (EVIDENCE & NOTES)', style: AppTextStyles.heading(15, color: Colors.black54)),
-                const SizedBox(height: 10),
+                Text(l.common_evidence,
+                    style: AppTextStyles.heading(20, color: Palette.error)),
+                const SizedBox(height: 15),
                 _buildEvidenceSection(),
                 
                 const SizedBox(height: 48),
@@ -1140,7 +1347,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
         // Bottom submit all answers button
         StickyBottomButton(
           onPressed: _handleSubmit,
-          label: 'ยืนยันและบันทึกผลกิจกรรมทั้งหมด',
+          label: l.common_finish,
           color: Palette.success,
           isLoading: _isSubmitting,
         ),
@@ -1149,31 +1356,35 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   }
 
   Widget _buildEvidenceSection() {
+    final l = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(l.calculate_diaryNotes,
+            style: AppTextStyles.heading(18, color: Colors.black54)),
+        const SizedBox(height: 5),
         Container(
+          height: 100,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: TextField(
             controller: _descriptionController,
             enabled: !_isSubmitting,
-            maxLines: 3,
+            maxLines: null,
             decoration: InputDecoration(
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
-              hintText: AppLocalizations.of(context)!.calculate_writeNotes,
+              hintText: l.calculate_writeNotes,
             ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 15),
         Row(
           children: [
             Expanded(child: _buildImagePicker()),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             Expanded(child: _buildVideoPicker()),
           ],
         ),
@@ -1182,114 +1393,135 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   }
 
   Widget _buildImagePicker() {
-    return GestureDetector(
-      onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: false),
-      child: Container(
-        height: 110,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _imagePath != null ? Palette.success : Colors.grey.shade300,
-            width: 2,
+    final l = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l.common_image,
+            style: AppTextStyles.heading(18, color: Colors.black54)),
+        const SizedBox(height: 5),
+        GestureDetector(
+          onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: false),
+          child: Container(
+            height: 120,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _imagePath != null ? Palette.success : Colors.grey.shade300,
+                width: 2,
+              ),
+            ),
+            child: _imagePath != null && !kIsWeb
+                ? Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: double.infinity,
+                          child: Image.file(File(_imagePath!), fit: BoxFit.cover),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                          child: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                            onPressed: _isSubmitting ? null : () => setState(() => _imagePath = null),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.grey),
+                        const SizedBox(height: 8),
+                        Text(l.common_addImage, style: AppTextStyles.body(12, color: Colors.grey)),
+                      ],
+                    ),
+                  ),
           ),
         ),
-        child: _imagePath != null && !kIsWeb
-            ? Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: double.infinity,
-                      child: Image.file(File(_imagePath!), fit: BoxFit.cover),
-                    ),
-                  ),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: Container(
-                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 14),
-                        onPressed: _isSubmitting ? null : () => setState(() => _imagePath = null),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                      ),
-                    ),
-                  ),
-                ],
-              )
-            : Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.add_photo_alternate_outlined, size: 36, color: Colors.grey),
-                    const SizedBox(height: 6),
-                    Text(AppLocalizations.of(context)!.common_addImage, style: AppTextStyles.body(11, color: Colors.grey)),
-                  ],
-                ),
-              ),
-      ),
+      ],
     );
   }
 
   Widget _buildVideoPicker() {
-    return GestureDetector(
-      onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: true),
-      child: Container(
-        height: 110,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _videoPath != null ? Palette.success : Colors.grey.shade300,
-            width: 2,
-          ),
-        ),
-        child: _videoPath != null
-            ? Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (_videoThumbnail != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.memory(_videoThumbnail!, fit: BoxFit.cover),
-                    )
-                  else
-                    const Center(child: Icon(Icons.check_circle_outline, color: Colors.green, size: 36)),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: Container(
-                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                      child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 14),
-                        onPressed: _isSubmitting ? null : () => setState(() { _videoPath = null; _videoThumbnail = null; }),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+    final l = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l.common_video,
+            style: AppTextStyles.heading(18, color: Colors.black54)),
+        const SizedBox(height: 5),
+        GestureDetector(
+          onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: true),
+          child: Container(
+            height: 120,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _videoPath != null ? Palette.success : Colors.grey.shade300,
+                width: 2,
+              ),
+            ),
+            child: _videoPath != null
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (_videoThumbnail != null)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Image.memory(_videoThumbnail!, fit: BoxFit.cover),
+                        )
+                      else
+                        const Center(child: Icon(Icons.check_circle_outline, color: Colors.green, size: 36)),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                          child: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white, size: 14),
+                            onPressed: _isSubmitting ? null : () => setState(() { _videoPath = null; _videoThumbnail = null; }),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          ),
+                        ),
                       ),
+                    ],
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add_circle_outline, size: 40, color: Colors.grey),
+                        const SizedBox(height: 8),
+                        Text(l.common_addVideo, style: AppTextStyles.body(12, color: Colors.grey)),
+                      ],
                     ),
                   ),
-                ],
-              )
-            : Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.add_circle_outline, size: 36, color: Colors.grey),
-                    const SizedBox(height: 6),
-                    Text(AppLocalizations.of(context)!.common_addVideo, style: AppTextStyles.body(11, color: Colors.grey)),
-                  ],
-                ),
-              ),
-      ),
+          ),
+        ),
+      ],
     );
   }
 
   // ── Screen: Summary (Well Done) Phase ──────────────────
 
   Widget _buildSummaryScreen() {
+    final l = AppLocalizations.of(context)!;
     int correctCount = 0;
     for (int i = 0; i < _segmentResults.length; i++) {
       if (_answerStatus[i] == true) correctCount++;
@@ -1422,7 +1654,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               // Bottom summary options
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 55,
                 child: ElevatedButton.icon(
                   onPressed: () {
                     setState(() {
@@ -1440,47 +1672,33 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                       }
                     });
                   },
-                  icon: const Icon(Icons.replay, color: Colors.white),
-                  label: const Text('เล่นอีกครั้ง (PLAY AGAIN)', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  icon: const Icon(Icons.replay, color: Colors.white, size: 22),
+                  label: Text(
+                    l.result_playAgainBtn,
+                    style: AppTextStyles.heading(18, color: Palette.white),
+                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1B5E20),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    backgroundColor: Palette.bluePill,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
-              
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Share.share('ลูกของฉันเล่นคณิตศาสตร์ผ่านภาพสถานการณ์ "${widget.activity.name}" สแกนตรวจลายมือได้คะแนน $correctCount/${_segments.length} ข้อ บันทึกคะแนนสำเร็จในแอป SkillWalletKizuna!');
-                      },
-                      icon: const Icon(Icons.share),
-                      label: const Text('แชร์ผลงาน'),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Palette.sky),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: Icon(Icons.home_outlined, color: Palette.sky, size: 22),
+                  label: Text(
+                    l.result_backToActivitiesBtn,
+                    style: AppTextStyles.heading(18, color: Palette.sky),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.home),
-                      label: const Text('กลับหน้าหลัก'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Palette.sky,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Palette.sky, width: 2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                   ),
-                ],
+                ),
               ),
               const SizedBox(height: 32),
             ],

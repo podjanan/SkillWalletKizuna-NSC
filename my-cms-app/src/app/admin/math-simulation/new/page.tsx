@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, Plus, Trash2, ArrowLeft, Brain, PlusCircle } from 'lucide-react';
+import { Send, Plus, Trash2, ArrowLeft, Brain, PlusCircle, RefreshCw } from 'lucide-react';
 import UserProfile from '@/components/UserProfile';
 
 interface Question {
@@ -12,6 +12,7 @@ interface Question {
   answer: string;
   solution: string;
   score: number;
+  equation?: string;
 }
 
 export default function CreateMathSimulationPage() {
@@ -23,6 +24,56 @@ export default function CreateMathSimulationPage() {
   const [additionalInstructions, setAdditionalInstructions] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [generatingIndex, setGeneratingIndex] = useState<number | null>(null);
+
+  const handleGenerateQuestion = async (index: number, q: Question) => {
+    if (!name || !name.trim()) {
+      alert('กรุณากรอก Activity Title (ชื่อกิจกรรม) ก่อนที่จะใช้ AI เจนโจทย์');
+      return;
+    }
+    if (!description || !description.trim()) {
+      alert('กรุณากรอก Description (รายละเอียดกิจกรรม) ก่อนที่จะใช้ AI เจนโจทย์');
+      return;
+    }
+    if (!q.equation || !q.equation.trim()) {
+      alert('กรุณากรอกสมการในการสร้างโจทย์ของข้อนี้ก่อนที่จะใช้ AI เจนโจทย์ (เช่น 18+2)');
+      return;
+    }
+
+    setGeneratingIndex(index);
+    try {
+      const response = await fetch('/api/activities/generate-math-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          activityTitle: name,
+          activityDescription: description,
+          equation: q.equation,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setQuestions(prev => {
+          const updated = [...prev];
+          updated[index] = {
+            ...updated[index],
+            question: data.question,
+            solution: data.solution,
+            answer: data.answer || updated[index].answer
+          };
+          return updated;
+        });
+      } else {
+        alert(data.error || 'เกิดข้อผิดพลาดในการสร้างโจทย์ด้วย AI');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('เกิดข้อผิดพลาดระหว่างเรียกใช้งาน AI');
+    } finally {
+      setGeneratingIndex(null);
+    }
+  };
 
   const addQuestion = () => {
     setQuestions(prev => [
@@ -223,6 +274,37 @@ export default function CreateMathSimulationPage() {
                       className="p-1 hover:bg-red--light6 rounded text-red"
                     >
                       <Trash2 size={18} />
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col md:flex-row md:items-end gap-3 p-3 bg-purple--light5 border border-purple--light4 rounded-lg mb-3">
+                    <div className="flex-1">
+                      <label className="body-xs-semibold text-purple block mb-1">สมการในการสร้างโจทย์ด้วย AI (เช่น 18+2 หรือ 5*4)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 18+2"
+                        value={q.equation || ''}
+                        onChange={(e) => updateQuestion(index, 'equation', e.target.value)}
+                        className="w-full px-3 py-1.5 border border-purple--light3 rounded-lg body-small-regular focus:outline-none focus:ring-2 focus:ring-purple bg-white"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleGenerateQuestion(index, q)}
+                      disabled={generatingIndex === index}
+                      className="px-4 py-1.5 bg-purple text-white rounded-lg body-small-medium hover:bg-purple--dark disabled:bg-purple--light3 flex items-center gap-1.5 h-[38px] justify-center min-w-[120px]"
+                    >
+                      {generatingIndex === index ? (
+                        <>
+                          <RefreshCw size={14} className="animate-spin" />
+                          กำลังสร้าง...
+                        </>
+                      ) : (
+                        <>
+                          <Brain size={14} />
+                          เจนโจทย์ด้วย AI
+                        </>
+                      )}
                     </button>
                   </div>
 

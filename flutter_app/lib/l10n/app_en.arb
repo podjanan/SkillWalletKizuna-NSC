@@ -776,5 +776,39 @@
 
   "profile_gallery" : "Select an image from your gallery",
   "profile_google" : "Use a Google profile picture",
-  "profile_facebook" : "Use a Facebook profile picture"
+  "profile_facebook" : "Use a Facebook profile picture",
+  "math_simulation_scanBtn": "Scan Answer Sheet",
+  "math_simulation_manualCheckBtn": "Manual Grading (No Camera)",
+  "math_simulation_retakeBtn": "Retake Answer Sheet Photo",
+  "math_simulation_detectedHeader": "Detected all {count} answers",
+  "@math_simulation_detectedHeader": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "math_simulation_detectedHint": "Tap pencil icon to edit if AI conversion is inaccurate",
+  "math_simulation_sectionTitle": "DETECTED ANSWERS",
+  "math_simulation_ocrLabel": "Scanned Answer: ",
+  "math_simulation_noData": "No scan data (Manual grade)",
+  "math_simulation_editTitle": "Edit Answer for Question {index}",
+  "@math_simulation_editTitle": {
+    "placeholders": {
+      "index": { "type": "int" }
+    }
+  },
+  "math_simulation_editHint": "Type correct mathematical answer...",
+  "math_simulation_questionPrefix": "Question: {question}",
+  "@math_simulation_questionPrefix": {
+    "placeholders": {
+      "question": { "type": "String" }
+    }
+  },
+  "math_simulation_correctAnswerPrefix": "Expected Answer: {answer}",
+  "@math_simulation_correctAnswerPrefix": {
+    "placeholders": {
+      "answer": { "type": "String" }
+    }
+  },
+  "math_simulation_prevBtn": "PREVIOUS",
+  "math_simulation_nextBtn": "NEXT"
 }
