@@ -29,6 +29,7 @@ interface AnalysisSegment {
   answer: string;
   solution: string;
   score: number;
+  imageUrl?: string;
 }
 
 type SegmentType = LanguageSegment[] | AnalysisSegment[];
@@ -60,6 +61,7 @@ export default function ActivityDetailPage() {
   const [timeLimit, setTimeLimit] = useState<number>(60);
   const [scorePerItem, setScorePerItem] = useState<number>(10);
   const [wordCategory, setWordCategory] = useState<string>('animals');
+  const [isMathSimulation, setIsMathSimulation] = useState<boolean>(true);
 
   // Segment state สำหรับ Language
   const [languageSegments, setLanguageSegments] = useState<LanguageSegment[]>([]);
@@ -103,9 +105,12 @@ export default function ActivityDetailPage() {
             setLanguageHistory([parsedSegments || []]);
             setLanguageHistoryIndex(0);
           } else if (data.category === 'ด้านคำนวณ') {
-            setAnalysisSegments(parsedSegments || []);
-            setAnalysisHistory([parsedSegments || []]);
+            const list = parsedSegments || [];
+            setAnalysisSegments(list);
+            setAnalysisHistory([list]);
             setAnalysisHistoryIndex(0);
+            const hasImage = Array.isArray(list) && list.length > 0 && list.some((s: any) => s.imageUrl);
+            setIsMathSimulation(hasImage);
           }
         }
       } else {
@@ -307,7 +312,29 @@ export default function ActivityDetailPage() {
       } else if (activity?.category === 'ด้านภาษา') {
         segmentsToSave = languageSegments;
       } else if (activity?.category === 'ด้านคำนวณ') {
-        segmentsToSave = analysisSegments;
+        if (isMathSimulation) {
+          try {
+            const genResponse = await fetch('/api/activities/generate-math-images', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ questions: analysisSegments })
+            });
+            const genResult = await genResponse.json();
+            if (genResult.success && genResult.segments) {
+              segmentsToSave = genResult.segments;
+            } else {
+              segmentsToSave = analysisSegments;
+            }
+          } catch (e) {
+            console.error('Failed to pre-generate math images:', e);
+            segmentsToSave = analysisSegments;
+          }
+        } else {
+          segmentsToSave = analysisSegments.map(q => {
+            const { imageUrl, ...rest } = q as any;
+            return rest;
+          });
+        }
         // คำนวณ maxScore จาก segments
         maxScoreToSave = analysisSegments.reduce((sum, q) => sum + q.score, 0);
       }
@@ -798,6 +825,36 @@ export default function ActivityDetailPage() {
       {/* Analysis Segments Editor */}
       {activity?.category === 'ด้านคำนวณ' && activity?.content !== 'voice_quest' && activity?.content !== 'space_adventure' && isEditing && (
         <div className="bg-white rounded-lg shadow p-6 mb-6">
+          {/* Math Game Type Selection */}
+          <div className="p-4 bg-purple--light5 border border-purple--light3 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+              <h4 className="body-medium-semibold text-purple">รูปแบบกิจกรรมคณิตศาสตร์ (Math Game Style)</h4>
+              <p className="body-small-regular text-secondary--text">
+                เลือกว่าต้องการให้เป็นคณิตศาสตร์สถานการณ์จำลอง (มีภาพจำลองและสแกนลายมือ) หรือคำนวณแบบเก่า
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={isMathSimulation}
+                  onChange={() => setIsMathSimulation(true)}
+                  className="w-4 h-4 accent-purple"
+                />
+                <span className="body-medium-medium text-dark">สถานการณ์จำลอง (มีภาพ AI & สแกนคำตอบ)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={!isMathSimulation}
+                  onChange={() => setIsMathSimulation(false)}
+                  className="w-4 h-4 accent-purple"
+                />
+                <span className="body-medium-medium text-dark">คณิตศาสตร์ทั่วไป (ประเมินแบบธรรมดา)</span>
+              </label>
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
             <h3 className="heading-h5">คำถาม (Questions)</h3>
             <div className="flex items-center gap-2">
@@ -901,6 +958,64 @@ export default function ActivityDetailPage() {
                         placeholder="กรอกคำแนะนำ..."
                       />
                     </div>
+                    {isMathSimulation && (
+                      <div className="mt-3 p-3 bg-white border border-gray4 rounded-lg flex flex-col md:flex-row items-center gap-4">
+                        <div className="w-full md:w-48 h-32 bg-gray2 rounded-lg overflow-hidden flex items-center justify-center border border-gray4 relative">
+                          {segment.imageUrl ? (
+                            <img
+                              src={segment.imageUrl}
+                              alt={`Question ${index + 1} illustration`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="body-xs-regular text-secondary--text text-center px-2">
+                              ไม่มีรูปภาพประกอบ (จะสร้างภาพอัตโนมัติเมื่อเซฟ)
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <h5 className="body-small-semibold text-dark">รูปภาพสถานการณ์จำลอง (AI Illustration)</h5>
+                          <p className="body-xs-regular text-secondary--text">
+                            ภาพประกอบการเรียนคณิตศาสตร์ที่วาดโดย AI ตามเนื้อหาคำถามข้อนี้
+                          </p>
+                          {segment.imageUrl && (
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                try {
+                                  const btn = e.currentTarget;
+                                  btn.disabled = true;
+                                  const oldText = btn.innerText;
+                                  btn.innerText = 'กำลังสร้างภาพใหม่...';
+
+                                  const response = await fetch('/api/activities/generate-math-images', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ questions: [segment] })
+                                  });
+                                  const result = await response.json();
+                                  if (result.success && result.segments && result.segments[0]) {
+                                    handleAnalysisSegmentChange(index, 'imageUrl', result.segments[0].imageUrl);
+                                    alert('สร้างรูปภาพใหม่ประกอบข้อนี้เรียบร้อยครับ!');
+                                  } else {
+                                    alert('เกิดข้อผิดพลาดในการสร้างภาพ');
+                                  }
+                                  btn.innerText = oldText;
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+                                } finally {
+                                  e.currentTarget.disabled = false;
+                                }
+                              }}
+                              className="px-3 py-1.5 border border-purple text-purple rounded-lg body-xs-medium hover:bg-purple--light5"
+                            >
+                              สร้างรูปภาพใหม่ประกอบข้อนี้ (Regenerate Image)
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

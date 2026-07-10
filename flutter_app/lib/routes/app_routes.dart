@@ -22,6 +22,7 @@ import '../screens/activities/detail/physical_video_screen.dart';
 import '../screens/activities/detail/language_detail_screen.dart';
 import '../screens/activities/detail/physical_detail_screen.dart';
 import '../screens/activities/detail/calculate_activity_screen.dart';
+import '../screens/activities/detail/math_simulation_activity_screen.dart';
 
 
 // --- Child Management Screens ---
@@ -50,6 +51,7 @@ class AppRoutes {
   static const String languageDetail = '/language-detail';
   static const String physicalActivity = '/physical-activity';
   static const String calculateActivity = '/calculate-activity';
+  static const String mathSimulationActivity = '/math-simulation-activity';
 
   // --- All Activities Routes ---
   static const String allActivities = '/all-activities';
@@ -114,6 +116,11 @@ class AppRoutes {
           final activity =
               ModalRoute.of(context)!.settings.arguments as Activity;
           return CalculateActivityScreen(activity: activity);
+        },
+        mathSimulationActivity: (context) {
+          final activity =
+              ModalRoute.of(context)!.settings.arguments as Activity;
+          return MathSimulationActivityScreen(activity: activity);
         },
 
         // --- All Activities ---

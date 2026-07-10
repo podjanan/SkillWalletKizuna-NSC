@@ -63,11 +63,14 @@ class _DraftBannerState extends State<DraftBanner> {
     final type = _draft!['type'] as String;
     final activityJson = _draft!['activityJson'] as Map<String, dynamic>;
     final activity = Activity.fromJson(activityJson);
-    final route = switch (type) {
+    String route = switch (type) {
       DraftService.typePhysical => AppRoutes.physicalActivity,
       DraftService.typeCalculate => AppRoutes.calculateActivity,
       _ => AppRoutes.itemIntro,
     };
+    if (activity.content == 'math_simulation') {
+      route = AppRoutes.mathSimulationActivity;
+    }
     if (!mounted) return;
     Navigator.pushNamed(context, route, arguments: activity);
   }

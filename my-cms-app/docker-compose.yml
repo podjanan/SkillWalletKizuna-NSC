@@ -193,6 +193,8 @@ services:
       - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
       - OLLAMA_VISION_MODEL=${OLLAMA_VISION_MODEL:-gemma3:4b}
+      - DATABASE_URL=postgresql://skillwallet_user:super_secret@db:5432/skillwallet
+      - DIRECT_URL=postgresql://skillwallet_user:super_secret@db:5432/skillwallet
       - OLLAMA_KEEP_ALIVE=1m
       - OBJECT_DETECTION_URL=http://yolo-detector:8000/detect
       - OBJECT_DETECTION_MIN_CONFIDENCE=${OBJECT_DETECTION_MIN_CONFIDENCE:-0.25}

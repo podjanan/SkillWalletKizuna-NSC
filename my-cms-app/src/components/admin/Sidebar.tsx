@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronDown, FileText, Mic, Users, Rocket } from 'lucide-react';
+import { ChevronDown, FileText, Mic, Users, Rocket, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 
 export default function Sidebar() {
@@ -80,6 +80,16 @@ export default function Sidebar() {
         >
           <Rocket size={20} className="text-secondary--text" />
           <span className="body-medium-medium">Space Adventure</span>
+        </Link>
+
+        <Link
+          href="/admin/math-simulation"
+          className={`flex items-center gap-2 px-4 py-2 hover:bg-gray--light1 ${
+            pathname.startsWith('/admin/math-simulation') ? 'bg-gray--light1' : ''
+          }`}
+        >
+          <Sparkles size={20} className="text-secondary--text" />
+          <span className="body-medium-medium">Math Simulation</span>
         </Link>
 
         {/* Users */}

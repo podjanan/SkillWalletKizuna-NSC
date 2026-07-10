@@ -439,6 +439,26 @@ class ActivityService {
     }
   }
 
+  Future<Map<String, dynamic>> verifyHandwriting({
+    required String base64Image,
+    required List<dynamic> questions,
+  }) async {
+    final payload = {
+      'base64Image': base64Image,
+      'questions': questions,
+    };
+    return _apiService.post('/activities/verify-handwriting', payload, timeout: const Duration(seconds: 60));
+  }
+
+  Future<Map<String, dynamic>> generateMathImages({
+    required List<dynamic> questions,
+  }) async {
+    final payload = {
+      'questions': questions,
+    };
+    return _apiService.post('/activities/generate-math-images', payload, timeout: const Duration(seconds: 120));
+  }
+
   Future<Map<String, dynamic>> createActivity({
     required String parentId,
     required String name,

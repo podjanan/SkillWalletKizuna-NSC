@@ -42,10 +42,16 @@ export async function GET(request: Request) {
     const ownedBy = searchParams.get('ownedBy'); // show only this parent's activities
     const level = searchParams.get('level'); // filter by level_activity
 
+    const contentFilter = searchParams.get('content');
+ 
     // Build where clause
     const where: Prisma.activityWhereInput = {
       NOT: { content: 'dynamic-vocabulary' },
     };
+
+    if (contentFilter) {
+      where.content = contentFilter;
+    }
 
     if (search) {
       where.name_activity = {
@@ -171,12 +177,18 @@ export async function GET(request: Request) {
       }
     });
 
-    const virtualActivities = await Promise.all([
-      shouldInjectAiWordActivity(category, ownedBy),
-      shouldInjectSpaceAdventure(category, ownedBy),
-    ]);
+    const virtualActivities = [];
+    if (!contentFilter || contentFilter === 'voice_quest') {
+      const v = await shouldInjectAiWordActivity(category, ownedBy);
+      if (v) virtualActivities.push(v);
+    }
+    if (!contentFilter || contentFilter === 'space_adventure') {
+      const v = await shouldInjectSpaceAdventure(category, ownedBy);
+      if (v) virtualActivities.push(v);
+    }
+
     const data = [
-      ...virtualActivities.filter((activity): activity is NonNullable<typeof activity> => activity !== null),
+      ...virtualActivities,
       ...activitiesResponse,
     ];
 
