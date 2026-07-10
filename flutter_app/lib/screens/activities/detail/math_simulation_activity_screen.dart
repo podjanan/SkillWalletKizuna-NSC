@@ -850,22 +850,24 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Scan Answer Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton.icon(
-                    onPressed: _scanAnswerSheet,
-                    icon: const Icon(Icons.camera_alt, color: Colors.white),
-                    label: const Text('สแกนคำตอบตรวจการเขียนคำตอบคณิต', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1B5E20), // Dark green
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 2,
+                // Scan Answer Button (Only on the last question)
+                if (_currentQuestionIndex == totalQuestions - 1) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: _scanAnswerSheet,
+                      icon: const Icon(Icons.camera_alt, color: Colors.white),
+                      label: const Text('สแกนคำตอบตรวจการเขียนคำตอบคณิต', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1B5E20), // Dark green
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 2,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
+                  const SizedBox(height: 10),
+                ],
 
                 // Prev / Next actions
                 Row(
