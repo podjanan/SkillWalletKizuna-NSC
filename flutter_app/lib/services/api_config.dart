@@ -17,6 +17,20 @@ class ApiConfig {
     return url;
   }
 
+  /// Rewrites localhost asset URLs to the host used by the configured API.
+  /// This keeps MinIO images working on Android emulators and real devices.
+  static String resolveAssetUrl(String rawUrl) {
+    final uri = Uri.tryParse(rawUrl);
+    if (uri == null || !uri.hasScheme) return rawUrl;
+    if (uri.host != 'localhost' && uri.host != '127.0.0.1') return rawUrl;
+
+    final apiUri = Uri.tryParse(baseUrl);
+    if (apiUri == null || apiUri.host.isEmpty) {
+      return _normalizeLocalhostForPlatform(rawUrl);
+    }
+    return uri.replace(host: apiUri.host).toString();
+  }
+
   static String _normalizeLocalhostForPlatform(String rawUrl) {
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       return rawUrl;

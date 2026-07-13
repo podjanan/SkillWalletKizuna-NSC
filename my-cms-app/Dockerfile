@@ -56,6 +56,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     curl \
+    fonts-noto-core \
     && rm -rf /var/lib/apt/lists/*
 
 # ---- Create non-root user

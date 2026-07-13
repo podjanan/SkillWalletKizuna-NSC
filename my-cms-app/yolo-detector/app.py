@@ -9,9 +9,23 @@ from PIL import Image
 from ultralytics import YOLO
 
 
-MODEL_NAME = os.getenv("YOLO_MODEL", "yolo11n.pt")
-CONFIDENCE = float(os.getenv("YOLO_CONFIDENCE", "0.25"))
-MAX_OBJECTS = int(os.getenv("YOLO_MAX_OBJECTS", "10"))
+MODEL_NAME = os.getenv("YOLO_MODEL", "yolov8s-worldv2.pt")
+CONFIDENCE = float(os.getenv("YOLO_CONFIDENCE", "0.18"))
+IMAGE_SIZE = int(os.getenv("YOLO_IMAGE_SIZE", "960"))
+IOU_THRESHOLD = float(os.getenv("YOLO_IOU_THRESHOLD", "0.45"))
+MAX_OBJECTS = int(os.getenv("YOLO_MAX_OBJECTS", "20"))
+MAX_DETECTIONS = int(os.getenv("YOLO_MAX_DETECTIONS", "100"))
+
+DEFAULT_ROOM_OBJECT_CLASSES = (
+    "bed,pillow,blanket,plant,flowerpot,clock,lamp,picture frame,painting,"
+    "curtain,wardrobe,cabinet,nightstand,table,desk,chair,sofa,television,"
+    "window,door,mirror,rug,book,bottle,cup,backpack,handbag,vase,toy,fan,shelf"
+)
+ROOM_OBJECT_CLASSES = [
+    label.strip()
+    for label in os.getenv("YOLO_CLASSES", DEFAULT_ROOM_OBJECT_CLASSES).split(",")
+    if label.strip()
+]
 
 ROOM_OBJECT_ALIASES = {
     "couch": "sofa",
@@ -19,6 +33,8 @@ ROOM_OBJECT_ALIASES = {
     "potted plant": "plant",
     "tv": "television",
     "cell phone": "phone",
+    "flowerpot": "plant",
+    "picture frame": "picture",
 }
 
 app = FastAPI(title="Skill Wallet YOLO Detector")
@@ -34,6 +50,10 @@ def get_model() -> YOLO:
     global model
     if model is None:
         model = YOLO(MODEL_NAME)
+        # YOLO-World can search for room-specific objects that are not part of
+        # the 80 COCO classes used by a regular pretrained YOLO model.
+        if "world" in MODEL_NAME.lower() and ROOM_OBJECT_CLASSES:
+            model.set_classes(ROOM_OBJECT_CLASSES)
     return model
 
 
@@ -67,7 +87,14 @@ def detect(payload: DetectRequest) -> dict[str, Any]:
 
     image = decode_image(image_value)
     detector = get_model()
-    results = detector.predict(image, conf=CONFIDENCE, verbose=False)
+    results = detector.predict(
+        image,
+        conf=CONFIDENCE,
+        iou=IOU_THRESHOLD,
+        imgsz=IMAGE_SIZE,
+        max_det=MAX_DETECTIONS,
+        verbose=False,
+    )
 
     detections: list[dict[str, Any]] = []
     for result in results:

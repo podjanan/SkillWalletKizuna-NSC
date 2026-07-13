@@ -15,6 +15,8 @@ interface Question {
   equation?: string;
   imageUrl?: string;
   visualPrompt?: string;
+  imageProvider?: string;
+  visualData?: Record<string, unknown>;
 }
 
 export default function EditMathSimulationPage() {
@@ -155,8 +157,11 @@ export default function EditMathSimulationPage() {
       });
       const result = await response.json();
       if (result.success && result.segments && result.segments[0]) {
-        updateQuestion(index, 'imageUrl', result.segments[0].imageUrl);
-        updateQuestion(index, 'visualPrompt', result.segments[0].visualPrompt);
+        setQuestions((previous) => {
+          const updated = [...previous];
+          updated[index] = { ...updated[index], ...result.segments[0] };
+          return updated;
+        });
         alert(`Regenerated image for Question #${q.id} successfully!`);
       } else {
         alert('Failed to regenerate image.');

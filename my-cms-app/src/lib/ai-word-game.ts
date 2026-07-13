@@ -143,7 +143,7 @@ function objectLabelsMatch(detected: string, target: string): boolean {
     targetLabel.includes(detectedLabel);
 }
 
-function normalizeDetectedObjects(parsed: unknown, minConfidence = 0): string[] {
+function normalizeDetectedObjects(parsed: unknown, minConfidence = 0, maxObjects = 20): string[] {
   const rawList = Array.isArray(parsed)
     ? parsed
     : parsed && typeof parsed === 'object'
@@ -176,7 +176,7 @@ function normalizeDetectedObjects(parsed: unknown, minConfidence = 0): string[] 
     .map(normalizeObjectLabel)
     .filter(Boolean)
     .filter((item, index, list) => list.indexOf(item) === index)
-    .slice(0, 10);
+    .slice(0, maxObjects);
 }
 
 async function callObjectDetectionService(base64Image: string): Promise<string[]> {
@@ -184,7 +184,8 @@ async function callObjectDetectionService(base64Image: string): Promise<string[]
   if (!detectorUrl) return [];
 
   const timeoutMs = Number(process.env.OBJECT_DETECTION_TIMEOUT_MS || 20000);
-  const minConfidence = Number(process.env.OBJECT_DETECTION_MIN_CONFIDENCE || 0.25);
+  const minConfidence = Number(process.env.OBJECT_DETECTION_MIN_CONFIDENCE || 0.18);
+  const maxObjects = Number(process.env.OBJECT_DETECTION_MAX_OBJECTS || 20);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -201,7 +202,7 @@ async function callObjectDetectionService(base64Image: string): Promise<string[]
     }
 
     const result = await response.json();
-    return normalizeDetectedObjects(result, minConfidence);
+    return normalizeDetectedObjects(result, minConfidence, maxObjects);
   } catch (error) {
     console.warn('Object detection service failed, falling back to Ollama:', error);
     return [];

@@ -14,6 +14,7 @@ import '../../../models/activity.dart';
 import '../../../providers/user_provider.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/activity_service.dart';
+import '../../../services/api_config.dart';
 import '../../../services/draft_service.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/palette.dart';
@@ -41,7 +42,8 @@ class MathSimulationActivityScreen extends StatefulWidget {
       _MathSimulationActivityScreenState();
 }
 
-class _MathSimulationActivityScreenState extends State<MathSimulationActivityScreen>
+class _MathSimulationActivityScreenState
+    extends State<MathSimulationActivityScreen>
     with SingleTickerProviderStateMixin {
   final ActivityService _activityService = ActivityService();
 
@@ -68,6 +70,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   List<dynamic> _segments = [];
   final Map<int, int> _originalScores = {};
   final Map<int, bool?> _answerStatus = {};
+  final Map<int, TextEditingController> _answerControllers = {};
 
   bool _isSubmitting = false;
   int _totalScoreEarned = 0;
@@ -87,6 +90,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   void dispose() {
     _uiUpdateTimer?.cancel();
     _scanAnimationController.dispose();
+    for (final controller in _answerControllers.values) {
+      controller.dispose();
+    }
     _descriptionController.dispose();
     super.dispose();
   }
@@ -108,6 +114,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
           10;
 
       _originalScores[i] = scoreFromSegment;
+      _answerControllers[i] = TextEditingController();
 
       _segmentResults.add(SegmentResult(
         id: segment['id']?.toString() ?? '${i + 1}',
@@ -160,8 +167,12 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                 _phase = _Phase.ready;
                 _currentQuestionIndex = 0;
                 _answerStatus.clear();
+                for (final controller in _answerControllers.values) {
+                  controller.clear();
+                }
                 for (int i = 0; i < _segmentResults.length; i++) {
-                  _segmentResults[i] = _segmentResults[i].copyWith(maxScore: 0, recognizedText: '');
+                  _segmentResults[i] = _segmentResults[i]
+                      .copyWith(maxScore: 0, recognizedText: '');
                 }
               });
             },
@@ -188,26 +199,26 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     if (!mounted) return;
     final savedStart = data['startTime'] as String?;
     final phaseStr = data['phase'] as String? ?? 'ready';
-    final restoredPhase = _Phase.values.firstWhere((p) => p.name == phaseStr,
-        orElse: () => _Phase.ready);
-    
+    final restoredPhase = _Phase.values
+        .firstWhere((p) => p.name == phaseStr, orElse: () => _Phase.ready);
+
     _baseElapsedSeconds = data['elapsedSeconds'] as int? ?? 0;
     if (savedStart != null && restoredPhase == _Phase.running) {
       final closedAt = DateTime.parse(savedStart);
       _baseElapsedSeconds += DateTime.now().difference(closedAt).inSeconds;
     }
-    
+
     if (restoredPhase == _Phase.running) {
       _uiUpdateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() {});
       });
     }
-    
+
     setState(() {
       _phase = restoredPhase;
       _currentQuestionIndex = data['currentQuestionIndex'] as int? ?? 0;
       _descriptionController.text = data['description'] as String? ?? '';
-      
+
       final scores = data['scores'] as Map<String, dynamic>? ?? {};
       scores.forEach((k, v) {
         final idx = int.tryParse(k);
@@ -216,11 +227,19 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               _segmentResults[idx].copyWith(maxScore: (v as num).toInt());
         }
       });
-      
+
       final answers = data['answerStatus'] as Map<String, dynamic>? ?? {};
       answers.forEach((k, v) {
         final idx = int.tryParse(k);
         if (idx != null) _answerStatus[idx] = v as bool?;
+      });
+
+      final typedAnswers = data['typedAnswers'] as Map<String, dynamic>? ?? {};
+      typedAnswers.forEach((k, v) {
+        final idx = int.tryParse(k);
+        if (idx != null && _answerControllers[idx] != null) {
+          _answerControllers[idx]!.text = v?.toString() ?? '';
+        }
       });
     });
   }
@@ -234,7 +253,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     }
     final answers = <String, bool?>{};
     _answerStatus.forEach((k, v) => answers['$k'] = v);
-    
+    final typedAnswers = <String, String>{};
+    _answerControllers.forEach((k, v) => typedAnswers['$k'] = v.text);
+
     await DraftService.saveDraft(
       childId: childId,
       type: DraftService.typeCalculate,
@@ -244,10 +265,12 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
         'phase': _phase.name,
         'currentQuestionIndex': _currentQuestionIndex,
         'elapsedSeconds': _elapsedSeconds,
-        'startTime': _phase == _Phase.running ? DateTime.now().toIso8601String() : null,
+        'startTime':
+            _phase == _Phase.running ? DateTime.now().toIso8601String() : null,
         'description': _descriptionController.text,
         'scores': scores,
         'answerStatus': answers,
+        'typedAnswers': typedAnswers,
       },
     );
   }
@@ -340,9 +363,10 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
             );
             if (ocrItem != null) {
               final detectedText = ocrItem['detectedText']?.toString() ?? '';
-              final detectedAnswer = ocrItem['detectedAnswer']?.toString() ?? '';
+              final detectedAnswer =
+                  ocrItem['detectedAnswer']?.toString() ?? '';
               final isCorrect = ocrItem['isCorrect'] as bool? ?? false;
-              
+
               _segmentResults[i] = _segmentResults[i].copyWith(
                 recognizedText: detectedText,
                 maxScore: isCorrect ? (_originalScores[i] ?? 10) : 0,
@@ -360,7 +384,6 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
       } else {
         throw Exception('เซิร์ฟเวอร์ส่งข้อมูลกลับในรูปแบบที่ไม่ถูกต้อง');
       }
-
     } catch (e) {
       _scanAnimationController.stop();
       setState(() => _phase = _Phase.running);
@@ -377,25 +400,80 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   bool _evaluateAnswerLocally(String detected, String expected) {
     final cleanDet = detected.replaceAll(RegExp(r'\s+'), '').toLowerCase();
     final cleanExp = expected.replaceAll(RegExp(r'\s+'), '').toLowerCase();
-    
+
     if (cleanDet == cleanExp) return true;
-    
-    // Check numeric match
-    final detNum = RegExp(r'\d+').stringMatch(cleanDet);
-    final expNum = RegExp(r'\d+').stringMatch(cleanExp);
-    if (detNum != null && expNum != null && detNum == expNum) return true;
-    
+
+    // Check numeric values, including negative and decimal answers.
+    final detNum = double.tryParse(cleanDet.replaceAll(',', ''));
+    final expNum = double.tryParse(cleanExp.replaceAll(',', ''));
+    if (detNum != null &&
+        expNum != null &&
+        (detNum - expNum).abs() < 0.000001) {
+      return true;
+    }
+
     return false;
+  }
+
+  void _checkTypedAnswer(int index, {bool showMessage = true}) {
+    final typed = _answerControllers[index]?.text.trim() ?? '';
+    final expected = _segments[index]['answer']?.toString() ?? '';
+    if (typed.isEmpty) {
+      if (showMessage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('กรุณากรอกคำตอบก่อนตรวจ')),
+        );
+      }
+      return;
+    }
+
+    final isCorrect = _evaluateAnswerLocally(typed, expected);
+    setState(() {
+      _answerStatus[index] = isCorrect;
+      _segmentResults[index] = _segmentResults[index].copyWith(
+        recognizedText: typed,
+        maxScore: isCorrect ? (_originalScores[index] ?? 10) : 0,
+      );
+    });
+    _saveDraft();
+
+    if (showMessage) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              isCorrect ? 'ถูกต้อง เก่งมาก!' : 'ยังไม่ถูก ลองคิดอีกครั้งนะ'),
+          backgroundColor: isCorrect ? Palette.success : Colors.orange.shade700,
+        ),
+      );
+    }
+  }
+
+  void _reviewTypedAnswers() {
+    for (int i = 0; i < _segments.length; i++) {
+      final typed = _answerControllers[i]?.text.trim() ?? '';
+      if (typed.isEmpty) {
+        _answerStatus[i] = false;
+        _segmentResults[i] = _segmentResults[i].copyWith(
+          recognizedText: '',
+          maxScore: 0,
+        );
+      } else {
+        _checkTypedAnswer(i, showMessage: false);
+      }
+    }
+    setState(() => _phase = _Phase.reviewing);
   }
 
   void _showEditOcrDialog(int index) {
     final l = AppLocalizations.of(context)!;
-    final textCtrl = TextEditingController(text: _segmentResults[index].recognizedText);
+    final textCtrl =
+        TextEditingController(text: _segmentResults[index].recognizedText);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(l.math_simulation_editTitle(index + 1), style: AppTextStyles.heading(18)),
+        title: Text(l.math_simulation_editTitle(index + 1),
+            style: AppTextStyles.heading(18)),
         content: TextField(
           controller: textCtrl,
           decoration: InputDecoration(
@@ -412,9 +490,10 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
           ElevatedButton(
             onPressed: () {
               final newText = textCtrl.text.trim();
-              final expectedAnswer = _segments[index]['answer']?.toString() ?? '';
+              final expectedAnswer =
+                  _segments[index]['answer']?.toString() ?? '';
               final isCorrect = _evaluateAnswerLocally(newText, expectedAnswer);
-              
+
               setState(() {
                 _segmentResults[index] = _segmentResults[index].copyWith(
                   recognizedText: newText,
@@ -425,7 +504,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               Navigator.pop(ctx);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Palette.sky),
-            child: Text(l.profile_save, style: const TextStyle(color: Colors.white)),
+            child: Text(l.profile_save,
+                style: const TextStyle(color: Colors.white)),
           )
         ],
       ),
@@ -511,7 +591,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     final String? childId = context.read<UserProvider>().currentChildId;
     if (childId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.calculate_childIdNotFound)),
+        SnackBar(
+            content:
+                Text(AppLocalizations.of(context)!.calculate_childIdNotFound)),
       );
       return;
     }
@@ -520,7 +602,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     setState(() => _isSubmitting = true);
 
     final timeSpentSeconds = _elapsedSeconds;
-    
+
     // Calculate total points
     int correctCount = 0;
     for (int i = 0; i < _segmentResults.length; i++) {
@@ -561,7 +643,6 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
         _phase = _Phase.summary;
         _uiUpdateTimer?.cancel();
       });
-      
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('ส่งคำตอบล้มเหลว: $e')),
@@ -596,7 +677,10 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 leading: IconButton(
-                  icon: Icon(_phase == _Phase.summary ? Icons.close : Icons.arrow_back, color: Colors.black, size: 28),
+                  icon: Icon(
+                      _phase == _Phase.summary ? Icons.close : Icons.arrow_back,
+                      color: Colors.black,
+                      size: 28),
                   onPressed: () async {
                     if (_phase == _Phase.summary) {
                       Navigator.pop(context);
@@ -609,7 +693,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                 centerTitle: true,
                 title: Text(
                   _phase == _Phase.summary
-                      ? ActivityL10n.localizedActivityType(context, widget.activity.category)
+                      ? ActivityL10n.localizedActivityType(
+                          context, widget.activity.category)
                       : _phase == _Phase.reviewing
                           ? 'ผลการสแกนการตรวจคำตอบ'
                           : 'กิจกรรมคณิตศาสตร์ตามสถานการณ์จำลอง',
@@ -625,7 +710,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                           ShareResultData(
                             activityName: widget.activity.name,
                             score: _totalScoreEarned,
-                            maxScore: _segments.length * 10,
+                            maxScore: widget.activity.maxScore,
                             timeSpentSeconds: _elapsedSeconds,
                             category: widget.activity.category,
                             evidenceImagePath: _imagePath,
@@ -671,11 +756,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
         children: [
           InfoBadges(activity: widget.activity),
           const SizedBox(height: 20),
-          
           Text('รายละเอียดกิจกรรม',
               style: AppTextStyles.heading(18, color: Palette.sky)),
           const SizedBox(height: 8),
-          
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -686,27 +769,29 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               border: Border.all(color: Palette.divider),
             ),
             child: Text(
-              widget.activity.content.isNotEmpty ? widget.activity.content : 'ฝึกคิดวิเคราะห์และแก้โจทย์คณิตศาสตร์ผ่านภาพสถานการณ์จริง บันทึกคำตอบลงในกระดาษก่อนกดสแกน',
+              widget.activity.content.isNotEmpty
+                  ? widget.activity.content
+                  : 'ฝึกคิดวิเคราะห์และแก้โจทย์คณิตศาสตร์ผ่านภาพสถานการณ์จริง บันทึกคำตอบลงในกระดาษก่อนกดสแกน',
               style: AppTextStyles.body(15),
             ),
           ),
           const SizedBox(height: 32),
-          
           _buildReadyMessage(),
           const SizedBox(height: 48),
-
           Center(
             child: SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
                 onPressed: _startTimer,
-                icon: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
+                icon: const Icon(Icons.play_arrow_rounded,
+                    color: Colors.white, size: 28),
                 label: Text(AppLocalizations.of(context)!.common_start,
                     style: AppTextStyles.heading(18, color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Palette.success,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   elevation: 2,
                 ),
               ),
@@ -731,10 +816,12 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
           Icon(Icons.edit_note_rounded, size: 48, color: Palette.sky),
           const SizedBox(height: 12),
           Text(AppLocalizations.of(context)!.calculate_pressStart,
-              style: AppTextStyles.body(15, color: Palette.sky, weight: FontWeight.w600),
+              style: AppTextStyles.body(15,
+                  color: Palette.sky, weight: FontWeight.w600),
               textAlign: TextAlign.center),
           const SizedBox(height: 6),
-          Text('เตรียมกระดาษจริงและดินสอเขียนคำตอบไว้ให้พร้อม\nตัวเลขคำตอบเขียนชัดๆ เพื่อสแกนตรวจคำตอบ',
+          Text(
+              'เตรียมกระดาษจริงและดินสอเขียนคำตอบไว้ให้พร้อม\nตัวเลขคำตอบเขียนชัดๆ เพื่อสแกนตรวจคำตอบ',
               style: AppTextStyles.body(13, color: Palette.deepGrey),
               textAlign: TextAlign.center),
         ],
@@ -748,11 +835,13 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     final l = AppLocalizations.of(context)!;
     final segment = _segments[_currentQuestionIndex];
     final totalQuestions = _segments.length;
-    
+
     final questionText = MathOpDetector.normalizeQuestion(
       segment['question']?.toString() ?? segment['text']?.toString() ?? '',
     );
-    final imageUrl = segment['imageUrl']?.toString() ?? '';
+    final imageUrl =
+        ApiConfig.resolveAssetUrl(segment['imageUrl']?.toString() ?? '');
+    final answerState = _answerStatus[_currentQuestionIndex];
 
     return Column(
       children: [
@@ -792,7 +881,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                 style: AppTextStyles.heading(16, color: Palette.sky),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
                   gradient: Palette.skyGradient,
                   borderRadius: BorderRadius.circular(16),
@@ -817,7 +907,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24)),
               elevation: 4,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -825,7 +916,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                   // Situation Image
                   if (imageUrl.isNotEmpty)
                     ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(24)),
                       child: AspectRatio(
                         aspectRatio: 1.6,
                         child: Image.network(
@@ -834,7 +926,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                           errorBuilder: (ctx, err, stack) => Container(
                             color: Colors.grey.shade100,
                             alignment: Alignment.center,
-                            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                            child: const Icon(Icons.broken_image,
+                                size: 50, color: Colors.grey),
                           ),
                         ),
                       ),
@@ -844,10 +937,12 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                       height: 180,
                       decoration: BoxDecoration(
                         color: Colors.grey.shade100,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(24)),
                       ),
                       alignment: Alignment.center,
-                      child: Icon(Icons.image, size: 60, color: Colors.grey.shade400),
+                      child: Icon(Icons.image,
+                          size: 60, color: Colors.grey.shade400),
                     ),
 
                   // Proposition Text box
@@ -858,12 +953,79 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                       children: [
                         Text(
                           'สถานการณ์ปัญหาวิเคราะห์ (PROPOSITION)',
-                          style: AppTextStyles.heading(14, color: Colors.amber.shade800),
+                          style: AppTextStyles.heading(14,
+                              color: Colors.amber.shade800),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           questionText,
-                          style: AppTextStyles.body(17, weight: FontWeight.w600),
+                          style:
+                              AppTextStyles.body(17, weight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 18),
+                        TextField(
+                          controller: _answerControllers[_currentQuestionIndex],
+                          keyboardType: const TextInputType.numberWithOptions(
+                            signed: true,
+                            decimal: true,
+                          ),
+                          textInputAction: TextInputAction.done,
+                          onChanged: (_) {
+                            if (_answerStatus[_currentQuestionIndex] != null) {
+                              setState(() {
+                                _answerStatus[_currentQuestionIndex] = null;
+                                _segmentResults[_currentQuestionIndex] =
+                                    _segmentResults[_currentQuestionIndex]
+                                        .copyWith(maxScore: 0);
+                              });
+                            }
+                          },
+                          onSubmitted: (_) =>
+                              _checkTypedAnswer(_currentQuestionIndex),
+                          decoration: InputDecoration(
+                            labelText: 'คำตอบของฉัน',
+                            hintText: 'กรอกตัวเลข',
+                            prefixIcon: const Icon(Icons.calculate_rounded),
+                            suffixIcon: answerState == null
+                                ? null
+                                : Icon(
+                                    answerState
+                                        ? Icons.check_circle
+                                        : Icons.cancel,
+                                    color: answerState
+                                        ? Palette.success
+                                        : Colors.orange,
+                                  ),
+                            filled: true,
+                            fillColor: answerState == true
+                                ? Palette.success.withValues(alpha: 0.08)
+                                : Colors.grey.shade50,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () =>
+                                _checkTypedAnswer(_currentQuestionIndex),
+                            icon:
+                                const Icon(Icons.task_alt, color: Colors.white),
+                            label: const Text(
+                              'ตรวจคำตอบ',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Palette.sky,
+                              padding: const EdgeInsets.symmetric(vertical: 13),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -887,12 +1049,39 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton.icon(
+                      onPressed: _reviewTypedAnswers,
+                      icon: const Icon(Icons.fact_check_rounded,
+                          color: Colors.white),
+                      label: const Text(
+                        'ดูผลคำตอบทั้งหมด',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Palette.sky,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
                       onPressed: _scanAnswerSheet,
                       icon: const Icon(Icons.camera_alt, color: Colors.white),
-                      label: Text(l.math_simulation_scanBtn, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                      label: Text(l.math_simulation_scanBtn,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF1B5E20), // Dark green
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                         elevation: 2,
                       ),
                     ),
@@ -915,7 +1104,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                       ),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: Palette.sky, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16)),
                         elevation: 0,
                       ),
                     ),
@@ -929,27 +1119,38 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                     if (_currentQuestionIndex > 0)
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () => setState(() => _currentQuestionIndex--),
+                          onPressed: () =>
+                              setState(() => _currentQuestionIndex--),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: Palette.sky, width: 1.5),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: Text(l.math_simulation_prevBtn, style: AppTextStyles.heading(14, color: Palette.sky)),
+                          child: Text(l.math_simulation_prevBtn,
+                              style: AppTextStyles.heading(14,
+                                  color: Palette.sky)),
                         ),
                       ),
-                    if (_currentQuestionIndex > 0 && _currentQuestionIndex < totalQuestions - 1)
+                    if (_currentQuestionIndex > 0 &&
+                        _currentQuestionIndex < totalQuestions - 1)
                       const SizedBox(width: 12),
                     if (_currentQuestionIndex < totalQuestions - 1)
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () => setState(() => _currentQuestionIndex++),
+                          onPressed: () =>
+                              setState(() => _currentQuestionIndex++),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Palette.sky,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: Text(l.math_simulation_nextBtn, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                          child: Text(l.math_simulation_nextBtn,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold)),
                         ),
                       ),
                   ],
@@ -982,7 +1183,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.35), width: 28),
+                border: Border.all(
+                    color: Colors.greenAccent.withValues(alpha: 0.35),
+                    width: 28),
               ),
             ),
           ),
@@ -992,7 +1195,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
             animation: _scanAnimationController,
             builder: (context, child) {
               return Positioned(
-                top: MediaQuery.of(context).size.height * _scanAnimationController.value,
+                top: MediaQuery.of(context).size.height *
+                    _scanAnimationController.value,
                 left: 0,
                 right: 0,
                 child: Container(
@@ -1020,7 +1224,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               decoration: BoxDecoration(
                 color: Colors.black87,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                boxShadow: const [
+                  BoxShadow(color: Colors.black26, blurRadius: 10)
+                ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1087,13 +1293,15 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // List of question cards
-                Text(l.math_simulation_sectionTitle, style: AppTextStyles.heading(15, color: Colors.black54)),
+                Text(l.math_simulation_sectionTitle,
+                    style: AppTextStyles.heading(15, color: Colors.black54)),
                 const SizedBox(height: 10),
-                
+
                 ...List.generate(_segments.length, (index) {
                   final segment = _segments[index];
                   final ocrText = _segmentResults[index].recognizedText ?? '';
-                  final status = _answerStatus[index]; // bool? (true, false, null)
+                  final status =
+                      _answerStatus[index]; // bool? (true, false, null)
                   final isCorrect = status == true;
                   final isIncorrect = status == false;
 
@@ -1108,7 +1316,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: status != null ? Palette.buttonShadow : Palette.cardShadow,
+                      boxShadow: status != null
+                          ? Palette.buttonShadow
+                          : Palette.cardShadow,
                     ),
                     clipBehavior: Clip.hardEdge,
                     child: IntrinsicHeight(
@@ -1131,7 +1341,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                         width: 32,
                                         height: 32,
                                         decoration: BoxDecoration(
-                                          color: accentColor.withValues(alpha: 0.12),
+                                          color: accentColor.withValues(
+                                              alpha: 0.12),
                                           shape: BoxShape.circle,
                                         ),
                                         alignment: Alignment.center,
@@ -1148,48 +1359,66 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                       // Text block
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              l.math_simulation_questionPrefix(segment['question']?.toString() ?? ''),
-                                              style: AppTextStyles.body(14, weight: FontWeight.w600),
+                                              l.math_simulation_questionPrefix(
+                                                  segment['question']
+                                                          ?.toString() ??
+                                                      ''),
+                                              style: AppTextStyles.body(14,
+                                                  weight: FontWeight.w600),
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              l.math_simulation_correctAnswerPrefix(segment['answer']?.toString() ?? ''),
-                                              style: AppTextStyles.label(12, color: Palette.success),
+                                              l.math_simulation_correctAnswerPrefix(
+                                                  segment['answer']
+                                                          ?.toString() ??
+                                                      ''),
+                                              style: AppTextStyles.label(12,
+                                                  color: Palette.success),
                                             ),
                                           ],
                                         ),
                                       ),
-                                      
+
                                       // Edit button
                                       IconButton(
-                                        icon: Icon(Icons.edit, color: Palette.sky, size: 20),
-                                        onPressed: () => _showEditOcrDialog(index),
+                                        icon: Icon(Icons.edit,
+                                            color: Palette.sky, size: 20),
+                                        onPressed: () =>
+                                            _showEditOcrDialog(index),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 12),
-                                  
+
                                   // Scanned/Typed answer display
                                   Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
                                     decoration: BoxDecoration(
                                       color: Colors.grey.shade50,
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.grey.shade200),
+                                      border: Border.all(
+                                          color: Colors.grey.shade200),
                                     ),
                                     child: Row(
                                       children: [
-                                        Text(l.math_simulation_ocrLabel, style: AppTextStyles.body(13, color: Colors.grey.shade600)),
+                                        Text(l.math_simulation_ocrLabel,
+                                            style: AppTextStyles.body(13,
+                                                color: Colors.grey.shade600)),
                                         Expanded(
                                           child: Text(
-                                            ocrText.isNotEmpty ? ocrText : l.math_simulation_noData,
-                                            style: AppTextStyles.body(14, weight: FontWeight.bold),
+                                            ocrText.isNotEmpty
+                                                ? ocrText
+                                                : l.math_simulation_noData,
+                                            style: AppTextStyles.body(14,
+                                                weight: FontWeight.bold),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
@@ -1207,31 +1436,40 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                             _answerStatus[index] = true;
                                             _segmentResults[index] =
                                                 _segmentResults[index].copyWith(
-                                                    maxScore: _originalScores[index] ?? 10);
+                                                    maxScore: _originalScores[
+                                                            index] ??
+                                                        10);
                                           }),
                                           child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 200),
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                            duration: const Duration(
+                                                milliseconds: 200),
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 12),
                                             decoration: BoxDecoration(
                                               color: isCorrect
                                                   ? Palette.success
                                                   : Colors.white,
-                                              borderRadius: BorderRadius.circular(14),
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
                                               border: Border.all(
                                                   color: Palette.success,
                                                   width: isCorrect ? 0 : 1.5),
                                               boxShadow: isCorrect
                                                   ? [
                                                       BoxShadow(
-                                                        color: Palette.success.withValues(alpha: 0.3),
+                                                        color: Palette.success
+                                                            .withValues(
+                                                                alpha: 0.3),
                                                         blurRadius: 6,
-                                                        offset: const Offset(0, 2),
+                                                        offset:
+                                                            const Offset(0, 2),
                                                       )
                                                     ]
                                                   : [],
                                             ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
                                                 Icon(Icons.check_circle_rounded,
                                                     size: 20,
@@ -1241,7 +1479,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                                 const SizedBox(width: 6),
                                                 Text(
                                                   l.calculate_correct,
-                                                  style: AppTextStyles.heading(14,
+                                                  style: AppTextStyles.heading(
+                                                      14,
                                                       color: isCorrect
                                                           ? Colors.white
                                                           : Palette.success),
@@ -1257,31 +1496,39 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                           onTap: () => setState(() {
                                             _answerStatus[index] = false;
                                             _segmentResults[index] =
-                                                _segmentResults[index].copyWith(maxScore: 0);
+                                                _segmentResults[index]
+                                                    .copyWith(maxScore: 0);
                                           }),
                                           child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 200),
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                            duration: const Duration(
+                                                milliseconds: 200),
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 12),
                                             decoration: BoxDecoration(
                                               color: isIncorrect
                                                   ? Palette.pink
                                                   : Colors.white,
-                                              borderRadius: BorderRadius.circular(14),
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
                                               border: Border.all(
                                                   color: Palette.pink,
                                                   width: isIncorrect ? 0 : 1.5),
                                               boxShadow: isIncorrect
                                                   ? [
                                                       BoxShadow(
-                                                        color: Palette.pink.withValues(alpha: 0.3),
+                                                        color: Palette.pink
+                                                            .withValues(
+                                                                alpha: 0.3),
                                                         blurRadius: 6,
-                                                        offset: const Offset(0, 2),
+                                                        offset:
+                                                            const Offset(0, 2),
                                                       )
                                                     ]
                                                   : [],
                                             ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
                                                 Icon(Icons.cancel_rounded,
                                                     size: 20,
@@ -1291,7 +1538,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                                 const SizedBox(width: 6),
                                                 Text(
                                                   l.calculate_incorrect,
-                                                  style: AppTextStyles.heading(14,
+                                                  style: AppTextStyles.heading(
+                                                      14,
                                                       color: isIncorrect
                                                           ? Colors.white
                                                           : Palette.pink),
@@ -1314,7 +1562,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                 }),
 
                 const SizedBox(height: 16),
-                
+
                 // Retake action button
                 SizedBox(
                   width: double.infinity,
@@ -1325,19 +1573,20 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: Palette.sky, width: 1.5),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
 
                 const SizedBox(height: 30),
-                
+
                 // Evidence Attachments block
                 Text(l.common_evidence,
                     style: AppTextStyles.heading(20, color: Palette.error)),
                 const SizedBox(height: 15),
                 _buildEvidenceSection(),
-                
+
                 const SizedBox(height: 48),
               ],
             ),
@@ -1401,7 +1650,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
             style: AppTextStyles.heading(18, color: Colors.black54)),
         const SizedBox(height: 5),
         GestureDetector(
-          onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: false),
+          onTap: _isSubmitting
+              ? null
+              : () => _handleMediaSelection(isVideo: false),
           child: Container(
             height: 120,
             width: double.infinity,
@@ -1409,7 +1660,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _imagePath != null ? Palette.success : Colors.grey.shade300,
+                color:
+                    _imagePath != null ? Palette.success : Colors.grey.shade300,
                 width: 2,
               ),
             ),
@@ -1421,19 +1673,25 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                         child: SizedBox(
                           width: double.infinity,
                           height: double.infinity,
-                          child: Image.file(File(_imagePath!), fit: BoxFit.cover),
+                          child:
+                              Image.file(File(_imagePath!), fit: BoxFit.cover),
                         ),
                       ),
                       Positioned(
                         top: 4,
                         right: 4,
                         child: Container(
-                          decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                          decoration: const BoxDecoration(
+                              color: Colors.black54, shape: BoxShape.circle),
                           child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 16),
-                            onPressed: _isSubmitting ? null : () => setState(() => _imagePath = null),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 16),
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => setState(() => _imagePath = null),
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
                           ),
                         ),
                       ),
@@ -1443,9 +1701,11 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.grey),
+                        const Icon(Icons.add_photo_alternate_outlined,
+                            size: 40, color: Colors.grey),
                         const SizedBox(height: 8),
-                        Text(l.common_addImage, style: AppTextStyles.body(12, color: Colors.grey)),
+                        Text(l.common_addImage,
+                            style: AppTextStyles.body(12, color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -1464,7 +1724,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
             style: AppTextStyles.heading(18, color: Colors.black54)),
         const SizedBox(height: 5),
         GestureDetector(
-          onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: true),
+          onTap:
+              _isSubmitting ? null : () => _handleMediaSelection(isVideo: true),
           child: Container(
             height: 120,
             width: double.infinity,
@@ -1472,7 +1733,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _videoPath != null ? Palette.success : Colors.grey.shade300,
+                color:
+                    _videoPath != null ? Palette.success : Colors.grey.shade300,
                 width: 2,
               ),
             ),
@@ -1483,20 +1745,31 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                       if (_videoThumbnail != null)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(18),
-                          child: Image.memory(_videoThumbnail!, fit: BoxFit.cover),
+                          child:
+                              Image.memory(_videoThumbnail!, fit: BoxFit.cover),
                         )
                       else
-                        const Center(child: Icon(Icons.check_circle_outline, color: Colors.green, size: 36)),
+                        const Center(
+                            child: Icon(Icons.check_circle_outline,
+                                color: Colors.green, size: 36)),
                       Positioned(
                         top: 4,
                         right: 4,
                         child: Container(
-                          decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                          decoration: const BoxDecoration(
+                              color: Colors.black54, shape: BoxShape.circle),
                           child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 14),
-                            onPressed: _isSubmitting ? null : () => setState(() { _videoPath = null; _videoThumbnail = null; }),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 14),
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => setState(() {
+                                      _videoPath = null;
+                                      _videoThumbnail = null;
+                                    }),
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                            constraints: const BoxConstraints(
+                                minWidth: 26, minHeight: 26),
                           ),
                         ),
                       ),
@@ -1506,9 +1779,11 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_circle_outline, size: 40, color: Colors.grey),
+                        const Icon(Icons.add_circle_outline,
+                            size: 40, color: Colors.grey),
                         const SizedBox(height: 8),
-                        Text(l.common_addVideo, style: AppTextStyles.body(12, color: Colors.grey)),
+                        Text(l.common_addVideo,
+                            style: AppTextStyles.body(12, color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -1543,13 +1818,15 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                   color: Colors.amber.shade100,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.star_rounded, size: 54, color: Colors.amber),
+                child: const Icon(Icons.star_rounded,
+                    size: 54, color: Colors.amber),
               ),
               const SizedBox(height: 12),
-              
+
               Text(
                 'เก่งมากเลย! (Well Done)',
-                style: AppTextStyles.heading(28, color: const Color(0xFF1B5E20)),
+                style:
+                    AppTextStyles.heading(28, color: const Color(0xFF1B5E20)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
@@ -1595,7 +1872,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               // Detailed summary checklist
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('รายละเอียดการทำกิจกรรม', style: AppTextStyles.heading(16, color: Colors.black54)),
+                child: Text('รายละเอียดการทำกิจกรรม',
+                    style: AppTextStyles.heading(16, color: Colors.black54)),
               ),
               const SizedBox(height: 10),
 
@@ -1619,13 +1897,18 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                         width: 28,
                         height: 28,
                         decoration: BoxDecoration(
-                          color: isCorrect ? Palette.success.withValues(alpha: 0.1) : Palette.pink.withValues(alpha: 0.1),
+                          color: isCorrect
+                              ? Palette.success.withValues(alpha: 0.1)
+                              : Palette.pink.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           '${index + 1}',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: isCorrect ? Palette.success : Palette.pink, fontSize: 13),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isCorrect ? Palette.success : Palette.pink,
+                              fontSize: 13),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1633,9 +1916,13 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(segment['question']?.toString() ?? '', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                            Text(segment['question']?.toString() ?? '',
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey)),
                             const SizedBox(height: 2),
-                            Text(ocrVal, style: AppTextStyles.body(14, weight: FontWeight.w600)),
+                            Text(ocrVal,
+                                style: AppTextStyles.body(14,
+                                    weight: FontWeight.w600)),
                           ],
                         ),
                       ),
@@ -1667,8 +1954,12 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                       _videoPath = null;
                       _videoThumbnail = null;
                       _descriptionController.clear();
+                      for (final controller in _answerControllers.values) {
+                        controller.clear();
+                      }
                       for (int i = 0; i < _segmentResults.length; i++) {
-                        _segmentResults[i] = _segmentResults[i].copyWith(maxScore: 0, recognizedText: '');
+                        _segmentResults[i] = _segmentResults[i]
+                            .copyWith(maxScore: 0, recognizedText: '');
                       }
                     });
                   },
@@ -1679,7 +1970,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Palette.bluePill,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
                   ),
                 ),
               ),
@@ -1696,7 +1988,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                   ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Palette.sky, width: 2),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
                   ),
                 ),
               ),
@@ -1728,13 +2021,15 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+            style: TextStyle(
+                fontSize: 20, fontWeight: FontWeight.bold, color: color),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+                fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w600),
           ),
         ],
       ),
