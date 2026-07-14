@@ -442,10 +442,12 @@ class ActivityService {
   Future<Map<String, dynamic>> verifyHandwriting({
     required String base64Image,
     required List<dynamic> questions,
+    String? mimeType,
   }) async {
     final payload = {
       'base64Image': base64Image,
       'questions': questions,
+      if (mimeType != null) 'mimeType': mimeType,
     };
     return _apiService.post('/activities/verify-handwriting', payload, timeout: const Duration(seconds: 60));
   }

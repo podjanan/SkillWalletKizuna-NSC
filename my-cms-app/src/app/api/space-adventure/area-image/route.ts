@@ -36,9 +36,13 @@ export async function POST(request: NextRequest) {
 
     const bytes = new Uint8Array(await file.arrayBuffer());
     const base64Image = `data:${file.type};base64,${Buffer.from(bytes).toString('base64')}`;
-    const scan = await scanRoomImage(base64Image);
     const key = `space-adventure/areas/${crypto.randomUUID()}.${getExtension(file.type)}`;
-    const imageUrl = await uploadToMinio(key, bytes, file.type);
+    // Scanning and object-storage upload are independent, so run them together
+    // instead of making the user wait for both operations sequentially.
+    const [scan, imageUrl] = await Promise.all([
+      scanRoomImage(base64Image),
+      uploadToMinio(key, bytes, file.type),
+    ]);
 
     return NextResponse.json({
       success: true,

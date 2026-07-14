@@ -1,69 +1,54 @@
-// src/app/api/activities/verify-handwriting/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import sharp from 'sharp';
 import { auth } from '@/lib/auth';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key, x-requested-with',
   'Access-Control-Max-Age': '86400',
 };
 
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
+type Question = {
+  id?: string | number;
+  question?: string;
+  answer?: string | number;
+};
+
+type OcrNumber = {
+  text: string;
+  confidence?: number;
+};
+
+function normalizeAnswer(value: unknown) {
+  return String(value ?? '')
+    .trim()
+    .replace(/[\s,]/g, '')
+    .replace(/[−–—]/g, '-');
 }
 
-async function callGeminiREST(prompt: string, base64Image?: string, schema?: any): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-  
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not configured in environment variables.');
-  }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-
-  const parts: any[] = [{ text: prompt }];
-  if (base64Image) {
-    parts.push({
-      inlineData: {
-        mimeType: 'image/jpeg',
-        data: base64Image
-      }
-    });
-  }
-
-  const requestBody = {
-    contents: [
-      {
-        parts
-      }
-    ],
-    generationConfig: schema ? {
-      responseMimeType: 'application/json',
-      responseSchema: schema
-    } : undefined
-  };
+async function recognizeNumbersLocally(base64Image: string): Promise<OcrNumber[]> {
+  const configuredUrl = process.env.HANDWRITING_OCR_URL?.trim();
+  const detectorUrl = process.env.OBJECT_DETECTION_URL?.trim();
+  const url = configuredUrl || (detectorUrl
+    ? `${detectorUrl.replace(/\/detect\/?$/, '')}/recognize-numbers`
+    : 'http://localhost:8002/recognize-numbers');
 
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(requestBody)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: base64Image }),
+    signal: AbortSignal.timeout(30000),
   });
-
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API returned error: ${response.status} - ${errorText}`);
+    throw new Error(`Local number OCR returned HTTP ${response.status}: ${await response.text()}`);
   }
+  const payload = await response.json() as { numbers?: OcrNumber[] };
+  return Array.isArray(payload.numbers) ? payload.numbers : [];
+}
 
-  const resultJson = await response.json();
-  const text = resultJson.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error('Gemini API returned an empty response.');
-  }
-  return text;
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
 }
 
 export async function POST(request: NextRequest) {
@@ -72,95 +57,82 @@ export async function POST(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized user session' },
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: corsHeaders },
       );
     }
 
-    const body = await request.json();
-    const { base64Image, questions } = body;
-
-    if (!base64Image) {
+    const body = await request.json() as { base64Image?: string; questions?: Question[] };
+    if (!body.base64Image) {
       return NextResponse.json(
         { error: 'Missing required field: base64Image' },
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: corsHeaders },
       );
     }
-
-    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+    if (!Array.isArray(body.questions) || body.questions.length === 0) {
       return NextResponse.json(
-        { error: 'Missing or empty required field: questions (must be an array)' },
-        { status: 400, headers: corsHeaders }
+        { error: 'Missing or empty required field: questions' },
+        { status: 400, headers: corsHeaders },
       );
     }
 
-    // Compose prompt instructing Gemini to perform OCR and grade correctness
-    const questionsText = questions
-      .map((q) => `Question #${q.id}: "${q.question}" (Expected Answer: "${q.answer}")`)
-      .join('\n');
+    const cleanBase64 = body.base64Image.replace(/^data:image\/\w+;base64,/, '');
+    const optimizedImage = await sharp(Buffer.from(cleanBase64, 'base64'))
+      .rotate()
+      .flatten({ background: '#ffffff' })
+      .trim({ background: '#ffffff', threshold: 12 })
+      .extend({ top: 24, bottom: 24, left: 24, right: 24, background: '#ffffff' })
+      .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 92 })
+      .toBuffer();
 
-    const prompt = `You are a primary school math teacher evaluating a student's handwritten answer sheet.
-Compare the handwritten equations in the image to the question list below and determine whether they are correct.
+    const detected = await recognizeNumbersLocally(optimizedImage.toString('base64'));
+    const available = detected.map((item) => ({
+      original: item.text,
+      normalized: normalizeAnswer(item.text),
+      confidence: Number(item.confidence ?? 0),
+    }));
 
-List of expected questions:
-${questionsText}
+    // Match by value only. Position and OCR output order are intentionally
+    // ignored because children may write answers anywhere on the page.
+    const results = body.questions.map((question, index) => {
+      const expected = normalizeAnswer(question.answer);
+      const matchIndex = available.findIndex((item) => {
+        if (item.normalized === expected) return true;
+        // EasyOCR can mistake a large gap between handwritten digits for a
+        // dash (for example "3 6" -> "3-6"). For positive integer answers,
+        // compare the digit sequence as a safe secondary match.
+        if (!/^\d+$/.test(expected)) return false;
+        const detectedDigits = item.normalized.replace(/\D/g, '');
+        if (detectedDigits === expected) return true;
+        return item.confidence < 0.75 &&
+          detectedDigits.length === expected.length + 1 &&
+          (detectedDigits.startsWith(expected) || detectedDigits.endsWith(expected));
+      });
+      const match = matchIndex >= 0 ? available.splice(matchIndex, 1)[0] : null;
+      return {
+        questionIndex: index + 1,
+        detectedText: match ? expected : '',
+        detectedAnswer: match ? expected : '',
+        confidence: match?.confidence ?? 0,
+        isCorrect: Boolean(match),
+      };
+    });
 
-For each question:
-1. Locate the written equation corresponding to that question number or math expression in the image.
-2. Read the text of the equation written by the child.
-3. Extract the final numerical answer from their written equation.
-4. Compare their final answer to the Expected Answer. (Ensure minor spelling, spacing, or handwriting deviations are evaluated fairly; e.g. "12 + 8 = 20" matches the expected answer "20").
-5. Mark "isCorrect" as true if the answer matches the expected answer, false otherwise.
-
-Provide feedback as a JSON array of results matching the strict schema.`;
-
-    const schema = {
-      type: 'OBJECT',
-      properties: {
-        results: {
-          type: 'ARRAY',
-          items: {
-            type: 'OBJECT',
-            properties: {
-              questionIndex: { type: 'INTEGER', description: 'The 1-based index corresponding to the question ID.' },
-              detectedText: { type: 'STRING', description: 'The complete equation text detected (e.g. "12 + 8 = 20").' },
-              detectedAnswer: { type: 'STRING', description: 'The extracted numerical answer text (e.g. "20").' },
-              isCorrect: { type: 'BOOLEAN', description: 'True if the answer matches the expected answer.' }
-            },
-            required: ['questionIndex', 'detectedText', 'detectedAnswer', 'isCorrect']
-          }
-        }
-      },
-      required: ['results']
-    };
-
-    // Clean image prefix if present
-    const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
-
-    const geminiResponseText = await callGeminiREST(prompt, cleanBase64, schema);
-    let parsedResult;
-    try {
-      parsedResult = JSON.parse(geminiResponseText);
-    } catch (err) {
-      console.error('Failed to parse Gemini OCR response JSON:', geminiResponseText);
-      return NextResponse.json(
-        { error: 'Failed to parse AI grading results', details: geminiResponseText },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-        results: parsedResult.results
-      },
-      { headers: corsHeaders }
-    );
-
-  } catch (error: any) {
+    return NextResponse.json({
+      success: true,
+      engine: 'easyocr-local',
+      detectedNumbers: detected,
+      unmatchedNumbers: available.map((item) => item.original),
+      results,
+    }, { headers: corsHeaders });
+  } catch (error: unknown) {
     console.error('POST /api/activities/verify-handwriting error:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
-      { status: 500, headers: corsHeaders }
+      {
+        error: 'Local handwriting OCR failed',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 503, headers: corsHeaders },
     );
   }
 }

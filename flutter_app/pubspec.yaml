@@ -74,6 +74,7 @@ flutter:
     - assets/images/calculate_easy.png
     - assets/images/calculate_medium.png
     - assets/images/calculate_hard.png
-    - assets/images/voice_quest_cover.png
+      - assets/images/voice_quest_cover.png
+      - assets/images/space_adventure_cover.png
     - assets/icons/
     - .env

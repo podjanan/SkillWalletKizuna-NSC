@@ -83,7 +83,7 @@ async function generateSuggestion(
 ) {
   const settings = await getAiWordSettings();
   if (!settings.useGemini) {
-    throw new Error('AI suggestion is disabled in AI Word Game settings.');
+    throw new Error('AI suggestion is disabled in Voice Quest settings.');
   }
 
   // Fetch existing words to exclude them from suggestions
@@ -221,7 +221,7 @@ async function enrichWord(word: string, category: AiWordCategory, difficulty: 'e
   const settings = await getAiWordSettings();
   const fallback = getFallbackMetadata(word);
   if (!settings.useGemini) {
-    throw new Error('AI metadata generation is disabled in AI Word Game settings.');
+    throw new Error('AI metadata generation is disabled in Voice Quest settings.');
   }
 
   const prompt = `You are a children's English vocabulary teacher. Create accurate metadata for the English word "${word}".

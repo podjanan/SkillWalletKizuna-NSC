@@ -138,7 +138,7 @@ export default function MathSimulationDashboard() {
           </div>
           <div>
             <h4 className="body-small-semibold text-secondary--text">AI Generation Mode</h4>
-            <p className="heading-h5 text-dark font-semibold mt-1">Exact Local Images · ComfyUI Ready</p>
+            <p className="heading-h5 text-dark font-semibold mt-1">Exact Local Images</p>
           </div>
         </div>
       </div>

@@ -74,7 +74,7 @@ async function generateWord(
 ) {
   const settings = await getAiWordSettings();
   if (!settings.useGemini) {
-    throw new Error('AI vocabulary generation is disabled in AI Word Game settings.');
+    throw new Error('AI vocabulary generation is disabled in Voice Quest settings.');
   }
 
   const existingWords = await getAiWordFallbackWords(category.id);
@@ -323,7 +323,7 @@ export async function POST(request: NextRequest) {
     const settings = await getAiWordSettings();
     if (!settings.enabled) {
       return NextResponse.json(
-        { error: 'AI Word Game is disabled.' },
+        { error: 'Voice Quest is disabled.' },
         { status: 403, headers: corsHeaders },
       );
     }

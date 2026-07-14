@@ -69,7 +69,7 @@ export default function Sidebar() {
           }`}
         >
           <Mic size={20} className="text-secondary--text" />
-          <span className="body-medium-medium">AI Word Game</span>
+          <span className="body-medium-medium">Voice Quest</span>
         </Link>
 
         <Link

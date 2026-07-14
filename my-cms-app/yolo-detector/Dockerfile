@@ -12,6 +12,10 @@ RUN apt-get update \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Bake the local OCR weights into the image so production scanning never
+# needs internet access or a first-request model download.
+RUN python -c "import easyocr; easyocr.Reader(['en'], gpu=False, verbose=False)"
+
 COPY app.py .
 
 EXPOSE 8000

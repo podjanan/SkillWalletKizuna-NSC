@@ -10,8 +10,6 @@ export type MathVisualData = {
   rightLabel: string;
 };
 
-type ComfyImage = { buffer: Buffer; prompt: string };
-
 const WIDTH = 1280;
 const HEIGHT = 768;
 
@@ -132,98 +130,30 @@ function fallbackBackgroundSvg() {
   </svg>`);
 }
 
-function overlaySvg(question: string, visual: MathVisualData) {
-  const safeQuestion = escapeXml(question.length > 82 ? `${question.slice(0, 79)}…` : question);
+function overlaySvg(_question: string, visual: MathVisualData) {
   const leftLabel = escapeXml(visual.leftLabel);
   const rightLabel = escapeXml(visual.rightLabel);
   return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}">
     <style>text{font-family:'Noto Sans Thai','Tahoma','Arial',sans-serif}</style>
-    <rect x="70" y="28" width="1140" height="118" rx="30" fill="#fff" fill-opacity=".94" stroke="#7c3aed" stroke-width="6"/>
-    <text x="640" y="74" font-size="29" font-weight="700" text-anchor="middle" fill="#3b0764">${safeQuestion}</text>
-    <text x="640" y="124" font-size="42" font-weight="800" text-anchor="middle" fill="#6d28d9">${visual.leftCount} ${escapeXml(visual.operator)} ${visual.rightCount} = ?</text>
-    <rect x="55" y="185" width="555" height="525" rx="38" fill="#fff" fill-opacity=".93" stroke="#fb7185" stroke-width="7"/>
-    <rect x="670" y="185" width="555" height="525" rx="38" fill="#fff" fill-opacity=".93" stroke="#60a5fa" stroke-width="7"/>
-    <text x="332" y="240" font-size="30" font-weight="700" text-anchor="middle" fill="#9f1239">${leftLabel} ${visual.leftCount}</text>
-    <text x="947" y="240" font-size="30" font-weight="700" text-anchor="middle" fill="#1e40af">${rightLabel} ${visual.rightCount}</text>
-    ${objectGrid(visual.leftItem, visual.leftCount, 90, 265, 485, 390)}
-    ${objectGrid(visual.rightItem, visual.rightCount, 705, 265, 485, 390)}
-    <circle cx="640" cy="458" r="48" fill="#7c3aed" stroke="#fff" stroke-width="7"/><text x="640" y="475" font-size="50" font-weight="800" text-anchor="middle" fill="#fff">${escapeXml(visual.operator)}</text>
+    <rect x="55" y="80" width="555" height="610" rx="38" fill="#fff" fill-opacity=".93" stroke="#fb7185" stroke-width="7"/>
+    <rect x="670" y="80" width="555" height="610" rx="38" fill="#fff" fill-opacity=".93" stroke="#60a5fa" stroke-width="7"/>
+    <text x="332" y="135" font-size="30" font-weight="700" text-anchor="middle" fill="#9f1239">${leftLabel} ${visual.leftCount}</text>
+    <text x="947" y="135" font-size="30" font-weight="700" text-anchor="middle" fill="#1e40af">${rightLabel} ${visual.rightCount}</text>
+    ${objectGrid(visual.leftItem, visual.leftCount, 90, 165, 485, 470)}
+    ${objectGrid(visual.rightItem, visual.rightCount, 705, 165, 485, 470)}
+    <circle cx="640" cy="390" r="48" fill="#7c3aed" stroke="#fff" stroke-width="7"/><text x="640" y="407" font-size="50" font-weight="800" text-anchor="middle" fill="#fff">${escapeXml(visual.operator)}</text>
   </svg>`);
-}
-
-function comfyWorkflow(prompt: string, seed: number) {
-  const checkpoint = process.env.COMFYUI_CHECKPOINT || 'sd_xl_base_1.0.safetensors';
-  return {
-    '3': { class_type: 'KSampler', inputs: { seed, steps: 24, cfg: 6.5, sampler_name: 'dpmpp_2m', scheduler: 'karras', denoise: 1, model: ['4', 0], positive: ['6', 0], negative: ['7', 0], latent_image: ['5', 0] } },
-    '4': { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: checkpoint } },
-    '5': { class_type: 'EmptyLatentImage', inputs: { width: WIDTH, height: HEIGHT, batch_size: 1 } },
-    '6': { class_type: 'CLIPTextEncode', inputs: { text: prompt, clip: ['4', 1] } },
-    '7': { class_type: 'CLIPTextEncode', inputs: { text: 'text, letters, numbers, fruit, objects on foreground, watermark, blurry, photorealistic', clip: ['4', 1] } },
-    '8': { class_type: 'VAEDecode', inputs: { samples: ['3', 0], vae: ['4', 2] } },
-    '9': { class_type: 'SaveImage', inputs: { filename_prefix: 'math-simulation', images: ['8', 0] } },
-  };
-}
-
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-async function tryComfyBackground(question: string, seed: number): Promise<ComfyImage | null> {
-  const baseUrl = process.env.COMFYUI_URL?.replace(/\/$/, '');
-  if (!baseUrl) return null;
-  const prompt = `cute 2D children's storybook illustration, magical outdoor market, friendly animal teacher and child, warm pastel colors, bold clean outlines, two empty display areas in the foreground, uncluttered center, no text, no numbers, no fruit, 16:9, inspired by this math story: ${question}`;
-  try {
-    const health = await fetchWithTimeout(`${baseUrl}/system_stats`, {}, 1800);
-    if (!health.ok) return null;
-    const queued = await fetchWithTimeout(`${baseUrl}/prompt`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: comfyWorkflow(prompt, seed) }),
-    }, 5000);
-    if (!queued.ok) throw new Error(`ComfyUI queue returned ${queued.status}`);
-    const { prompt_id: promptId } = await queued.json() as { prompt_id?: string };
-    if (!promptId) throw new Error('ComfyUI did not return prompt_id');
-
-    const deadline = Date.now() + Number(process.env.COMFYUI_TIMEOUT_MS || 180000);
-    while (Date.now() < deadline) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      const historyResponse = await fetchWithTimeout(`${baseUrl}/history/${promptId}`, {}, 5000);
-      if (!historyResponse.ok) continue;
-      const history = await historyResponse.json() as Record<string, { outputs?: Record<string, { images?: Array<{ filename: string; subfolder?: string; type?: string }> }> }>;
-      const image = history[promptId]?.outputs?.['9']?.images?.[0];
-      if (!image) continue;
-      const query = new URLSearchParams({ filename: image.filename, subfolder: image.subfolder ?? '', type: image.type ?? 'output' });
-      const imageResponse = await fetchWithTimeout(`${baseUrl}/view?${query}`, {}, 15000);
-      if (!imageResponse.ok) throw new Error(`ComfyUI image returned ${imageResponse.status}`);
-      return { buffer: Buffer.from(await imageResponse.arrayBuffer()), prompt };
-    }
-    throw new Error('ComfyUI generation timed out');
-  } catch (error) {
-    console.warn('ComfyUI unavailable; using deterministic local illustration:', error);
-    return null;
-  }
 }
 
 export async function createMathSimulationImage(question: string, equation?: string) {
   const visualData = extractMathVisualData(question, equation);
-  const seed = Math.abs(Array.from(question).reduce((sum, char) => ((sum * 31) + char.charCodeAt(0)) | 0, 17));
-  const comfy = await tryComfyBackground(question, seed);
   const overlay = overlaySvg(question, visualData);
-
-  const image = comfy
-    ? sharp(comfy.buffer).resize(WIDTH, HEIGHT, { fit: 'cover' }).composite([{ input: overlay }])
-    : sharp(fallbackBackgroundSvg()).composite([{ input: overlay }]);
+  const image = sharp(fallbackBackgroundSvg()).composite([{ input: overlay }]);
 
   return {
     buffer: await image.png({ compressionLevel: 8 }).toBuffer(),
-    provider: comfy ? 'comfyui' : 'local-svg',
-    visualPrompt: comfy?.prompt ?? 'Deterministic local storybook illustration',
+    provider: 'local-svg',
+    visualPrompt: 'Deterministic local storybook illustration',
     visualData,
   };
 }

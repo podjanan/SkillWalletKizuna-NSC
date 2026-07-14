@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -105,6 +106,7 @@ class _DynamicVocabularyGameScreenState
   bool _isEvaluating = false;
   bool _isSavingScore = false;
   bool _scoreSaved = false;
+  bool _isTvMode = false;
   int? _savedWallet;
   String? _errorMessage;
   String _tempFilePath = '';
@@ -148,12 +150,24 @@ class _DynamicVocabularyGameScreenState
   void dispose() {
     _timer?.cancel();
     _pulseController.dispose();
+    if (_isTvMode) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
     _ttsPlayer.dispose();
     _audioRecorder.dispose();
     _webAudioSub?.cancel();
     _flutterTts.stop();
     _cleanupRecordedAudio();
     super.dispose();
+  }
+
+  Future<void> _toggleTvMode() async {
+    final nextValue = !_isTvMode;
+    await SystemChrome.setEnabledSystemUIMode(
+      nextValue ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge,
+    );
+    if (!mounted) return;
+    setState(() => _isTvMode = nextValue);
   }
 
   Future<void> _cleanupRecordedAudio() async {
@@ -891,8 +905,12 @@ class _DynamicVocabularyGameScreenState
         await _handleBackPressed();
       },
       child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
+        backgroundColor: _isTvMode && _screen == _ScreenState.gameplayScreen
+            ? const Color(0xFF071A34)
+            : Colors.transparent,
+        appBar: _isTvMode && _screen == _ScreenState.gameplayScreen
+            ? null
+            : AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
@@ -910,6 +928,17 @@ class _DynamicVocabularyGameScreenState
             style: AppTextStyles.heading(20, color: Palette.text),
           ),
           actions: [
+            if (_screen == _ScreenState.gameplayScreen || _isTvMode)
+              IconButton(
+                tooltip: _isTvMode ? 'Exit TV Mode' : 'TV Mode',
+                icon: Icon(
+                  _isTvMode
+                      ? Icons.fullscreen_exit_rounded
+                      : Icons.tv_rounded,
+                  color: Palette.sky,
+                ),
+                onPressed: _toggleTvMode,
+              ),
             if (isSummary)
               IconButton(
                 icon: const Icon(Icons.share, color: Palette.sky),
@@ -944,7 +973,7 @@ class _DynamicVocabularyGameScreenState
       case _ScreenState.startScreen:
         return _buildStartScreen();
       case _ScreenState.gameplayScreen:
-        return _buildGameplayScreen();
+        return _isTvMode ? _buildTvGameplayScreen() : _buildGameplayScreen();
       case _ScreenState.resultScreen:
         return _buildResultScreen();
       case _ScreenState.summaryScreen:
@@ -1229,6 +1258,180 @@ class _DynamicVocabularyGameScreenState
   // ----------------------------------------------------
   // Screen 2: Gameplay Screen
   // ----------------------------------------------------
+  Widget _buildTvGameplayScreen() {
+    if (_words.isEmpty) return const SizedBox.shrink();
+    final item = _words[_currentIndex];
+    final progress = (_currentIndex + 1) / _words.length;
+    final mm = (_secondsLeft ~/ 60).toString().padLeft(2, '0');
+    final ss = (_secondsLeft % 60).toString().padLeft(2, '0');
+
+    return ColoredBox(
+      color: const Color(0xFF071A34),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Material(
+                  color: Colors.white.withValues(alpha: 0.10),
+                  shape: const CircleBorder(),
+                  child: IconButton(
+                    tooltip: 'Exit TV Mode',
+                    onPressed: _toggleTvMode,
+                    icon: const Icon(Icons.close_rounded,
+                        color: Colors.white, size: 30),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF103357),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.tv_rounded,
+                          color: Color(0xFF24AEFF), size: 21),
+                      SizedBox(width: 7),
+                      Text('TV Mode',
+                          style: TextStyle(
+                              color: Color(0xFF24AEFF), fontSize: 16)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 5,
+                backgroundColor: Colors.white.withValues(alpha: 0.13),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Color(0xFF1DA9FA)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  '${_currentIndex + 1} / ${_words.length}',
+                  style: const TextStyle(
+                      color: Color(0xFF24AEFF), fontSize: 13),
+                ),
+                const Spacer(),
+                const Icon(Icons.timer_rounded,
+                    color: Color(0xFF24AEFF), size: 16),
+                const SizedBox(width: 5),
+                Text('$mm:$ss',
+                    style: const TextStyle(
+                        color: Color(0xFF24AEFF), fontSize: 14)),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: const Color(0xFF137FC1)),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Color(0x4424AEFF),
+                        blurRadius: 28,
+                        offset: Offset(0, 8)),
+                  ],
+                ),
+                child: item.imageUrl != null && item.imageUrl!.isNotEmpty
+                    ? Image.network(
+                        item.imageUrl!,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) =>
+                            _buildImagePlaceholder(item.word),
+                      )
+                    : _buildImagePlaceholder(item.word),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              item.word.toUpperCase(),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 38,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5),
+            ),
+            if (item.thaiMeaning?.isNotEmpty == true)
+              Text(
+                item.thaiMeaning!,
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.60), fontSize: 17),
+              ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton.filledTonal(
+                  tooltip: 'Listen',
+                  onPressed: () => _speakWord(item.word),
+                  icon: const Icon(Icons.volume_up_rounded),
+                  style: IconButton.styleFrom(
+                    foregroundColor: const Color(0xFF24AEFF),
+                    backgroundColor: const Color(0xFF103357),
+                  ),
+                ),
+                const SizedBox(width: 22),
+                if (_isEvaluating)
+                  const SizedBox(
+                    width: 68,
+                    height: 68,
+                    child: Padding(
+                      padding: EdgeInsets.all(14),
+                      child: CircularProgressIndicator(
+                          color: Color(0xFF24AEFF)),
+                    ),
+                  )
+                else
+                  Listener(
+                    onPointerDown: (_) => _startRecording(),
+                    onPointerUp: (_) => _stopRecording(),
+                    onPointerCancel: (_) => _stopRecording(),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        gradient: _isListening
+                            ? Palette.skyGradient
+                            : Palette.successGradient,
+                        shape: BoxShape.circle,
+                        boxShadow: Palette.buttonShadow,
+                      ),
+                      child: const Icon(Icons.mic_rounded,
+                          color: Colors.white, size: 36),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text(
+              _isListening ? 'กำลังฟัง...' : 'กดค้างเพื่อพูด',
+              style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.48), fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildGameplayScreen() {
     if (_words.isEmpty) return const SizedBox.shrink();
     final item = _words[_currentIndex];

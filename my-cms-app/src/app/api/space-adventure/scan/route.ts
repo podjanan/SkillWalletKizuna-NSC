@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Image base64 data is required' }, { status: 400 });
     }
 
-    const scan = await scanRoomImage(image);
+    const scan = await scanRoomImage(image, String(body.place ?? 'general'));
     if (scan.fallback) {
       return NextResponse.json({
         success: false,

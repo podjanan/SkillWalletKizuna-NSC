@@ -200,10 +200,6 @@ services:
       - OBJECT_DETECTION_MIN_CONFIDENCE=${OBJECT_DETECTION_MIN_CONFIDENCE:-0.18}
       - OBJECT_DETECTION_MAX_OBJECTS=${OBJECT_DETECTION_MAX_OBJECTS:-20}
       - OBJECT_DETECTION_TIMEOUT_MS=${OBJECT_DETECTION_TIMEOUT_MS:-20000}
-      - COMFYUI_URL=${COMFYUI_URL:-http://host.docker.internal:8188}
-      - COMFYUI_CHECKPOINT=${COMFYUI_CHECKPOINT:-sd_xl_base_1.0.safetensors}
-      - COMFYUI_TIMEOUT_MS=${COMFYUI_TIMEOUT_MS:-180000}
-
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -258,11 +254,11 @@ services:
     environment:
       - YOLO_MODEL=${YOLO_MODEL:-yolov8s-worldv2.pt}
       - YOLO_CONFIDENCE=${YOLO_CONFIDENCE:-0.18}
-      - YOLO_IMAGE_SIZE=${YOLO_IMAGE_SIZE:-960}
+      - YOLO_IMAGE_SIZE=${YOLO_IMAGE_SIZE:-640}
       - YOLO_IOU_THRESHOLD=${YOLO_IOU_THRESHOLD:-0.45}
       - YOLO_MAX_OBJECTS=${YOLO_MAX_OBJECTS:-20}
       - YOLO_MAX_DETECTIONS=${YOLO_MAX_DETECTIONS:-100}
-      - YOLO_CLASSES=${YOLO_CLASSES:-bed,pillow,blanket,plant,flowerpot,clock,lamp,picture frame,painting,curtain,wardrobe,cabinet,nightstand,table,desk,chair,sofa,television,window,door,mirror,rug,book,bottle,cup,backpack,handbag,vase,toy,fan,shelf}
+      - YOLO_CLASSES=${YOLO_CLASSES:-bed,pillow,blanket,plant,flowerpot,clock,lamp,picture frame,painting,curtain,wardrobe,cabinet,nightstand,table,desk,chair,sofa,television,window,door,mirror,rug,book,bottle,cup,backpack,handbag,vase,toy,fan,shelf,person,cat,dog,bird,horse,sheep,cow,elephant,bear,zebra,giraffe}
     volumes:
       - swk_yolo_cache:/root/.cache/ultralytics
     healthcheck:

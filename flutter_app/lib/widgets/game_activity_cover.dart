@@ -30,6 +30,21 @@ class GameActivityCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isVoiceQuest) {
+      return Image.asset(
+        'assets/images/space_adventure_cover.png',
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        errorBuilder: (_, __, ___) => const ColoredBox(
+          color: Color(0xFF071A34),
+          child: Center(
+            child: Icon(Icons.rocket_launch_rounded,
+                color: Colors.white, size: 42),
+          ),
+        ),
+      );
+    }
+
     final headerSize = compact ? 8.0 : 11.0;
     final iconSize = compact ? 30.0 : 48.0;
     final tagSize = compact ? 6.0 : 8.0;

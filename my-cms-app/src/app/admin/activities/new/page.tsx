@@ -191,7 +191,7 @@ export default function NewActivityPage() {
 
       const data = await response.json();
 
-      const segmentsWithIds: Segment[] = data.segments?.map((seg: any, idx: number) => ({
+      const segmentsWithIds: Segment[] = data.segments?.map((seg: Omit<Segment, 'id'>, idx: number) => ({
         id: `seg_${Date.now()}_${idx}`,
         start: seg.start,
         end: seg.end,
@@ -426,7 +426,7 @@ export default function NewActivityPage() {
         <h3 className="body-large-semibold text-dark mb-4">
           Select Activity Category / Type <span className="text-red">*</span>
         </h3>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <button
             type="button"
             onClick={() => handleCategorySelect('ด้านภาษา')}
@@ -478,39 +478,6 @@ export default function NewActivityPage() {
             </div>
           </button>
 
-          <button
-            type="button"
-            onClick={() => handleCategorySelect('voice_quest')}
-            className={`p-6 border-2 rounded-lg transition-all text-center flex flex-col justify-between h-full ${
-              selectedCategory === 'voice_quest'
-                ? 'border-purple bg-purple--light5'
-                : 'border-gray6 hover:border-purple--light3'
-            }`}
-          >
-            <div>
-              <div className="body-large-semibold mb-2">Voice Quest</div>
-              <div className="body-small-regular text-secondary--text">
-                AI English speech matching game
-              </div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleCategorySelect('space_adventure')}
-            className={`p-6 border-2 rounded-lg transition-all text-center flex flex-col justify-between h-full ${
-              selectedCategory === 'space_adventure'
-                ? 'border-purple bg-purple--light5'
-                : 'border-gray6 hover:border-purple--light3'
-            }`}
-          >
-            <div>
-              <div className="body-large-semibold mb-2">Space Adventure</div>
-              <div className="body-small-regular text-secondary--text">
-                Vision scavenger match game
-              </div>
-            </div>
-          </button>
         </div>
       </div>
 
@@ -828,7 +795,7 @@ export default function NewActivityPage() {
 
               {questions.length === 0 ? (
                 <div className="text-center py-8 text-secondary--text body-medium-regular">
-                  No questions added yet. Click "Add Question" to start.
+                  No questions added yet. Click &quot;Add Question&quot; to start.
                 </div>
               ) : (
                 <div className="space-y-4">
