@@ -42,6 +42,7 @@ dependencies:
   app_links: ^6.4.1
   webview_flutter: ^4.4.2
   google_sign_in: ^7.2.0
+  google_sign_in_web: ^1.1.0
   share_plus: ^10.1.4
   video_thumbnail: ^0.5.3
 
@@ -74,7 +75,7 @@ flutter:
     - assets/images/calculate_easy.png
     - assets/images/calculate_medium.png
     - assets/images/calculate_hard.png
-      - assets/images/voice_quest_cover.png
-      - assets/images/space_adventure_cover.png
+    - assets/images/voice_quest_cover.png
+    - assets/images/space_adventure_cover.png
     - assets/icons/
     - .env

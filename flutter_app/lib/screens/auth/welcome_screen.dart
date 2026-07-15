@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -11,6 +12,7 @@ import 'package:skill_wallet_kizuna/services/api_service.dart';
 import 'package:skill_wallet_kizuna/services/auth_service.dart';
 import 'package:skill_wallet_kizuna/services/storage_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:skill_wallet_kizuna/widgets/google_sign_in_button.dart';
 import '../../routes/app_routes.dart';
 import '../../../theme/palette.dart';
 import '../../../theme/app_text_styles.dart';
@@ -27,6 +29,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   bool _isLoading = false;
   bool _waitingForOAuth = false;
   bool _agreedToTerms = false;
+  StreamSubscription<GoogleSignInAuthenticationEvent>? _googleAuthSubscription;
+
+  static const _googleWebClientId =
+      '936997750810-d9k18t2710eesdh2bton3kduesri6b4s.apps.googleusercontent.com';
+  static const _googleIosClientId =
+      '765972336394-sbuakvc3n35ttq4milr37ddqeafhrjkh.apps.googleusercontent.com';
+  static const _facebookAppId = '926390707142716';
 
   static const _privacyPolicyUrl =
       'https://krxton.github.io/Skill-Wallet-Kizuna/privacy-policy.html';
@@ -37,11 +46,35 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (kIsWeb) {
+      unawaited(_initializeWebSocialSignIn());
+    }
+  }
+
+  Future<void> _initializeWebSocialSignIn() async {
+    try {
+      final googleSignIn = GoogleSignIn.instance;
+      await googleSignIn.initialize(clientId: _googleWebClientId);
+      _googleAuthSubscription = googleSignIn.authenticationEvents.listen(
+        _handleGoogleAuthenticationEvent,
+        onError: _handleGoogleAuthenticationError,
+      );
+
+      await FacebookAuth.instance.webAndDesktopInitialize(
+        appId: _facebookAppId,
+        cookie: true,
+        xfbml: true,
+        version: 'v23.0',
+      );
+    } catch (error) {
+      debugPrint('Web social sign-in initialization error: $error');
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    unawaited(_googleAuthSubscription?.cancel());
     super.dispose();
   }
 
@@ -70,77 +103,82 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         child: Stack(
           children: [
             // ── Main layout (ปุ่มอยู่เดิมเสมอ) ──
-            LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                    ),
-                    child: IntrinsicHeight(
-                      child: Column(
-                        children: [
-                          // Logo
-                          Expanded(
-                            flex: 2,
-                            child: Center(
-                              child:
-                                  Image.asset('assets/images/SWK_home.png', height: 260),
-                            ),
+            LayoutBuilder(builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      children: [
+                        // Logo
+                        Expanded(
+                          flex: 2,
+                          child: Center(
+                            child: Image.asset('assets/images/SWK_home.png',
+                                height: 260),
                           ),
+                        ),
 
-                          // OAuth buttons
-                          Expanded(
-                            flex: 1,
-                            child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 24),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    _oauthButton(
-                                      icon: Icons.email_outlined,
-                                      text: l10n.email_loginWithEmail,
-                                      color: Colors.grey.shade700,
-                                      onTap: isLoading
-                                          ? () {}
-                                          : () => Navigator.pushNamed(
-                                              context, AppRoutes.emailLogin),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _oauthButton(
-                                      icon: Icons.facebook,
-                                      text: l10n.login_facebookBtn,
-                                      color: Palette.facebook,
-                                      onTap: isLoading
-                                          ? () {}
-                                          : () => _handleOAuth('facebook'),
-                                    ),
-                                    const SizedBox(height: 12),
+                        // OAuth buttons
+                        Expanded(
+                          flex: 1,
+                          child: Center(
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  _oauthButton(
+                                    icon: Icons.email_outlined,
+                                    text: l10n.email_loginWithEmail,
+                                    color: Colors.grey.shade700,
+                                    onTap: isLoading
+                                        ? () {}
+                                        : () => Navigator.pushNamed(
+                                            context, AppRoutes.emailLogin),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  _oauthButton(
+                                    icon: Icons.facebook,
+                                    text: l10n.login_facebookBtn,
+                                    color: Palette.facebook,
+                                    onTap: isLoading
+                                        ? () {}
+                                        : () => _handleOAuth('facebook'),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  if (kIsWeb && _agreedToTerms)
+                                    IgnorePointer(
+                                      ignoring: isLoading,
+                                      child: _googleWebButton(),
+                                    )
+                                  else
                                     _googleButton(
                                       text: l10n.login_googleBtn,
                                       onTap: isLoading
                                           ? () {}
                                           : () => _handleOAuth('google'),
                                     ),
-                                  ],
-                                ),
+                                ],
                               ),
                             ),
                           ),
+                        ),
 
-                          // Terms
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
-                            child: _buildTermsCheckbox(l10n),
-                          ),
-                        ],
-                      ),
+                        // Terms
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
+                          child: _buildTermsCheckbox(l10n),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              }
-            ),
+                ),
+              );
+            }),
 
             // ── Loading overlay (ลอยอยู่บนทุกอย่าง) ──
             if (isLoading)
@@ -293,13 +331,16 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
       if (result.status == LoginStatus.success) {
         final accessToken = result.accessToken!.tokenString;
+        final facebookPhotoUrl = await _getFacebookProfilePhotoUrl();
         final user = await AuthService().signInWithSocial(
           provider: 'facebook',
           idToken: accessToken,
           accessToken: accessToken,
         );
         await StorageService().saveProvider('facebook');
-        if (user.image != null) {
+        if (facebookPhotoUrl != null) {
+          await StorageService().saveOAuthPhotoUrl(facebookPhotoUrl);
+        } else if (user.image != null) {
           await StorageService().saveOAuthPhotoUrl(user.image!);
         }
         await _handlePostOAuth(
@@ -326,8 +367,33 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     }
   }
 
+  Future<String?> _getFacebookProfilePhotoUrl() async {
+    try {
+      final facebookData = await FacebookAuth.instance.getUserData(
+        fields: 'picture.width(500).height(500)',
+      );
+      final picture = facebookData['picture'];
+      if (picture is! Map) return null;
+
+      final data = picture['data'];
+      if (data is! Map) return null;
+
+      final url = data['url'];
+      return url is String && url.isNotEmpty ? url : null;
+    } catch (error) {
+      // A profile image is optional; keep sign-in working and use the image
+      // returned by Better Auth when the Graph API is unavailable.
+      debugPrint('Facebook high-resolution photo error: $error');
+      return null;
+    }
+  }
+
   // ========== Google Sign-In ==========
   Future<void> _handleGoogleSignIn() async {
+    if (kIsWeb) {
+      // Google Identity Services requires its SDK-rendered button on Web.
+      return;
+    }
     setState(() => _isLoading = true);
 
     try {
@@ -355,18 +421,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   Future<void> _nativeGoogleSignIn() async {
     try {
-      // webClientId must match GOOGLE_CLIENT_ID in backend .env
-      const webClientId =
-          '765972336394-nbcvpu9r7niacp5t9ce1ad8j23l80hha.apps.googleusercontent.com';
-      const iosClientId =
-          '765972336394-sbuakvc3n35ttq4milr37ddqeafhrjkh.apps.googleusercontent.com';
-
       final scopes = ['email', 'profile'];
       final googleSignIn = GoogleSignIn.instance;
 
       await googleSignIn.initialize(
-        serverClientId: webClientId,
-        clientId: iosClientId,
+        serverClientId: _googleWebClientId,
+        clientId: defaultTargetPlatform == TargetPlatform.iOS
+            ? _googleIosClientId
+            : null,
       );
 
       final googleUser = await googleSignIn.authenticate();
@@ -382,25 +444,75 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         throw Exception('No ID Token found from Google.');
       }
 
-      final user = await AuthService().signInWithSocial(
-        provider: 'google',
-        idToken: idToken,
+      await _completeGoogleSignIn(
+        googleUser,
         accessToken: authorization.accessToken,
-      );
-      await StorageService().saveProvider('google');
-      if (user.image != null) {
-        await StorageService().saveOAuthPhotoUrl(user.image!);
-      }
-      await _handlePostOAuth(
-        provider: 'google',
-        userId: user.id,
-        email: user.email,
-        fullName: fullName ?? user.name,
+        fullName: fullName,
       );
     } catch (e) {
       setState(() => _isLoading = false);
       rethrow;
     }
+  }
+
+  Future<void> _handleGoogleAuthenticationEvent(
+    GoogleSignInAuthenticationEvent event,
+  ) async {
+    if (event is! GoogleSignInAuthenticationEventSignIn) return;
+
+    if (!_agreedToTerms) {
+      await GoogleSignIn.instance.signOut();
+      if (mounted) _showTermsDialog('google');
+      return;
+    }
+
+    if (mounted) setState(() => _isLoading = true);
+    try {
+      await _completeGoogleSignIn(event.user);
+    } catch (error) {
+      if (mounted) setState(() => _isLoading = false);
+      debugPrint('Google Web Sign-In error: $error');
+      if (mounted) {
+        _showMessage(AppLocalizations.of(context)!.common_errorGeneric(
+            error.toString().replaceFirst('Exception: ', '')));
+      }
+    }
+  }
+
+  void _handleGoogleAuthenticationError(Object error) {
+    debugPrint('Google Web authentication error: $error');
+    if (mounted) {
+      setState(() => _isLoading = false);
+      _showMessage(
+          AppLocalizations.of(context)!.common_errorGeneric(error.toString()));
+    }
+  }
+
+  Future<void> _completeGoogleSignIn(
+    GoogleSignInAccount googleUser, {
+    String? accessToken,
+    String? fullName,
+  }) async {
+    final idToken = googleUser.authentication.idToken;
+    if (idToken == null) {
+      throw Exception('No ID Token found from Google.');
+    }
+
+    final user = await AuthService().signInWithSocial(
+      provider: 'google',
+      idToken: idToken,
+      accessToken: accessToken,
+    );
+    await StorageService().saveProvider('google');
+    if (user.image != null) {
+      await StorageService().saveOAuthPhotoUrl(user.image!);
+    }
+    await _handlePostOAuth(
+      provider: 'google',
+      userId: user.id,
+      email: user.email,
+      fullName: fullName ?? googleUser.displayName ?? user.name,
+    );
   }
 
   // ========== Post-OAuth: Auto-detect Login vs Register ==========
@@ -417,7 +529,12 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       await _syncUserData(email: email);
       // Load photo from user metadata (custom photo_url takes priority)
       if (mounted) {
-        await context.read<UserProvider>().fetchParentData();
+        final userProvider = context.read<UserProvider>();
+        await userProvider.fetchParentData();
+        if (provider == 'facebook' &&
+            _isFacebookProfilePhotoUrl(userProvider.parentPhotoUrl)) {
+          await userProvider.setPhotoFromOAuth(provider);
+        }
       }
 
       if (mounted) {
@@ -449,6 +566,14 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         );
       }
     }
+  }
+
+  bool _isFacebookProfilePhotoUrl(String? url) {
+    if (url == null) return false;
+    final host = Uri.tryParse(url)?.host.toLowerCase() ?? '';
+    return host.contains('facebook.com') ||
+        host.contains('fbcdn.net') ||
+        host.contains('fbsbx.com');
   }
 
   // ========== Helpers ==========
@@ -591,6 +716,18 @@ class _WelcomeScreenState extends State<WelcomeScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _googleWebButton() {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: SizedBox(
+        width: double.infinity,
+        height: 70,
+        child: Center(child: buildGoogleSignInButton()),
       ),
     );
   }
