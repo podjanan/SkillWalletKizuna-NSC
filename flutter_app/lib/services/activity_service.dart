@@ -405,7 +405,6 @@ class ActivityService {
     }
   }
 
-  /// สร้างกิจกรรมใหม่ผ่าน backend API
   Future<Map<String, dynamic>> completeVoiceQuest({
     required String childId,
     required int totalScoreEarned,
@@ -414,6 +413,7 @@ class ActivityService {
     required String category,
     required String difficulty,
     int? timeSpent,
+    Map<String, dynamic>? customEvidence,
   }) async {
     final payload = {
       'childId': childId,
@@ -426,6 +426,7 @@ class ActivityService {
       'evidence': {
         'wordCount': segmentResults.length,
         'correctCount': segmentResults.where((r) => r.maxScore > 0).length,
+        if (customEvidence != null) ...customEvidence,
       },
     };
 

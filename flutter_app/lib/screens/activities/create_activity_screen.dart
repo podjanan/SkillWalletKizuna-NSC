@@ -390,38 +390,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                     if (_questions.isEmpty) _addQuestion();
                   },
                 ),
-                _categoryCard(
-                  icon: Icons.mic,
-                  label: 'Voice Quest',
-                  color: Palette.teal,
-                  onTap: () => setState(() {
-                    _selectedActivityType = 'voice_quest';
-                    _selectedCategory = 'ด้านภาษา';
-                    _maxScoreCtrl.text = '100';
-                  }),
-                ),
-                _categoryCard(
-                  icon: Icons.auto_awesome,
-                  label: 'Space Adventure',
-                  color: Palette.sky,
-                  onTap: () => setState(() {
-                    _selectedActivityType = 'space_adventure';
-                    _selectedCategory = 'ด้านภาษา';
-                    _maxScoreCtrl.text = '100';
-                  }),
-                ),
-                _categoryCard(
-                  icon: Icons.psychology_alt_rounded,
-                  label: 'Math Simulation',
-                  color: Palette.pink,
-                  onTap: () {
-                    setState(() {
-                      _selectedActivityType = 'math_simulation';
-                      _selectedCategory = 'ด้านคำนวณ';
-                    });
-                    if (_questions.isEmpty) _addQuestion();
-                  },
-                ),
+
               ],
             ),
           ],

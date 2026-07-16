@@ -82,7 +82,7 @@ export default function Sidebar() {
           <span className="body-medium-medium">Space Adventure</span>
         </Link>
 
-        <Link
+        {/* <Link
           href="/admin/math-simulation"
           className={`flex items-center gap-2 px-4 py-2 hover:bg-gray--light1 ${
             pathname.startsWith('/admin/math-simulation') ? 'bg-gray--light1' : ''
@@ -90,7 +90,7 @@ export default function Sidebar() {
         >
           <Sparkles size={20} className="text-secondary--text" />
           <span className="body-medium-medium">Math Simulation</span>
-        </Link>
+        </Link> */}
 
         {/* Users */}
         <Link

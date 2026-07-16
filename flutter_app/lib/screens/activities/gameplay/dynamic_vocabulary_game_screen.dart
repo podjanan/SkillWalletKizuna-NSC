@@ -24,6 +24,8 @@ import '../../../widgets/game_activity_cover.dart';
 import '../../../widgets/ui.dart';
 import '../../../widgets/share_result_helper.dart';
 import 'package:skill_wallet_kizuna/l10n/app_localizations.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 import '../../../utils/activity_l10n.dart';
 
 enum _ScreenState { startScreen, gameplayScreen, resultScreen, summaryScreen }
@@ -109,6 +111,11 @@ class _DynamicVocabularyGameScreenState
   bool _isTvMode = false;
   int? _savedWallet;
   String? _errorMessage;
+
+  String? _imagePath;
+  String? _videoPath;
+  Uint8List? _videoThumbnail;
+  final TextEditingController _descriptionController = TextEditingController();
   String _tempFilePath = '';
 
   static const Color _languageAccent = Color(0xFFFFB300);
@@ -441,7 +448,7 @@ class _DynamicVocabularyGameScreenState
       if (_secondsLeft <= 1) {
         _timer?.cancel();
         setState(() => _secondsLeft = 0);
-        _finishQuest();
+        _showSummaryScreen();
       } else {
         setState(() {
           _secondsLeft--;
@@ -728,7 +735,7 @@ class _DynamicVocabularyGameScreenState
   // Next Word
   Future<void> _nextWord() async {
     if (_currentIndex + 1 >= _words.length) {
-      await _finishQuest();
+      _showSummaryScreen();
     } else {
       setState(() {
         _currentIndex++;
@@ -740,12 +747,21 @@ class _DynamicVocabularyGameScreenState
     }
   }
 
+  void _showSummaryScreen() {
+    _timer?.cancel();
+    setState(() {
+      _screen = _ScreenState.summaryScreen;
+      _scoreSaved = false;
+      _isSavingScore = false;
+      _errorMessage = null;
+    });
+  }
+
   Future<void> _finishQuest() async {
     if (_words.isEmpty || _isSavingScore) return;
 
     _timer?.cancel();
     setState(() {
-      _screen = _ScreenState.summaryScreen;
       _isSavingScore = true;
       _errorMessage = null;
     });
@@ -781,6 +797,15 @@ class _DynamicVocabularyGameScreenState
       );
     }
 
+    final evidencePayload = {
+      'videoPathLocal': _videoPath,
+      'imagePathLocal': _imagePath,
+      'status': 'Approved',
+      'description': _descriptionController.text.trim().isNotEmpty
+          ? _descriptionController.text.trim()
+          : null,
+    };
+
     try {
       final response = await _activityService.completeVoiceQuest(
         childId: childId,
@@ -790,6 +815,7 @@ class _DynamicVocabularyGameScreenState
         category: category,
         difficulty: _difficulty,
         timeSpent: _timeSpentSeconds,
+        customEvidence: evidencePayload,
       );
       await userProvider.fetchChildrenData();
       if (!mounted) return;
@@ -1390,12 +1416,17 @@ class _DynamicVocabularyGameScreenState
                 const SizedBox(width: 22),
                 if (_isEvaluating)
                   const SizedBox(
-                    width: 68,
-                    height: 68,
-                    child: Padding(
-                      padding: EdgeInsets.all(14),
-                      child: CircularProgressIndicator(
-                          color: Color(0xFF24AEFF)),
+                    width: 76,
+                    height: 76,
+                    child: Center(
+                      child: SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF24AEFF),
+                          strokeWidth: 2.5,
+                        ),
+                      ),
                     ),
                   )
                 else
@@ -1598,7 +1629,14 @@ class _DynamicVocabularyGameScreenState
             child: _isEvaluating
                 ? const Column(
                     children: [
-                      CircularProgressIndicator(color: Palette.successAlt),
+                      SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(
+                          color: Palette.successAlt,
+                          strokeWidth: 2.5,
+                        ),
+                      ),
                       SizedBox(height: 8),
                       Text('Evaluating your voice...'),
                     ],
@@ -1875,9 +1913,9 @@ class _DynamicVocabularyGameScreenState
         context.watch<UserProvider>().currentChildName ?? 'Selected child';
     final savedText = _scoreSaved
         ? 'Saved to $childName${_savedWallet != null ? ' • Wallet: $_savedWallet' : ''}'
-        : 'Saving score for $childName...';
+        : 'Please enter evidence and save score';
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1954,143 +1992,418 @@ class _DynamicVocabularyGameScreenState
             ),
           ),
           const SizedBox(height: 18),
-          Expanded(
-            child: ListView.separated(
-              itemCount: _words.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final result = _wordResults[index];
-                final score = _wordScores[index];
-                final isCorrect = result?.isCorrect ?? false;
-                return Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Palette.greyCard, width: 1.5),
+          
+          // Words list
+          ...List.generate(_words.length, (index) {
+            final result = _wordResults[index];
+            final score = _wordScores[index];
+            final isCorrect = result?.isCorrect ?? false;
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Palette.greyCard, width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isCorrect
+                        ? Icons.check_circle_rounded
+                        : Icons.info_outline_rounded,
+                    color: isCorrect ? Palette.successAlt : Palette.warning,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isCorrect
-                            ? Icons.check_circle_rounded
-                            : Icons.info_outline_rounded,
-                        color: isCorrect ? Palette.successAlt : Palette.warning,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _words[index].word.toUpperCase(),
-                              style: AppTextStyles.heading(15,
-                                  color: Palette.text),
-                            ),
-                            Text(
-                              result?.spokenText.isNotEmpty == true
-                                  ? 'Said: ${result!.spokenText}'
-                                  : 'No speech recorded',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.body(12,
-                                  color: Palette.deepGrey),
-                            ),
-                          ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _words[index].word.toUpperCase(),
+                          style: AppTextStyles.heading(15, color: Palette.text),
                         ),
-                      ),
-                      if (result != null &&
-                          (result.audioPath != null ||
-                              result.audioBytes != null))
-                        IconButton(
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: const Icon(
-                            Icons.play_circle_outline_rounded,
-                            color: Palette.sky,
-                            size: 24,
-                          ),
-                          onPressed: () => _playRecordedAudio(result),
+                        Text(
+                          result?.spokenText.isNotEmpty == true
+                              ? 'Said: ${result!.spokenText}'
+                              : 'No speech recorded',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.body(12, color: Palette.deepGrey),
                         ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '+$score',
-                        style: AppTextStyles.heading(
-                          16,
-                          color:
-                              score > 0 ? Palette.successAlt : Palette.deepGrey,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 14),
-          if (!_scoreSaved && !_isSavingScore) ...[
+                  if (result != null &&
+                      (result.audioPath != null ||
+                          result.audioBytes != null))
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: const Icon(
+                        Icons.play_circle_outline_rounded,
+                        color: Palette.sky,
+                        size: 24,
+                      ),
+                      onPressed: () => _playRecordedAudio(result),
+                    ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '+$score',
+                    style: AppTextStyles.heading(
+                      16,
+                      color: score > 0 ? Palette.successAlt : Palette.deepGrey,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          
+          const SizedBox(height: 20),
+          _buildEvidenceSection(),
+          const SizedBox(height: 30),
+          
+          // Action Buttons
+          if (!_scoreSaved) ...[
             GradientButton.success(
-              label: 'Retry Save Score',
-              icon: const Icon(Icons.cloud_upload_outlined, color: Colors.white),
+              label: 'Done',
               onTap: _finishQuest,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              radius: 18,
-              fontSize: 15,
+              isLoading: _isSavingScore,
+              padding: const EdgeInsets.symmetric(vertical: 16),
             ),
-            const SizedBox(height: 12),
+          ] else ...[
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                onPressed: _isSavingScore
+                    ? null
+                    : () => setState(() {
+                          _screen = _ScreenState.startScreen;
+                          _words = [];
+                          _wordResults = [];
+                          _wordScores = [];
+                          _score = 0;
+                          _imagePath = null;
+                          _videoPath = null;
+                          _videoThumbnail = null;
+                          _descriptionController.clear();
+                        }),
+                icon: const Icon(Icons.replay, color: Colors.white, size: 22),
+                label: Text(
+                  l.result_playAgainBtn,
+                  style: AppTextStyles.heading(18, color: Palette.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Palette.bluePill,
+                  disabledBackgroundColor: Palette.bluePill.withValues(alpha: 0.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  AppRoutes.home,
+                  (route) => false,
+                ),
+                icon: Icon(Icons.home_outlined, color: Palette.sky, size: 22),
+                label: Text(
+                  l.result_backToActivitiesBtn,
+                  style: AppTextStyles.heading(18, color: Palette.sky),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Palette.sky, width: 2),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                ),
+              ),
+            ),
           ],
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton.icon(
-              onPressed: _isSavingScore
-                  ? null
-                  : () => setState(() {
-                        _screen = _ScreenState.startScreen;
-                        _words = [];
-                        _wordResults = [];
-                        _wordScores = [];
-                        _score = 0;
-                      }),
-              icon: const Icon(Icons.replay, color: Colors.white, size: 22),
-              label: Text(
-                l.result_playAgainBtn,
-                style: AppTextStyles.heading(18, color: Palette.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Palette.bluePill,
-                disabledBackgroundColor:
-                    Palette.bluePill.withValues(alpha: 0.5),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                context,
-                AppRoutes.home,
-                (route) => false,
-              ),
-              icon: Icon(Icons.home_outlined, color: Palette.sky, size: 22),
-              label: Text(
-                l.result_backToActivitiesBtn,
-                style: AppTextStyles.heading(18, color: Palette.sky),
-              ),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Palette.sky, width: 2),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15)),
-              ),
-            ),
-          ),
         ],
       ),
     );
+  }
+
+  Widget _buildEvidenceSection() {
+    final l = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l.common_evidence.toUpperCase(),
+          style: AppTextStyles.heading(14, color: Palette.pink),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          l.calculate_diaryNotes.toUpperCase(),
+          style: AppTextStyles.label(12, color: Palette.deepGrey),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: 100,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Palette.divider, width: 1.5),
+          ),
+          child: TextField(
+            controller: _descriptionController,
+            enabled: !_isSavingScore && !_scoreSaved,
+            maxLines: null,
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.all(16),
+              hintText: l.calculate_writeNotes,
+            ),
+          ),
+        ),
+        const SizedBox(height: 15),
+        Row(
+          children: [
+            Expanded(child: _buildImagePicker()),
+            const SizedBox(width: 10),
+            Expanded(child: _buildVideoPicker()),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImagePicker() {
+    final l = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l.common_image.toUpperCase(),
+          style: AppTextStyles.label(12, color: Palette.deepGrey),
+        ),
+        const SizedBox(height: 6),
+        GestureDetector(
+          onTap: (_isSavingScore || _scoreSaved)
+              ? null
+              : () => _handleMediaSelection(isVideo: false),
+          child: Container(
+            height: 120,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _imagePath != null ? Palette.successAlt : Palette.divider,
+                width: 1.5,
+              ),
+            ),
+            child: _imagePath != null && !kIsWeb
+                ? Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: double.infinity,
+                          child: Image.file(File(_imagePath!), fit: BoxFit.cover),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                            onPressed: (_isSavingScore || _scoreSaved)
+                                ? null
+                                : () => setState(() => _imagePath = null),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add_photo_alternate_outlined, size: 36, color: Colors.grey),
+                        const SizedBox(height: 6),
+                        Text(
+                          l.common_addImage,
+                          style: AppTextStyles.body(11, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVideoPicker() {
+    final l = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l.common_video.toUpperCase(),
+          style: AppTextStyles.label(12, color: Palette.deepGrey),
+        ),
+        const SizedBox(height: 6),
+        GestureDetector(
+          onTap: (_isSavingScore || _scoreSaved)
+              ? null
+              : () => _handleMediaSelection(isVideo: true),
+          child: Container(
+            height: 120,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _videoPath != null ? Palette.successAlt : Palette.divider,
+                width: 1.5,
+              ),
+            ),
+            child: _videoPath != null
+                ? Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (_videoThumbnail != null)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: Image.memory(_videoThumbnail!, fit: BoxFit.cover),
+                        )
+                      else
+                        const Center(
+                          child: Icon(Icons.check_circle_outline, color: Colors.green, size: 36),
+                        ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white, size: 14),
+                            onPressed: (_isSavingScore || _scoreSaved)
+                                ? null
+                                : () => setState(() {
+                                      _videoPath = null;
+                                      _videoThumbnail = null;
+                                    }),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add_circle_outline, size: 36, color: Colors.grey),
+                        const SizedBox(height: 6),
+                        Text(
+                          l.common_addVideo,
+                          style: AppTextStyles.body(11, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleMediaSelection({required bool isVideo}) async {
+    try {
+      final ImageSource source = await _showSourceDialog();
+      final ImagePicker picker = ImagePicker();
+      XFile? pickedFile;
+
+      if (isVideo) {
+        pickedFile = await picker.pickVideo(source: source);
+      } else {
+        pickedFile = await picker.pickImage(source: source);
+      }
+
+      if (pickedFile != null) {
+        if (isVideo && !kIsWeb) {
+          final thumb = await VideoThumbnail.thumbnailData(
+            video: pickedFile.path,
+            imageFormat: ImageFormat.JPEG,
+            maxWidth: 400,
+            quality: 70,
+          );
+          if (mounted) {
+            setState(() {
+              _videoPath = pickedFile!.path;
+              _videoThumbnail = thumb;
+            });
+          }
+        } else {
+          setState(() {
+            if (isVideo) {
+              _videoPath = pickedFile!.path;
+            } else {
+              _imagePath = pickedFile!.path;
+            }
+          });
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('เกิดข้อผิดพลาดในการแนบสื่อ: $e')),
+      );
+    }
+  }
+
+  Future<ImageSource> _showSourceDialog() async {
+    return await showDialog<ImageSource>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(
+              AppLocalizations.of(context)!.common_selectSource,
+              style: AppTextStyles.heading(18),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: Icon(Icons.camera_alt, color: Palette.successAlt),
+                  title: Text(
+                    AppLocalizations.of(context)!.common_camera,
+                    style: AppTextStyles.body(14),
+                  ),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+                ListTile(
+                  leading: Icon(Icons.photo_library, color: Palette.sky),
+                  title: Text(
+                    AppLocalizations.of(context)!.common_gallery,
+                    style: AppTextStyles.body(14),
+                  ),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+              ],
+            ),
+          ),
+        ) ??
+        ImageSource.gallery;
   }
 
   Widget _rewardBadge(String label, bool isCorrect, {bool isGold = false}) {

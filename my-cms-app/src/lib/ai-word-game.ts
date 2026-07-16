@@ -557,10 +557,19 @@ export async function ensureSpaceAdventureSettings() {
       "id" TEXT NOT NULL DEFAULT 'default',
       "scorePerItem" INTEGER NOT NULL DEFAULT 10,
       "timerLimit" INTEGER NOT NULL DEFAULT 60,
+      "maxItems" INTEGER NOT NULL DEFAULT 5,
       "updatedAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "GameSetting_pkey" PRIMARY KEY ("id")
     )
   `;
+
+  try {
+    await prisma.$executeRaw`
+      ALTER TABLE "GameSetting" ADD COLUMN "maxItems" INTEGER NOT NULL DEFAULT 5
+    `;
+  } catch (e) {
+    // Ignore error if column already exists
+  }
 
   await prisma.$executeRaw`
     CREATE TABLE IF NOT EXISTS "GameScore" (
@@ -587,8 +596,8 @@ export async function ensureSpaceAdventureSettings() {
   `;
 
   await prisma.$executeRaw`
-    INSERT INTO "GameSetting" ("id", "scorePerItem", "timerLimit", "updatedAt")
-    VALUES ('default', 10, 60, CURRENT_TIMESTAMP)
+    INSERT INTO "GameSetting" ("id", "scorePerItem", "timerLimit", "maxItems", "updatedAt")
+    VALUES ('default', 10, 60, 5, CURRENT_TIMESTAMP)
     ON CONFLICT ("id") DO NOTHING
   `;
 }
@@ -599,30 +608,33 @@ export async function getSpaceAdventureSettings() {
     id: string;
     scorePerItem: number;
     timerLimit: number;
+    maxItems: number;
     updatedAt: Date;
   }>>`
-    SELECT "id", "scorePerItem", "timerLimit", "updatedAt"
+    SELECT "id", "scorePerItem", "timerLimit", "maxItems", "updatedAt"
     FROM "GameSetting"
     WHERE "id" = 'default'
     LIMIT 1
   `;
-  return settings[0] || { id: 'default', scorePerItem: 10, timerLimit: 60 };
+  return settings[0] || { id: 'default', scorePerItem: 10, timerLimit: 60, maxItems: 5 };
 }
 
-export async function updateSpaceAdventureSettings(scorePerItem: number, timerLimit: number) {
+export async function updateSpaceAdventureSettings(scorePerItem: number, timerLimit: number, maxItems: number) {
   await ensureSpaceAdventureSettings();
   const settings = await prisma.$queryRaw<Array<{
     id: string;
     scorePerItem: number;
     timerLimit: number;
+    maxItems: number;
     updatedAt: Date;
   }>>`
     UPDATE "GameSetting"
     SET "scorePerItem" = ${scorePerItem},
         "timerLimit" = ${timerLimit},
+        "maxItems" = ${maxItems},
         "updatedAt" = CURRENT_TIMESTAMP
     WHERE "id" = 'default'
-    RETURNING "id", "scorePerItem", "timerLimit", "updatedAt"
+    RETURNING "id", "scorePerItem", "timerLimit", "maxItems", "updatedAt"
   `;
   return settings[0];
 }

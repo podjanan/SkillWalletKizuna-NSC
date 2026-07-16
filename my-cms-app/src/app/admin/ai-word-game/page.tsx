@@ -447,7 +447,7 @@ export default function AiWordGamePage() {
           }`}
         >
           <Sparkles size={18} />
-          🎨 Creator Studio
+          Creator Studio
         </button>
         <button
           onClick={() => setActiveTab('bank')}
@@ -458,7 +458,7 @@ export default function AiWordGamePage() {
           }`}
         >
           <BookOpen size={18} />
-          📚 Playable Word Bank
+          Playable Word Bank
         </button>
         <button
           onClick={() => setActiveTab('settings')}
@@ -620,7 +620,7 @@ export default function AiWordGamePage() {
                     : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                🌍 All Words ({data.words.length})
+              All Words ({data.words.length})
               </button>
               {data.categories.map((c) => {
                 const count = (wordsByCategory[c.id] ?? []).length;

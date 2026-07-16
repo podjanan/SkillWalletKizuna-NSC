@@ -28,7 +28,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
   List<String> _detectedObjects = [];
   List<SpaceAdventureArea> _areas = [];
   String? _scanError;
-  Map<String, dynamic> _gameSettings = {'scorePerItem': 10, 'timerLimit': 60};
+  Map<String, dynamic> _gameSettings = {'scorePerItem': 10, 'timerLimit': 60, 'maxItems': 5};
   Activity? _activity;
 
   bool _settingsLoaded = false;
@@ -57,16 +57,19 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
       _settingsLoaded = true;
       int timerLimit = 60;
       int scorePerItem = 10;
+      int maxItems = 5;
       if (activity.segments is Map) {
         final map = activity.segments as Map;
         timerLimit = int.tryParse(map['timeLimit']?.toString() ?? '60') ?? 60;
         scorePerItem = int.tryParse(map['scorePerItem']?.toString() ?? '10') ?? 10;
+        maxItems = int.tryParse(map['maxItems']?.toString() ?? '5') ?? 5;
       }
       if (mounted) {
         setState(() {
           _gameSettings = {
             'timerLimit': timerLimit,
             'scorePerItem': scorePerItem,
+            'maxItems': maxItems,
           };
         });
       }
@@ -213,6 +216,39 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
     _startQuestWithObjects(_detectedObjects);
   }
 
+  Future<bool?> _showDeleteConfirmDialog(String item) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          'Delete Item?',
+          style: AppTextStyles.heading(18),
+        ),
+        content: Text(
+          'Are you sure you want to remove "${item.toUpperCase()}" from this quest?',
+          style: AppTextStyles.body(14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.body(14, color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              'Delete',
+              style: AppTextStyles.body(14, color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _startQuestWithObjects(List<String> objects) {
     final availableObjects = objects
         .map((item) => item.trim())
@@ -231,7 +267,9 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
     }
 
     availableObjects.shuffle();
-    final targetObject = availableObjects.first;
+    final maxLimit = _gameSettings['maxItems'] ?? 5;
+    final limitedObjects = availableObjects.take(maxLimit).toList();
+    final targetObject = limitedObjects.first;
 
     Navigator.push(
       context,
@@ -240,10 +278,10 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
           targetObject: targetObject,
           timerLimit: _gameSettings['timerLimit'] ?? 60,
           scorePerItem: _gameSettings['scorePerItem'] ?? 10,
-          detectedObjects: availableObjects,
+          detectedObjects: limitedObjects,
           currentScore: 0,
           currentIndex: 1,
-          totalItems: availableObjects.length,
+          totalItems: limitedObjects.length,
           activity: _activity,
         ),
       ),
@@ -671,12 +709,29 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                           border: Border.all(color: Palette.sky.withOpacity(0.3)),
                         ),
                         child: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             const Icon(Icons.check_circle_outline, color: Palette.sky, size: 16),
                             const SizedBox(width: 6),
                             Text(
                               _detectedObjects[index].toUpperCase(),
                               style: AppTextStyles.label(12, color: Palette.skyDark),
+                            ),
+                            const SizedBox(width: 6),
+                            GestureDetector(
+                              onTap: () async {
+                                final confirm = await _showDeleteConfirmDialog(_detectedObjects[index]);
+                                if (confirm == true) {
+                                  setState(() {
+                                    _detectedObjects.removeAt(index);
+                                  });
+                                }
+                              },
+                              child: const Icon(
+                                Icons.close_rounded,
+                                color: Colors.grey,
+                                size: 16,
+                              ),
                             ),
                           ],
                         ),

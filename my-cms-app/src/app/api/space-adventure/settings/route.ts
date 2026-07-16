@@ -13,13 +13,13 @@ export async function GET() {
     return NextResponse.json({ success: false, error: getErrorMessage(e) }, { status: 500 });
   }
 }
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const scorePerItem = Number(body.scorePerItem ?? 10);
     const timerLimit = Number(body.timerLimit ?? 60);
-    const settings = await updateSpaceAdventureSettings(scorePerItem, timerLimit);
+    const maxItems = Number(body.maxItems ?? 5);
+    const settings = await updateSpaceAdventureSettings(scorePerItem, timerLimit, maxItems);
     return NextResponse.json({ success: true, data: settings });
   } catch (e: unknown) {
     return NextResponse.json({ success: false, error: getErrorMessage(e) }, { status: 500 });

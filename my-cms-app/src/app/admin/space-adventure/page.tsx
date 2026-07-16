@@ -8,6 +8,7 @@ interface GameSetting {
   id: string;
   scorePerItem: number;
   timerLimit: number;
+  maxItems: number;
   updatedAt: string;
 }
 
@@ -35,6 +36,7 @@ export default function SpaceAdventureAdminPage() {
   const [areaForm, setAreaForm] = useState(emptyAreaForm);
   const [scorePerItemInput, setScorePerItemInput] = useState<number>(10);
   const [timerLimitInput, setTimerLimitInput] = useState<number>(60);
+  const [maxItemsInput, setMaxItemsInput] = useState<number>(5);
   const [loading, setLoading] = useState<boolean>(true);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [areaStatus, setAreaStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
@@ -54,6 +56,7 @@ export default function SpaceAdventureAdminPage() {
         setSettings(settingsData.data);
         setScorePerItemInput(settingsData.data.scorePerItem);
         setTimerLimitInput(settingsData.data.timerLimit);
+        setMaxItemsInput(settingsData.data.maxItems ?? 5);
       }
 
       const areasRes = await fetch('/api/space-adventure/areas');
@@ -179,6 +182,7 @@ export default function SpaceAdventureAdminPage() {
         body: JSON.stringify({
           scorePerItem: scorePerItemInput,
           timerLimit: timerLimitInput,
+          maxItems: maxItemsInput,
         }),
       });
       const data = await response.json();
@@ -274,6 +278,24 @@ export default function SpaceAdventureAdminPage() {
                   </p>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-semibold text-primary--text mb-2">
+                    Max Quest Items
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={maxItemsInput}
+                    onChange={(e) => setMaxItemsInput(Number(e.target.value))}
+                    className="w-full px-4 py-3 rounded-xl border border-gray4 focus:outline-none focus:ring-2 focus:ring-purple focus:border-transparent transition text-dark"
+                    required
+                  />
+                  <p className="text-xs text-secondary--text mt-1.5">
+                    The maximum number of items a player is required to find in a single quest.
+                  </p>
+                </div>
+
                 <div className="border-t border-gray4 pt-4 mt-2 flex flex-col gap-3">
                   <button
                     type="submit"
@@ -300,7 +322,7 @@ export default function SpaceAdventureAdminPage() {
             </div>
             
             {/* Game Card preview */}
-            <div className="bg-gradient-to-br from-indigo-900 to-purple-800 text-white rounded-2xl p-6 shadow-lg border border-purple--dark flex flex-col gap-4 relative overflow-hidden">
+            {/* <div className="bg-gradient-to-br from-indigo-900 to-purple-800 text-white rounded-2xl p-6 shadow-lg border border-purple--dark flex flex-col gap-4 relative overflow-hidden">
               <div className="absolute right-[-20px] top-[-20px] opacity-15">
                 <Rocket className="w-40 h-40 transform rotate-45" />
               </div>
@@ -321,7 +343,7 @@ export default function SpaceAdventureAdminPage() {
                   <p className="text-xl font-extrabold">{settings?.timerLimit ?? 60} sec</p>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
 
           <div className="lg:col-span-2 flex flex-col gap-8">
