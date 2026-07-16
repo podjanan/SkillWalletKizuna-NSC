@@ -153,7 +153,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                   if (kIsWeb && _agreedToTerms)
                                     IgnorePointer(
                                       ignoring: isLoading,
-                                      child: _googleWebButton(),
+                                      child: _googleWebButton(
+                                        text: l10n.login_googleBtn,
+                                      ),
                                     )
                                   else
                                     _googleButton(
@@ -720,14 +722,24 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     );
   }
 
-  Widget _googleWebButton() {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: SizedBox(
-        width: double.infinity,
-        height: 70,
-        child: Center(child: buildGoogleSignInButton()),
+  Widget _googleWebButton({required String text}) {
+    return SizedBox(
+      width: double.infinity,
+      height: 70,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Keep the same app styling after accepting the terms. The web SDK
+          // button remains on top to handle the Google sign-in interaction.
+          _googleButton(text: text, onTap: () {}),
+          Opacity(
+            opacity: 0.01,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: buildGoogleSignInButton(),
+            ),
+          ),
+        ],
       ),
     );
   }
