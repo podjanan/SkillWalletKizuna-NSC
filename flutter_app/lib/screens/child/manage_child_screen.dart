@@ -6,6 +6,7 @@ import '../../theme/palette.dart';
 import '../../theme/app_text_styles.dart';
 
 import '../../providers/user_provider.dart';
+import '../../services/api_config.dart';
 import 'child_name_setting_screen.dart';
 import 'medals_redemption_screen.dart';
 
@@ -31,7 +32,6 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
   late String _currentName;
   String? _currentImageUrl;
   bool _isUploading = false;
-  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -40,40 +40,34 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
     _currentImageUrl = widget.imageUrl;
   }
 
-  // --- Functions ---
-
   Future<void> _pickImage() async {
-    if (widget.childId == null) return;
-    try {
-      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-      if (image == null) return;
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+    if (image == null) return;
 
-      final bytes = await image.readAsBytes();
-      if (!mounted) return;
+    setState(() {
+      _isUploading = true;
+    });
 
-      setState(() => _isUploading = true);
+    final bytes = await image.readAsBytes();
+    final success = await context
+        .read<UserProvider>()
+        .uploadChildPhoto(widget.childId ?? '', bytes);
 
-      final userProvider = context.read<UserProvider>();
-      final success =
-          await userProvider.uploadChildPhoto(widget.childId!, bytes);
+    if (success && mounted) {
+      final updatedChild = context
+          .read<UserProvider>()
+          .children
+          .firstWhere((c) => c['child']?['child_id'] == widget.childId);
+      setState(() {
+        _currentImageUrl = updatedChild['child']?['photo_url'] as String?;
+      });
+    }
 
-      if (!mounted) return;
-      setState(() => _isUploading = false);
-
-      if (success) {
-        // Pull the new URL from the updated local children list
-        final children = userProvider.children;
-        final childData = children.firstWhere(
-          (c) => c['child']?['child_id'] == widget.childId,
-          orElse: () => {},
-        );
-        setState(() {
-          _currentImageUrl = childData['child']?['photo_url'] as String?;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error picking image: $e');
-      if (mounted) setState(() => _isUploading = false);
+    if (mounted) {
+      setState(() {
+        _isUploading = false;
+      });
     }
   }
 
@@ -116,7 +110,11 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
               ),
             ),
             TextButton(
-              onPressed: () {
+              onPressed: () async {
+                await context
+                    .read<UserProvider>()
+                    .deleteChild(widget.childId ?? '');
+                if (!mounted) return;
                 Navigator.of(context).pop();
                 Navigator.of(context).pop(true);
               },
@@ -139,7 +137,7 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
       profileImageWidget = const Center(child: CircularProgressIndicator());
     } else if (_currentImageUrl != null && _currentImageUrl!.isNotEmpty) {
       profileImageWidget = Image.network(
-        _currentImageUrl!,
+        ApiConfig.resolveAssetUrl(_currentImageUrl!),
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) =>
             const Icon(Icons.person, size: 80, color: Colors.grey),
@@ -184,74 +182,74 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
         ),
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            // --- Header ---
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context, {'newName': _currentName});
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      color: Colors.transparent,
-                      child: const Icon(Icons.arrow_back,
-                          size: 30, color: Colors.black87),
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    AppLocalizations.of(context)!.managechild_manageprofileBtn,
-                    style: AppTextStyles.heading(24, color: Palette.sky),
-                  ),
-                  const Spacer(),
-                  const SizedBox(width: 46),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // --- Profile Image ---
-            Center(
-              child: GestureDetector(
-                onTap: _isUploading ? null : _pickImage,
-                child: Stack(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // --- Header ---
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                child: Row(
                   children: [
-                    Container(
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.grey.shade300),
-                      child: ClipOval(child: profileImageWidget),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context, {'newName': _currentName});
+                      },
                       child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                            color: Palette.yellow,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Palette.cream, width: 3)),
-                        child: const Icon(Icons.camera_alt,
-                            color: Colors.black87, size: 24),
+                        padding: const EdgeInsets.all(8.0),
+                        color: Colors.transparent,
+                        child: const Icon(Icons.arrow_back,
+                            size: 30, color: Colors.black87),
                       ),
                     ),
+                    const Spacer(),
+                    Text(
+                      AppLocalizations.of(context)!.managechild_manageprofileBtn,
+                      style: AppTextStyles.heading(24, color: Palette.sky),
+                    ),
+                    const Spacer(),
+                    const SizedBox(width: 46),
                   ],
                 ),
               ),
-            ),
+              const SizedBox(height: 10),
 
-            const SizedBox(height: 40),
+              // --- Profile Image ---
+              Center(
+                child: GestureDetector(
+                  onTap: _isUploading ? null : _pickImage,
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.grey.shade300),
+                        child: ClipOval(child: profileImageWidget),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                              color: Palette.yellow,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Palette.cream, width: 3)),
+                          child: const Icon(Icons.camera_alt,
+                              color: Colors.black87, size: 24),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
-            // --- Menu Items ---
-            Expanded(
-              child: Padding(
+              const SizedBox(height: 40),
+
+              // --- Menu Items ---
+              Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,20 +334,22 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
                   ],
                 ),
               ),
-            ),
 
-            // --- Delete Button ---
-            Padding(
-              padding: const EdgeInsets.only(bottom: 40.0),
-              child: TextButton(
-                onPressed: _showDeleteConfirmationDialog,
-                child: Text(
-                  AppLocalizations.of(context)!.managechild_deleteprofileBtn,
-                  style: AppTextStyles.heading(20, color: Palette.deleteRed),
+              const SizedBox(height: 20),
+
+              // --- Delete Button ---
+              Padding(
+                padding: const EdgeInsets.only(bottom: 40.0),
+                child: TextButton(
+                  onPressed: _showDeleteConfirmationDialog,
+                  child: Text(
+                    AppLocalizations.of(context)!.managechild_deleteprofileBtn,
+                    style: AppTextStyles.heading(20, color: Palette.deleteRed),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

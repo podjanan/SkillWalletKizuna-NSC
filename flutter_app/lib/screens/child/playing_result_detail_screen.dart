@@ -157,12 +157,14 @@ class PlayingResultDetailScreen extends StatelessWidget {
                       const Icon(Icons.emoji_events,
                           color: Palette.warning, size: 35),
                       const SizedBox(width: 10),
-                      Text(
-                        loc.playingresult_scoreObtained,
-                        style: AppTextStyles.body(20,
-                            color: Palette.warning, weight: FontWeight.bold),
+                      Expanded(
+                        child: Text(
+                          loc.playingresult_scoreObtained,
+                          style: AppTextStyles.body(20,
+                              color: Palette.warning, weight: FontWeight.bold),
+                        ),
                       ),
-                      const Spacer(),
+                      const SizedBox(width: 10),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 20, vertical: 10),

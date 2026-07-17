@@ -399,7 +399,7 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
           // Sharing and next action buttons
           Row(
             children: [
-              if (widget.imageBytes != null) ...[
+              if (widget.isMatch && widget.imageBytes != null) ...[
                 Expanded(
                   child: GradientButton.primary(
                     label: 'Share photo',
@@ -409,17 +409,23 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                   ),
                 ),
                 const SizedBox(width: 12),
+              ] else if (!widget.isMatch) ...[
+                Expanded(
+                  child: GradientButton.primary(
+                    label: 'Recapture',
+                    onTap: _isFinishing ? null : _retryQuest,
+                    fontSize: 14,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+                const SizedBox(width: 12),
               ],
               Expanded(
                 child: GradientButton.success(
-                  label: !widget.isMatch
-                      ? 'Recapture'
-                      : (widget.detectedObjects.length <= 1)
-                          ? (_isFinishing ? 'Saving score...' : 'Done')
-                          : 'Next quest',
-                  onTap: _isFinishing
-                      ? null
-                      : (!widget.isMatch ? _retryQuest : _nextQuest),
+                  label: (widget.detectedObjects.length <= 1)
+                      ? (_isFinishing ? 'Saving score...' : 'Done')
+                      : 'Next quest',
+                  onTap: _isFinishing ? null : _nextQuest,
                   fontSize: 14,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),

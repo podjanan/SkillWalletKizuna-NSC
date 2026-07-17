@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'space_adventure_quest_screen.dart';
 import '../../../../models/activity.dart';
 import '../../../../services/space_adventure_service.dart';
+import '../../../../services/api_config.dart';
 import '../../../../theme/palette.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../widgets/ui.dart';
@@ -407,7 +408,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                                     borderRadius: BorderRadius.circular(14),
                                     child: area.imageUrl.isNotEmpty
                                         ? Image.network(
-                                            area.imageUrl,
+                                            ApiConfig.resolveAssetUrl(area.imageUrl),
                                             width: 76,
                                             height: 76,
                                             fit: BoxFit.cover,

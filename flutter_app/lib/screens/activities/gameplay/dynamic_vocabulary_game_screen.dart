@@ -18,6 +18,7 @@ import '../../../providers/user_provider.dart';
 import '../../../services/dynamic_vocabulary_service.dart';
 import '../../../services/activity_service.dart';
 import '../../../services/child_service.dart';
+import '../../../services/api_config.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/palette.dart';
 import '../../../widgets/game_activity_cover.dart';
@@ -1376,7 +1377,7 @@ class _DynamicVocabularyGameScreenState
                 ),
                 child: item.imageUrl != null && item.imageUrl!.isNotEmpty
                     ? Image.network(
-                        item.imageUrl!,
+                        ApiConfig.resolveAssetUrl(item.imageUrl!),
                         fit: BoxFit.contain,
                         errorBuilder: (_, __, ___) =>
                             _buildImagePlaceholder(item.word),
@@ -1565,7 +1566,7 @@ class _DynamicVocabularyGameScreenState
                             child: item.imageUrl != null &&
                                     item.imageUrl!.isNotEmpty
                                 ? Image.network(
-                                    item.imageUrl!,
+                                    ApiConfig.resolveAssetUrl(item.imageUrl!),
                                     fit: BoxFit.contain,
                                     width: double.infinity,
                                     height: imageHeight,
@@ -1743,7 +1744,7 @@ class _DynamicVocabularyGameScreenState
     final isCorrect = currentResult?.isCorrect ?? (cleanSpoken == cleanTarget);
     final isPerfect = isCorrect && _confidence >= 0.8;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1857,7 +1858,7 @@ class _DynamicVocabularyGameScreenState
               ],
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 24),
 
           if (_errorMessage != null)
             Padding(

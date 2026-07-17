@@ -5,6 +5,7 @@ import '../../providers/user_provider.dart';
 import '../../services/child_service.dart';
 import '../../theme/palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../services/api_config.dart';
 import 'activity_history_screen.dart';
 
 class ChildProfileScreen extends StatefulWidget {
@@ -278,7 +279,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
 
     if (imageUrl.isNotEmpty) {
       return Image.network(
-        imageUrl,
+        ApiConfig.resolveAssetUrl(imageUrl),
         fit: BoxFit.cover,
         width: 160,
         height: 160,

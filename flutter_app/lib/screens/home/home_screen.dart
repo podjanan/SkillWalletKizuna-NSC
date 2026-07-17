@@ -7,6 +7,7 @@ import 'all_activities_screen.dart';
 import '../../providers/user_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/activity_service.dart';
+import '../../services/api_config.dart';
 import '../../theme/palette.dart';
 import '../../utils/youtube_helper.dart';
 
@@ -636,7 +637,7 @@ class _HomeScreenState extends State<HomeScreen> {
               )
             else if (thumbnailUrl != null)
               Image.network(
-                thumbnailUrl,
+                ApiConfig.resolveAssetUrl(thumbnailUrl),
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return _buildPlaceholder(activity);

@@ -6,6 +6,7 @@ import 'package:skill_wallet_kizuna/services/storage_service.dart';
 
 import '../../models/activity.dart';
 import '../../providers/user_provider.dart';
+import '../../services/api_config.dart';
 import '../../routes/app_routes.dart';
 import '../../services/activity_service.dart';
 import '../../theme/palette.dart';
@@ -304,7 +305,9 @@ class ProfileScreenState extends State<ProfileScreen> {
                                   color: Colors.grey.shade300,
                                   image: photoUrl != null && !_uploading
                                       ? DecorationImage(
-                                          image: NetworkImage(photoUrl),
+                                          image: NetworkImage(
+                                              ApiConfig.resolveAssetUrl(
+                                                  photoUrl)),
                                           fit: BoxFit.cover,
                                         )
                                       : null,

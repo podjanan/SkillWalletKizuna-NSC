@@ -6,6 +6,7 @@ import 'package:skill_wallet_kizuna/services/storage_service.dart';
 
 import '../../../providers/user_provider.dart';
 import '../../../routes/app_routes.dart';
+import '../../../services/api_config.dart';
 import '../../../theme/palette.dart';
 import '../../../theme/app_text_styles.dart';
 import 'name_setting_screen.dart';
@@ -189,7 +190,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,7 +221,8 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                           color: Colors.grey.shade300,
                           image: photoUrl != null
                               ? DecorationImage(
-                                  image: NetworkImage(photoUrl),
+                                  image: NetworkImage(
+                                      ApiConfig.resolveAssetUrl(photoUrl)),
                                   fit: BoxFit.cover,
                                 )
                               : null,

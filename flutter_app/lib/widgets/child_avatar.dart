@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/palette.dart';
+import '../services/api_config.dart';
 
 /// Reusable circular avatar for children.
 /// Shows [photoUrl] if valid, falls back to first letter of [name].
@@ -34,7 +35,7 @@ class ChildAvatar extends StatelessWidget {
       child: ClipOval(
         child: url.isNotEmpty
             ? Image.network(
-                url,
+                ApiConfig.resolveAssetUrl(url),
                 fit: BoxFit.cover,
                 width: diameter,
                 height: diameter,

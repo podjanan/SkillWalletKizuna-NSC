@@ -8,6 +8,7 @@ import 'package:skill_wallet_kizuna/routes/app_routes.dart';
 import '../../../providers/user_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/api_config.dart';
 import '../../../theme/palette.dart';
 import '../../../theme/app_text_styles.dart';
 
@@ -88,7 +89,8 @@ class _SettingScreenState extends State<SettingScreen> {
                             color: Colors.white,
                             image: photoUrl != null
                                 ? DecorationImage(
-                                    image: NetworkImage(photoUrl),
+                                    image: NetworkImage(
+                                        ApiConfig.resolveAssetUrl(photoUrl)),
                                     fit: BoxFit.cover,
                                   )
                                 : null,
