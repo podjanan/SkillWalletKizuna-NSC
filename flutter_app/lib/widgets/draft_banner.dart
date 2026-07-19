@@ -66,6 +66,8 @@ class _DraftBannerState extends State<DraftBanner> {
     String route = switch (type) {
       DraftService.typePhysical => AppRoutes.physicalActivity,
       DraftService.typeCalculate => AppRoutes.calculateActivity,
+      DraftService.typeVoiceQuest => AppRoutes.dynamicVocabularyGame,
+      DraftService.typeSpaceAdventure => AppRoutes.spaceAdventure,
       _ => AppRoutes.itemIntro,
     };
     if (activity.content == 'math_simulation') {

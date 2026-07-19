@@ -570,14 +570,14 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       onTap: () {
-        if (activity.isAiWordGame) {
-          Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame, arguments: activity);
-          return;
-        }
-
         final userProvider = context.read<UserProvider>();
         if (userProvider.currentChildId == null) {
           _showSelectChildDialog();
+          return;
+        }
+
+        if (activity.isAiWordGame) {
+          Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame, arguments: activity);
           return;
         }
 

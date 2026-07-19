@@ -28,6 +28,18 @@ class DynamicVocabularyItem {
       query: json['query']?.toString() ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'word': word,
+      'category': category,
+      'thaiMeaning': thaiMeaning,
+      'phonetic': phonetic,
+      'imageUrl': imageUrl,
+      'imageSource': imageSource,
+      'query': query,
+    };
+  }
 }
 
 class DynamicVocabularyCategory {

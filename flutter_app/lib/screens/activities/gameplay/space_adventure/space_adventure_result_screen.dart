@@ -8,6 +8,7 @@ import 'space_adventure_quest_screen.dart';
 import '../../../../models/activity.dart';
 import '../../../../providers/user_provider.dart';
 import '../../../../services/activity_service.dart';
+import '../../../../services/draft_service.dart';
 import '../../../../theme/palette.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../widgets/ui.dart';
@@ -213,6 +214,7 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
         useDirectScore: true,
         evidence: evidencePayload,
       );
+      await DraftService.clearDraft(childId);
       if (mounted) {
         await context.read<UserProvider>().fetchChildrenData();
       }
@@ -286,7 +288,7 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                     maxScore: widget.totalItems * widget.scorePerItem,
                     timeSpentSeconds: 0,
                     category: activity?.category,
-                    evidenceImagePath: null,
+                    evidenceImagePath: _imagePath,
                   ),
                 );
               },

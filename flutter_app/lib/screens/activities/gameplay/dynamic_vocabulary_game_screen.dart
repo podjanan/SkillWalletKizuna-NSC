@@ -19,6 +19,7 @@ import '../../../services/dynamic_vocabulary_service.dart';
 import '../../../services/activity_service.dart';
 import '../../../services/child_service.dart';
 import '../../../services/api_config.dart';
+import '../../../services/draft_service.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/palette.dart';
 import '../../../widgets/game_activity_cover.dart';
@@ -300,6 +301,11 @@ class _DynamicVocabularyGameScreenState
             activity.content != 'ai-word-game';
         _isLoadingCategories = false;
       });
+
+      final childId = context.read<UserProvider>().currentChildId;
+      if (childId != null) {
+        await _restoreDraft(childId);
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -818,6 +824,7 @@ class _DynamicVocabularyGameScreenState
         timeSpent: _timeSpentSeconds,
         customEvidence: evidencePayload,
       );
+      await DraftService.clearDraft(childId);
       await userProvider.fetchChildrenData();
       if (!mounted) return;
       final wallet = response['newWallet'];
@@ -887,25 +894,99 @@ class _DynamicVocabularyGameScreenState
     return parsed == null ? Palette.sky : Color(parsed);
   }
 
+  Future<void> _restoreDraft(String childId) async {
+    final draft = await DraftService.loadDraft(childId);
+    final activity = ModalRoute.of(context)?.settings.arguments as Activity?;
+    final expectedActivityId = activity?.id ?? 'ai-word-game';
+    if (draft == null ||
+        draft['type'] != DraftService.typeVoiceQuest ||
+        draft['activityId'] != expectedActivityId) {
+      return;
+    }
+    final data = draft['data'] as Map<String, dynamic>? ?? {};
+    final wordsJson = data['words'] as List<dynamic>? ?? [];
+    if (wordsJson.isEmpty) return;
+
+    final List<DynamicVocabularyItem> restoredWords = wordsJson
+        .map((j) => DynamicVocabularyItem.fromJson(j as Map<String, dynamic>))
+        .toList();
+
+    final resultsJson = data['wordResults'] as List<dynamic>? ?? [];
+    final List<_VoiceQuestWordResult?> restoredResults = resultsJson.map((j) {
+      if (j == null) return null;
+      return _VoiceQuestWordResult.fromJson(j as Map<String, dynamic>);
+    }).toList();
+
+    final List<int> restoredScores = List<int>.from(data['wordScores'] as List<dynamic>? ?? []);
+
+    setState(() {
+      _words = restoredWords;
+      _wordResults = restoredResults;
+      _wordScores = restoredScores;
+      _currentIndex = data['currentIndex'] as int? ?? 0;
+      _score = data['score'] as int? ?? 0;
+      _secondsLeft = data['secondsLeft'] as int? ?? _sessionTimeLimitSeconds;
+      _difficulty = data['difficulty'] as String? ?? _difficulty;
+      _selectedCategory = data['selectedCategory'] as String? ?? _selectedCategory;
+      _screen = _ScreenState.gameplayScreen; // Skip start screen, go straight to gameplay
+      _isLoading = false;
+    });
+
+    _startTimer();
+    if (_currentIndex < _words.length) {
+      _speakWord(_words[_currentIndex].word);
+    }
+  }
+
+  Future<void> _saveDraft() async {
+    final childId = context.read<UserProvider>().currentChildId;
+    if (childId == null) return;
+    final activity = ModalRoute.of(context)?.settings.arguments as Activity?;
+
+    final activityJson = activity?.toJson() ?? Activity(
+      id: 'ai-word-game',
+      name: 'Voice Quest',
+      category: 'ด้านภาษา',
+      difficulty: _difficulty,
+      maxScore: _sessionMaxScore,
+      content: 'AI Word Game',
+    ).toJson();
+
+    await DraftService.saveDraft(
+      childId: childId,
+      type: DraftService.typeVoiceQuest,
+      activityId: activity?.id ?? 'ai-word-game',
+      activityJson: activityJson,
+      data: {
+        'currentIndex': _currentIndex,
+        'score': _score,
+        'secondsLeft': _secondsLeft,
+        'difficulty': _difficulty,
+        'selectedCategory': _selectedCategory,
+        'wordScores': _wordScores,
+        'words': _words.map((w) => w.toJson()).toList(),
+        'wordResults': _wordResults.map((r) => r?.toJson()).toList(),
+      },
+    );
+  }
+
   Future<bool> _confirmExitIfNeeded() async {
     if (!_shouldConfirmExit) return true;
+    final l = AppLocalizations.of(context)!;
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Exit Voice Quest?'),
-        content: const Text('Your current quest progress will not be saved.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(l.draft_leaveTitle),
+        content: Text(l.draft_leaveMsg),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Keep Playing'),
+            child: Text(l.common_cancel),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Palette.errorStrong,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Exit'),
+            child: Text(l.draft_leaveBtn, style: const TextStyle(color: Palette.sky)),
           ),
         ],
       ),
@@ -914,9 +995,18 @@ class _DynamicVocabularyGameScreenState
   }
 
   Future<void> _handleBackPressed() async {
-    final shouldExit = await _confirmExitIfNeeded();
-    if (shouldExit && mounted) {
-      Navigator.pop(context);
+    final shouldSaveAndLeave = await _confirmExitIfNeeded();
+    if (shouldSaveAndLeave) {
+      if (_shouldConfirmExit) {
+        await _saveDraft();
+        if (mounted) {
+          Navigator.popUntil(context, (r) => r.isFirst);
+        }
+      } else {
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      }
     }
   }
 
@@ -978,7 +1068,7 @@ class _DynamicVocabularyGameScreenState
                       maxScore: _maxScore,
                       timeSpentSeconds: 0,
                       category: activity?.category,
-                      evidenceImagePath: null,
+                      evidenceImagePath: _imagePath,
                     ),
                   );
                 },
@@ -1065,7 +1155,7 @@ class _DynamicVocabularyGameScreenState
               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: AspectRatio(
-                  aspectRatio: 16 / 9,
+                  aspectRatio: 1.0,
                   child: _buildCoverImage(),
                 ),
               ),
@@ -2460,6 +2550,28 @@ class _VoiceQuestWordResult {
     this.audioPath,
     this.audioBytes,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'targetWord': targetWord,
+      'spokenText': spokenText,
+      'confidence': confidence,
+      'score': score,
+      'isCorrect': isCorrect,
+      'audioPath': audioPath,
+    };
+  }
+
+  factory _VoiceQuestWordResult.fromJson(Map<String, dynamic> json) {
+    return _VoiceQuestWordResult(
+      targetWord: json['targetWord']?.toString() ?? '',
+      spokenText: json['spokenText']?.toString() ?? '',
+      confidence: (json['confidence'] as num?)?.toDouble() ?? 0.0,
+      score: json['score'] as int? ?? 0,
+      isCorrect: json['isCorrect'] as bool? ?? false,
+      audioPath: json['audioPath']?.toString(),
+    );
+  }
 }
 
 class _VocabularyCategory {

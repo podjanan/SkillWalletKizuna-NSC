@@ -6,6 +6,10 @@ import 'package:image_picker/image_picker.dart';
 import 'space_adventure_result_screen.dart';
 import '../../../../models/activity.dart';
 import '../../../../services/space_adventure_service.dart';
+import '../../../../services/draft_service.dart';
+import '../../../../providers/user_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:skill_wallet_kizuna/l10n/app_localizations.dart';
 import '../../../../theme/palette.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../widgets/ui.dart';
@@ -164,25 +168,53 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
     );
   }
 
+  Future<void> _saveDraft() async {
+    final childId = context.read<UserProvider>().currentChildId;
+    if (childId == null) return;
+
+    final activityJson = widget.activity?.toJson() ?? Activity(
+      id: 'space-adventure',
+      name: 'Space Adventure',
+      category: 'ด้านร่างกาย',
+      difficulty: 'easy',
+      maxScore: widget.totalItems * widget.scorePerItem,
+      content: 'Space Adventure',
+    ).toJson();
+
+    await DraftService.saveDraft(
+      childId: childId,
+      type: DraftService.typeSpaceAdventure,
+      activityId: widget.activity?.id ?? 'space-adventure',
+      activityJson: activityJson,
+      data: {
+        'targetObject': widget.targetObject,
+        'timerLimit': widget.timerLimit,
+        'scorePerItem': widget.scorePerItem,
+        'detectedObjects': widget.detectedObjects,
+        'currentScore': widget.currentScore,
+        'currentIndex': widget.currentIndex,
+        'totalItems': widget.totalItems,
+        'completedItemsHistory': widget.completedItemsHistory,
+      },
+    );
+  }
+
   Future<bool> _confirmExit() async {
+    final l = AppLocalizations.of(context)!;
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Exit Space Adventure?'),
-        content: const Text('Your current mission progress and score will be lost.'),
+        title: Text(l.draft_leaveTitle),
+        content: Text(l.draft_leaveMsg),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Keep Playing'),
+            child: Text(l.common_cancel),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Palette.errorStrong,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Exit'),
+            child: Text(l.draft_leaveBtn, style: const TextStyle(color: Palette.sky)),
           ),
         ],
       ),
@@ -191,9 +223,12 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
   }
 
   Future<void> _handleBackPressed() async {
-    final shouldExit = await _confirmExit();
-    if (shouldExit && mounted) {
-      Navigator.pop(context);
+    final shouldSaveAndLeave = await _confirmExit();
+    if (shouldSaveAndLeave) {
+      await _saveDraft();
+      if (mounted) {
+        Navigator.popUntil(context, (r) => r.isFirst);
+      }
     }
   }
 

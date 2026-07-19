@@ -18,6 +18,8 @@ class DraftService {
   static const String typePhysical = 'physical';
   static const String typeLanguage = 'language';
   static const String typeCalculate = 'calculate';
+  static const String typeVoiceQuest = 'voice_quest';
+  static const String typeSpaceAdventure = 'space_adventure';
 
   /// Bumped whenever a draft is saved or cleared — banner listens to this.
   static final DraftVersionNotifier versionNotifier = DraftVersionNotifier();

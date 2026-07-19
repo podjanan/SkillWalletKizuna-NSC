@@ -89,7 +89,14 @@ class ActivityCard extends StatelessWidget {
     }
 
     void doNavigate() {
-      if (category == 'ด้านภาษา' || category == 'LANGUAGE') {
+      if (activity.isAiWordGame) {
+        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame, arguments: activity);
+      } else if (activity.id == 'space-adventure' ||
+          activity.content == 'Space Adventure' ||
+          activity.content == 'space_adventure' ||
+          activity.content == 'space-adventure') {
+        Navigator.pushNamed(context, AppRoutes.spaceAdventure, arguments: activity);
+      } else if (category == 'ด้านภาษา' || category == 'LANGUAGE') {
         Navigator.pushNamed(context, AppRoutes.languageDetail, arguments: activity);
       } else if (shouldGoToVideoDetail) {
         Navigator.pushNamed(context, AppRoutes.videoDetail, arguments: activity);
@@ -103,22 +110,9 @@ class ActivityCard extends StatelessWidget {
     }
 
     Future<void> navigate() async {
-      if (activity.isAiWordGame) {
-        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame, arguments: activity);
-        return;
-      }
-
       final userProvider = context.read<UserProvider>();
       if (userProvider.currentChildId == null) {
         showSelectChildDialog();
-        return;
-      }
-
-      if (activity.id == 'space-adventure' ||
-          activity.content == 'Space Adventure' ||
-          activity.content == 'space_adventure' ||
-          activity.content == 'space-adventure') {
-        Navigator.pushNamed(context, AppRoutes.spaceAdventure, arguments: activity);
         return;
       }
 

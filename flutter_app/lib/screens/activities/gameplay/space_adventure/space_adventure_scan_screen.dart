@@ -5,6 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import 'space_adventure_quest_screen.dart';
 import '../../../../models/activity.dart';
 import '../../../../services/space_adventure_service.dart';
+import '../../../../services/draft_service.dart';
+import '../../../../providers/user_provider.dart';
+import 'package:provider/provider.dart';
 import '../../../../services/api_config.dart';
 import '../../../../theme/palette.dart';
 import '../../../../theme/app_text_styles.dart';
@@ -74,6 +77,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
           };
         });
       }
+      await _checkAndRestoreDraft();
       return;
     }
 
@@ -83,6 +87,42 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
       setState(() {
         _gameSettings = settings;
       });
+    }
+    await _checkAndRestoreDraft();
+  }
+
+  Future<void> _checkAndRestoreDraft() async {
+    final childId = context.read<UserProvider>().currentChildId;
+    if (childId == null) return;
+    final draft = await DraftService.loadDraft(childId);
+    final expectedActivityId = _activity?.id ?? 'space-adventure';
+    if (draft != null &&
+        draft['type'] == DraftService.typeSpaceAdventure &&
+        draft['activityId'] == expectedActivityId) {
+      final data = draft['data'] as Map<String, dynamic>? ?? {};
+      final detectedObjects = List<String>.from(data['detectedObjects'] as List<dynamic>? ?? []);
+      final completedItemsHistory = (data['completedItemsHistory'] as List<dynamic>? ?? [])
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+
+      if (mounted && detectedObjects.isNotEmpty) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SpaceAdventureQuestScreen(
+              targetObject: data['targetObject'] as String? ?? detectedObjects.first,
+              timerLimit: data['timerLimit'] as int? ?? 60,
+              scorePerItem: data['scorePerItem'] as int? ?? 10,
+              detectedObjects: detectedObjects,
+              currentScore: data['currentScore'] as int? ?? 0,
+              currentIndex: data['currentIndex'] as int? ?? 1,
+              totalItems: data['totalItems'] as int? ?? detectedObjects.length,
+              completedItemsHistory: completedItemsHistory,
+              activity: _activity,
+            ),
+          ),
+        );
+      }
     }
   }
 

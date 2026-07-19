@@ -47,6 +47,7 @@ class _PhysicalVideoScreenState extends State<PhysicalVideoScreen> {
 
   @override
   void dispose() {
+    _webController?.loadData(data: '<html><body></body></html>');
     // pauseAllMediaPlayback is iOS-only
     if (Platform.isIOS) _webController?.pauseAllMediaPlayback();
     super.dispose();
@@ -346,7 +347,8 @@ class _PhysicalVideoScreenState extends State<PhysicalVideoScreen> {
                                   // Explicit allow-list — everything else is cancelled
                                   // (covers both iOS WKWebView iframe and Android WebView)
                                   final allowedPatterns = [
-                                    'tiktok.com/embed',
+                                    'tiktok.com',
+                                    'tiktokcdn.com',
                                     'embed.tiktok.com',
                                     'embed.js',
                                     'lf16-tiktok',
@@ -513,11 +515,13 @@ class _PhysicalVideoScreenState extends State<PhysicalVideoScreen> {
                     Expanded(
                       child: GestureDetector(
                         onTap: () async {
-                          // pauseAllMediaPlayback is iOS-only
-                          if (Platform.isIOS)
+                          // Clear WebView to stop any audio/video playing in the background
+                          _webController?.loadData(data: '<html><body></body></html>');
+                          if (Platform.isIOS) {
                             await _webController?.pauseAllMediaPlayback();
+                          }
                           if (!context.mounted) return;
-                          Navigator.pushNamed(
+                          await Navigator.pushNamed(
                             context,
                             AppRoutes.physicalActivity,
                             arguments: {
@@ -525,6 +529,14 @@ class _PhysicalVideoScreenState extends State<PhysicalVideoScreen> {
                               'extraChildIds': _extraChildIds,
                             },
                           );
+                          // Reload the original TikTok video when returning to this screen
+                          if (mounted && htmlContent.isNotEmpty) {
+                            _webController?.loadData(
+                              data: buildResponsiveTikTokHtml(htmlContent),
+                              mimeType: 'text/html',
+                              encoding: 'utf-8',
+                            );
+                          }
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 14),
