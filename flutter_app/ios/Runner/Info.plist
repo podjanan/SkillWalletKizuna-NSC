@@ -58,6 +58,14 @@
 	<string>This app needs access to the photo library to allow users to select and upload photos.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs access to the camera to allow users to take photos and record videos.</string>
+	<!-- Development API and MinIO are served over HTTP on the local network. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<!-- Google Sign-in Section -->
 	<key>CFBundleURLTypes</key>
 	<array>

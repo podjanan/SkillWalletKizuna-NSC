@@ -6,6 +6,7 @@ import '../../models/activity.dart';
 import '../../providers/user_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/activity_service.dart';
+import '../../services/api_config.dart';
 import '../../theme/app_text_styles.dart';
 import '../../theme/palette.dart';
 import '../../utils/youtube_helper.dart';
@@ -194,7 +195,8 @@ class _ActivityGridCard extends StatelessWidget {
 
     void navigate() {
       if (activity.isAiWordGame) {
-        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame, arguments: activity);
+        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame,
+            arguments: activity);
         return;
       }
 
@@ -208,7 +210,8 @@ class _ActivityGridCard extends StatelessWidget {
           activity.content == 'Space Adventure' ||
           activity.content == 'space_adventure' ||
           activity.content == 'space-adventure') {
-        Navigator.pushNamed(context, AppRoutes.spaceAdventure, arguments: activity);
+        Navigator.pushNamed(context, AppRoutes.spaceAdventure,
+            arguments: activity);
         return;
       }
 
@@ -313,8 +316,10 @@ class _ActivityGridCard extends StatelessWidget {
     final category = activity.category;
 
     if (hasTikTok && activity.thumbnailUrl != null) {
-      return Image.network(activity.thumbnailUrl!,
-          fit: BoxFit.cover, width: double.infinity, height: double.infinity,
+      return Image.network(ApiConfig.resolveAssetUrl(activity.thumbnailUrl!),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
           errorBuilder: (_, __, ___) => _placeholder(category));
     }
 
@@ -322,7 +327,9 @@ class _ActivityGridCard extends StatelessWidget {
       return Transform.scale(
         scale: 1.32,
         child: Image.network(youtubeThumbnailUrl,
-            fit: BoxFit.cover, width: double.infinity, height: double.infinity,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
             errorBuilder: (_, __, ___) => _placeholder(category)),
       );
     }
@@ -358,8 +365,7 @@ class _ActivityGridCard extends StatelessWidget {
     if (category == 'ด้านคำนวณ') {
       return Container(color: Palette.sky); // fallback ถ้าไม่มี activity object
     }
-    if (category == 'ด้านภาษา' ||
-        category.toUpperCase() == 'LANGUAGE') {
+    if (category == 'ด้านภาษา' || category.toUpperCase() == 'LANGUAGE') {
       return Container(
         color: Palette.languagePlaceholder,
         alignment: Alignment.center,
@@ -380,7 +386,8 @@ class _ActivityGridCard extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         category.isNotEmpty ? category.substring(0, 1) : '?',
-        style: AppTextStyles.body(30, color: Colors.white, weight: FontWeight.bold),
+        style: AppTextStyles.body(30,
+            color: Colors.white, weight: FontWeight.bold),
       ),
     );
   }

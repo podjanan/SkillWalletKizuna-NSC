@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../models/activity.dart';
 import '../providers/user_provider.dart';
 import '../routes/app_routes.dart';
+import '../services/api_config.dart';
 import '../services/draft_service.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/palette.dart';
@@ -90,20 +91,26 @@ class ActivityCard extends StatelessWidget {
 
     void doNavigate() {
       if (activity.isAiWordGame) {
-        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame, arguments: activity);
+        Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame,
+            arguments: activity);
       } else if (activity.id == 'space-adventure' ||
           activity.content == 'Space Adventure' ||
           activity.content == 'space_adventure' ||
           activity.content == 'space-adventure') {
-        Navigator.pushNamed(context, AppRoutes.spaceAdventure, arguments: activity);
+        Navigator.pushNamed(context, AppRoutes.spaceAdventure,
+            arguments: activity);
       } else if (category == 'ด้านภาษา' || category == 'LANGUAGE') {
-        Navigator.pushNamed(context, AppRoutes.languageDetail, arguments: activity);
+        Navigator.pushNamed(context, AppRoutes.languageDetail,
+            arguments: activity);
       } else if (shouldGoToVideoDetail) {
-        Navigator.pushNamed(context, AppRoutes.videoDetail, arguments: activity);
+        Navigator.pushNamed(context, AppRoutes.videoDetail,
+            arguments: activity);
       } else if (activity.content == 'math_simulation') {
-        Navigator.pushNamed(context, AppRoutes.mathSimulationActivity, arguments: activity);
+        Navigator.pushNamed(context, AppRoutes.mathSimulationActivity,
+            arguments: activity);
       } else if (category == 'ด้านคำนวณ') {
-        Navigator.pushNamed(context, AppRoutes.calculateActivity, arguments: activity);
+        Navigator.pushNamed(context, AppRoutes.calculateActivity,
+            arguments: activity);
       } else {
         Navigator.pushNamed(context, AppRoutes.itemIntro, arguments: activity);
       }
@@ -121,16 +128,16 @@ class ActivityCard extends StatelessWidget {
       final draft = await DraftService.loadDraft(childId);
       if (draft != null && draft['activityId'] != activity.id) {
         // There's a draft for a different activity — warn user
-        final draftName =
-            (draft['activityJson'] as Map<String, dynamic>?)?['name_activity']
-                as String? ??
-                '—';
+        final draftName = (draft['activityJson']
+                as Map<String, dynamic>?)?['name_activity'] as String? ??
+            '—';
         if (!context.mounted) return;
         final l10n = AppLocalizations.of(context)!;
         final choice = await showDialog<String>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: Text(l10n.draft_conflictTitle, style: AppTextStyles.heading(18)),
+            title: Text(l10n.draft_conflictTitle,
+                style: AppTextStyles.heading(18)),
             content: Text(
               l10n.draft_conflictMsg(draftName),
               style: AppTextStyles.body(14),
@@ -281,7 +288,7 @@ class ActivityCard extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         child: Image.network(
-          activity.thumbnailUrl!,
+          ApiConfig.resolveAssetUrl(activity.thumbnailUrl!),
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
             return _buildPlaceholder();
