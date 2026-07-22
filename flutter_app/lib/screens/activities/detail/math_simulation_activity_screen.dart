@@ -520,17 +520,18 @@ class _MathSimulationActivityScreenState
 
       if (pickedFile != null) {
         if (isVideo && !kIsWeb) {
-          final thumb = await VideoThumbnail.thumbnailData(
-            video: pickedFile.path,
-            imageFormat: ImageFormat.JPEG,
-            maxWidth: 400,
-            quality: 70,
-          );
-          if (mounted) {
-            setState(() {
-              _videoPath = pickedFile!.path;
-              _videoThumbnail = thumb;
-            });
+          final videoPath = pickedFile.path;
+          if (mounted) setState(() => _videoPath = videoPath);
+          try {
+            final thumb = await VideoThumbnail.thumbnailData(
+              video: videoPath,
+              imageFormat: ImageFormat.JPEG,
+              maxWidth: 400,
+              quality: 70,
+            );
+            if (mounted) setState(() => _videoThumbnail = thumb);
+          } catch (e) {
+            debugPrint('Video thumbnail generation failed: $e');
           }
         } else {
           setState(() {
@@ -698,7 +699,8 @@ class _MathSimulationActivityScreenState
                 actions: [
                   if (_phase == _Phase.ready || _phase == _Phase.running)
                     IconButton(
-                      tooltip: _isTvMode ? 'ออกจากโหมด Smart TV' : 'โหมด Smart TV',
+                      tooltip:
+                          _isTvMode ? 'ออกจากโหมด Smart TV' : 'โหมด Smart TV',
                       icon: Icon(
                         _isTvMode
                             ? Icons.fullscreen_exit_rounded
@@ -789,8 +791,8 @@ class _MathSimulationActivityScreenState
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 13, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
                     decoration: BoxDecoration(
                       color: const Color(0xFF103357),
                       borderRadius: BorderRadius.circular(22),
@@ -824,8 +826,8 @@ class _MathSimulationActivityScreenState
                 alignment: Alignment.centerLeft,
                 child: Text(
                   '${_currentQuestionIndex + 1} / $totalQuestions',
-                  style: const TextStyle(
-                      color: Color(0xFF24AEFF), fontSize: 13),
+                  style:
+                      const TextStyle(color: Color(0xFF24AEFF), fontSize: 13),
                 ),
               ),
               const Spacer(flex: 2),
@@ -897,8 +899,7 @@ class _MathSimulationActivityScreenState
                         ? '0'
                         : '$_currentQuestionIndex',
                     enabled: _currentQuestionIndex > 0,
-                    onPressed: () =>
-                        setState(() => _currentQuestionIndex--),
+                    onPressed: () => setState(() => _currentQuestionIndex--),
                   ),
                   const Spacer(),
                   Row(
@@ -970,9 +971,8 @@ class _MathSimulationActivityScreenState
     bool primary = false,
     bool iconAfter = false,
   }) {
-    final foreground = enabled
-        ? Colors.white
-        : Colors.white.withValues(alpha: 0.28);
+    final foreground =
+        enabled ? Colors.white : Colors.white.withValues(alpha: 0.28);
     final children = <Widget>[
       Icon(icon, color: foreground, size: 25),
       const SizedBox(width: 5),
@@ -1254,8 +1254,7 @@ class _MathSimulationActivityScreenState
                           child: Text(
                             'ทำครบทุกข้อแล้ว เลือกวิธีตรวจคำตอบ',
                             style: AppTextStyles.body(14,
-                                color: Palette.sky,
-                                weight: FontWeight.w600),
+                                color: Palette.sky, weight: FontWeight.w600),
                           ),
                         ),
                       ],
@@ -1376,8 +1375,7 @@ class _MathSimulationActivityScreenState
             child: Container(
               decoration: BoxDecoration(
                 border: Border.all(
-                    color: Palette.success.withValues(alpha: 0.18),
-                    width: 12),
+                    color: Palette.success.withValues(alpha: 0.18), width: 12),
               ),
             ),
           ),
@@ -1416,8 +1414,8 @@ class _MathSimulationActivityScreenState
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                    color: Palette.success.withValues(alpha: 0.18)),
+                border:
+                    Border.all(color: Palette.success.withValues(alpha: 0.18)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.14),
@@ -1507,8 +1505,8 @@ class _MathSimulationActivityScreenState
                     ),
                     Text(
                       'ตรวจสอบและแก้ไขผลก่อนกดเสร็จสิ้น',
-                      style: const TextStyle(
-                          fontSize: 12, color: Colors.black54),
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.black54),
                     ),
                   ],
                 ),
@@ -1594,8 +1592,7 @@ class _MathSimulationActivityScreenState
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              segment['question']
-                                                      ?.toString() ??
+                                              segment['question']?.toString() ??
                                                   '',
                                               style: AppTextStyles.body(14,
                                                   weight: FontWeight.w600),

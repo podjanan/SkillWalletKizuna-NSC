@@ -347,8 +347,11 @@ export async function POST(request: NextRequest) {
     const dbWords = await getAiWordFallbackWordsByDifficulty(category.id, difficulty);
 
     // 2. Try Gemini if enabled — wrap in try/catch and enforce a strict timeout to prevent client timeout
+    // Session requests should start immediately from the curated DB pool.
+    // AI generation and remote image lookup remain available for single-word
+    // requests, but no longer block a player who presses Start Quest.
     let aiPayload: VocabularyPayload | null = null;
-    if (settings.useGemini) {
+    if (settings.useGemini && !sessionMode) {
       try {
         const generatedPromise = (async () => {
           const generated = await generateWord(category, difficulty);

@@ -204,8 +204,8 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
     if (!mounted) return;
     final savedStart = data['startTime'] as String?;
     final phaseStr = data['phase'] as String? ?? 'ready';
-    final restoredPhase = _Phase.values.firstWhere((p) => p.name == phaseStr,
-        orElse: () => _Phase.ready);
+    final restoredPhase = _Phase.values
+        .firstWhere((p) => p.name == phaseStr, orElse: () => _Phase.ready);
     // Restore accumulated seconds
     _baseElapsedSeconds = data['elapsedSeconds'] as int? ?? 0;
     if (savedStart != null && restoredPhase == _Phase.running) {
@@ -255,7 +255,8 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
       data: {
         'phase': _phase.name,
         'elapsedSeconds': _elapsedSeconds,
-        'startTime': _phase == _Phase.running ? DateTime.now().toIso8601String() : null,
+        'startTime':
+            _phase == _Phase.running ? DateTime.now().toIso8601String() : null,
         'description': _descriptionController.text,
         'scores': scores,
         'answerStatus': answers,
@@ -313,16 +314,26 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
 
       if (pickedFile != null) {
         if (isVideo && !kIsWeb) {
-          final thumb = await VideoThumbnail.thumbnailData(
-            video: pickedFile.path,
-            imageFormat: ImageFormat.JPEG,
-            maxWidth: 400,
-            quality: 70,
-          );
-          if (mounted) setState(() { _videoPath = pickedFile!.path; _videoThumbnail = thumb; });
+          final videoPath = pickedFile.path;
+          if (mounted) setState(() => _videoPath = videoPath);
+          try {
+            final thumb = await VideoThumbnail.thumbnailData(
+              video: videoPath,
+              imageFormat: ImageFormat.JPEG,
+              maxWidth: 400,
+              quality: 70,
+            );
+            if (mounted) setState(() => _videoThumbnail = thumb);
+          } catch (e) {
+            debugPrint('Video thumbnail generation failed: $e');
+          }
         } else {
           setState(() {
-            if (isVideo) { _videoPath = pickedFile!.path; } else { _imagePath = pickedFile!.path; }
+            if (isVideo) {
+              _videoPath = pickedFile!.path;
+            } else {
+              _imagePath = pickedFile!.path;
+            }
           });
         }
       }
@@ -449,135 +460,137 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
         if (shouldPop && mounted) Navigator.pop(context);
       },
       child: Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black, size: 30),
-          onPressed: () async {
-            final shouldPop = await _onWillPop();
-            if (shouldPop && mounted) Navigator.pop(context);
-          },
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black, size: 30),
+            onPressed: () async {
+              final shouldPop = await _onWillPop();
+              if (shouldPop && mounted) Navigator.pop(context);
+            },
+          ),
+          centerTitle: true,
+          title: Text(
+            ActivityL10n.localizedActivityType(
+                context, widget.activity.category),
+            style: AppTextStyles.heading(24, color: Colors.black),
+          ),
+          actions: const [],
         ),
-        centerTitle: true,
-        title: Text(
-          ActivityL10n.localizedActivityType(context, widget.activity.category),
-          style: AppTextStyles.heading(24, color: Colors.black),
-        ),
-        actions: const [],
-      ),
-      body: _segments.isEmpty
-          ? Center(
-              child: Text(AppLocalizations.of(context)!.calculate_noQuestions,
-                  style: AppTextStyles.heading(20, color: Colors.grey)),
-            )
-          : Column(
-              children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        InfoBadges(activity: widget.activity),
-                        const SizedBox(height: 16),
-
-                        // ── Content / Instructions ──
-                        if (widget.activity.content.isNotEmpty) ...[
-                          Text(
-                              AppLocalizations.of(context)!
-                                  .calculate_descriptionLabel,
-                              style: AppTextStyles.heading(18,
-                                  color: Palette.sky)),
-                          const SizedBox(height: 8),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              boxShadow: Palette.cardShadow,
-                            ),
-                            child: Text(widget.activity.content,
-                                style: AppTextStyles.body(14)),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // ── Timer card ──
-                        _buildTimerCard(elapsedSeconds),
-                        const SizedBox(height: 14),
-
-                        // ── Timer controls ──
-                        _buildTimerControls(),
-                        const SizedBox(height: 20),
-
-                        // ── Questions (visible during running & answering) ──
-                        if (_phase == _Phase.running ||
-                            _phase == _Phase.answering) ...[
-                          // TV Mode banner
-                          _buildTvModeBanner(),
+        body: _segments.isEmpty
+            ? Center(
+                child: Text(AppLocalizations.of(context)!.calculate_noQuestions,
+                    style: AppTextStyles.heading(20, color: Colors.grey)),
+              )
+            : Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          InfoBadges(activity: widget.activity),
                           const SizedBox(height: 16),
 
-                          Row(
-                            children: [
-                              const Icon(Icons.quiz_rounded,
-                                  color: Palette.sky, size: 22),
-                              const SizedBox(width: 8),
-                              Text(
-                                  AppLocalizations.of(context)!.common_questions,
-                                  style: AppTextStyles.heading(22,
-                                      color: Palette.sky)),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Palette.sky.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  '${_segments.length} ${AppLocalizations.of(context)!.calculate_questionsCount}',
-                                  style: AppTextStyles.label(13,
-                                      color: Palette.sky),
-                                ),
+                          // ── Content / Instructions ──
+                          if (widget.activity.content.isNotEmpty) ...[
+                            Text(
+                                AppLocalizations.of(context)!
+                                    .calculate_descriptionLabel,
+                                style: AppTextStyles.heading(18,
+                                    color: Palette.sky)),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: Palette.cardShadow,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          ..._buildQuestionCards(),
-                          const SizedBox(height: 30),
-                        ],
+                              child: Text(widget.activity.content,
+                                  style: AppTextStyles.body(14)),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
 
-                        // ── Evidence (only in answering phase) ──
-                        if (_phase == _Phase.answering) ...[
-                          Text(AppLocalizations.of(context)!.common_evidence,
-                              style: AppTextStyles.heading(20,
-                                  color: Palette.error)),
-                          const SizedBox(height: 15),
-                          _buildEvidenceSection(),
+                          // ── Timer card ──
+                          _buildTimerCard(elapsedSeconds),
+                          const SizedBox(height: 14),
+
+                          // ── Timer controls ──
+                          _buildTimerControls(),
                           const SizedBox(height: 20),
-                        ],
 
-                        // ── Ready phase message ──
-                        if (_phase == _Phase.ready) _buildReadyMessage(),
-                      ],
+                          // ── Questions (visible during running & answering) ──
+                          if (_phase == _Phase.running ||
+                              _phase == _Phase.answering) ...[
+                            // TV Mode banner
+                            _buildTvModeBanner(),
+                            const SizedBox(height: 16),
+
+                            Row(
+                              children: [
+                                const Icon(Icons.quiz_rounded,
+                                    color: Palette.sky, size: 22),
+                                const SizedBox(width: 8),
+                                Text(
+                                    AppLocalizations.of(context)!
+                                        .common_questions,
+                                    style: AppTextStyles.heading(22,
+                                        color: Palette.sky)),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Palette.sky.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '${_segments.length} ${AppLocalizations.of(context)!.calculate_questionsCount}',
+                                    style: AppTextStyles.label(13,
+                                        color: Palette.sky),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            ..._buildQuestionCards(),
+                            const SizedBox(height: 30),
+                          ],
+
+                          // ── Evidence (only in answering phase) ──
+                          if (_phase == _Phase.answering) ...[
+                            Text(AppLocalizations.of(context)!.common_evidence,
+                                style: AppTextStyles.heading(20,
+                                    color: Palette.error)),
+                            const SizedBox(height: 15),
+                            _buildEvidenceSection(),
+                            const SizedBox(height: 20),
+                          ],
+
+                          // ── Ready phase message ──
+                          if (_phase == _Phase.ready) _buildReadyMessage(),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                // FINISH button (only in answering phase)
-                if (_phase == _Phase.answering)
-                  StickyBottomButton(
-                    onPressed: _handleSubmit,
-                    label: AppLocalizations.of(context)!.common_finish,
-                    color: Palette.success,
-                    isLoading: _isSubmitting,
-                  ),
-              ],
-            ),
-    ), // Scaffold
+                  // FINISH button (only in answering phase)
+                  if (_phase == _Phase.answering)
+                    StickyBottomButton(
+                      onPressed: _handleSubmit,
+                      label: AppLocalizations.of(context)!.common_finish,
+                      color: Palette.success,
+                      isLoading: _isSubmitting,
+                    ),
+                ],
+              ),
+      ), // Scaffold
     ); // PopScope
   }
 
@@ -691,8 +704,8 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: Palette.cardShadow,
-          border: Border.all(
-              color: Palette.sky.withValues(alpha: 0.25), width: 1),
+          border:
+              Border.all(color: Palette.sky.withValues(alpha: 0.25), width: 1),
         ),
         child: Row(
           children: [
@@ -705,8 +718,8 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                 boxShadow: Palette.buttonShadow,
               ),
               alignment: Alignment.center,
-              child: const Icon(Icons.tv_rounded,
-                  color: Colors.white, size: 22),
+              child:
+                  const Icon(Icons.tv_rounded, color: Colors.white, size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -717,13 +730,11 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                       style: AppTextStyles.label(15, color: Palette.sky)),
                   const SizedBox(height: 2),
                   Text(l.calculate_tvModeBannerSub,
-                      style: AppTextStyles.body(12,
-                          color: Palette.labelGrey)),
+                      style: AppTextStyles.body(12, color: Palette.labelGrey)),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios,
-                color: Palette.sky, size: 16),
+            const Icon(Icons.arrow_forward_ios, color: Palette.sky, size: 16),
           ],
         ),
       ),
@@ -811,8 +822,8 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                             alignment: Alignment.center,
                             child: Text(
                               '${index + 1}',
-                              style: AppTextStyles.heading(15,
-                                  color: accentColor),
+                              style:
+                                  AppTextStyles.heading(15, color: accentColor),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -820,8 +831,8 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                             child: Text(
                               AppLocalizations.of(context)!
                                   .calculate_solutionTitle(index + 1),
-                              style: AppTextStyles.label(14,
-                                  color: accentColor),
+                              style:
+                                  AppTextStyles.label(14, color: accentColor),
                             ),
                           ),
                           if (status != null)
@@ -850,8 +861,7 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                       ),
                       child: Text(question,
                           style: AppTextStyles.body(17,
-                              color: Colors.black87,
-                              weight: FontWeight.w600)),
+                              color: Colors.black87, weight: FontWeight.w600)),
                     ),
 
                     // ── Answering phase content ──
@@ -1044,22 +1054,22 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                                                 ? Colors.white
                                                 : Palette.pink),
                                       ),
-                                    ],           // inner Row children
-                                  ),             // inner Row
-                                ),               // AnimatedContainer
-                              ),                 // GestureDetector (incorrect)
-                            ),                   // Expanded (incorrect)
-                          ],                     // Row children [correct,SizedBox,incorrect]
-                        ),                       // Row (buttons)
-                      ),                         // Padding (buttons)
-                    ],                           // if answering spread
-                  ],                             // Column children
-                ),                               // Column
-              ),                                 // Expanded
-            ],                                   // Row children [strip, Expanded]
-          ),                                     // Row
-        ),                                       // IntrinsicHeight
-      );                                         // Container
+                                    ], // inner Row children
+                                  ), // inner Row
+                                ), // AnimatedContainer
+                              ), // GestureDetector (incorrect)
+                            ), // Expanded (incorrect)
+                          ], // Row children [correct,SizedBox,incorrect]
+                        ), // Row (buttons)
+                      ), // Padding (buttons)
+                    ], // if answering spread
+                  ], // Column children
+                ), // Column
+              ), // Expanded
+            ], // Row children [strip, Expanded]
+          ), // Row
+        ), // IntrinsicHeight
+      ); // Container
     });
   }
 
@@ -1109,7 +1119,9 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
             style: AppTextStyles.heading(18, color: Colors.black54)),
         const SizedBox(height: 5),
         GestureDetector(
-          onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: false),
+          onTap: _isSubmitting
+              ? null
+              : () => _handleMediaSelection(isVideo: false),
           child: Container(
             height: 120,
             width: double.infinity,
@@ -1143,7 +1155,9 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                           child: IconButton(
                             icon: const Icon(Icons.close,
                                 color: Colors.white, size: 16),
-                            onPressed: _isSubmitting ? null : () => setState(() => _imagePath = null),
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => setState(() => _imagePath = null),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
                                 minWidth: 28, minHeight: 28),
@@ -1178,7 +1192,8 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
             style: AppTextStyles.heading(18, color: Colors.black54)),
         const SizedBox(height: 5),
         GestureDetector(
-          onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: true),
+          onTap:
+              _isSubmitting ? null : () => _handleMediaSelection(isVideo: true),
           child: Container(
             height: 120,
             width: double.infinity,
@@ -1212,7 +1227,8 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                                   size: 50, color: Palette.success),
                               const SizedBox(height: 8),
                               Text(
-                                  AppLocalizations.of(context)!.common_videoAdded,
+                                  AppLocalizations.of(context)!
+                                      .common_videoAdded,
                                   style: AppTextStyles.label(12,
                                       color: Palette.success)),
                             ],
@@ -1239,10 +1255,12 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                           child: IconButton(
                             icon: const Icon(Icons.close,
                                 color: Colors.white, size: 16),
-                            onPressed: _isSubmitting ? null : () => setState(() {
-                              _videoPath = null;
-                              _videoThumbnail = null;
-                            }),
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => setState(() {
+                                      _videoPath = null;
+                                      _videoThumbnail = null;
+                                    }),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(
                                 minWidth: 28, minHeight: 28),
@@ -1348,8 +1366,7 @@ class _TvModeScreenState extends State<_TvModeScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(l.calculate_tvMode,
-                            style:
-                                AppTextStyles.label(15, color: Palette.sky)),
+                            style: AppTextStyles.label(15, color: Palette.sky)),
                       ],
                     ),
                   ],
@@ -1367,16 +1384,14 @@ class _TvModeScreenState extends State<_TvModeScreen> {
                       child: LinearProgressIndicator(
                         value: progress,
                         backgroundColor: Colors.white.withValues(alpha: 0.1),
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Palette.sky),
+                        valueColor: AlwaysStoppedAnimation<Color>(Palette.sky),
                         minHeight: 4,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       '${_currentPage + 1} / $total',
-                      style:
-                          AppTextStyles.body(13, color: Palette.sky),
+                      style: AppTextStyles.body(13, color: Palette.sky),
                     ),
                   ],
                 ),
@@ -1447,8 +1462,7 @@ class _TvModeScreenState extends State<_TvModeScreen> {
                             child: Text(
                               question,
                               style: AppTextStyles.body(36,
-                                  color: Colors.white,
-                                  weight: FontWeight.w700),
+                                  color: Colors.white, weight: FontWeight.w700),
                               textAlign: TextAlign.center,
                             ),
                           ),

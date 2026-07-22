@@ -52,10 +52,12 @@ class SpaceAdventureResultScreen extends StatefulWidget {
   });
 
   @override
-  State<SpaceAdventureResultScreen> createState() => _SpaceAdventureResultScreenState();
+  State<SpaceAdventureResultScreen> createState() =>
+      _SpaceAdventureResultScreenState();
 }
 
-class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen> {
+class _SpaceAdventureResultScreenState
+    extends State<SpaceAdventureResultScreen> {
   final ActivityService _activityService = ActivityService();
   bool _isFinishing = false;
   bool _showSummary = false;
@@ -72,7 +74,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
     if (kIsWeb) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Sharing is supported on mobile devices. Right-click the image to save on Web!'),
+          content: Text(
+              'Sharing is supported on mobile devices. Right-click the image to save on Web!'),
           backgroundColor: Colors.blueAccent,
         ),
       );
@@ -86,7 +89,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
 
       await Share.shareXFiles(
         [XFile(tempFile.path)],
-        text: 'Look at my Space Adventure scavenger match: ${widget.targetObject}! I scored ${widget.currentScore} points!',
+        text:
+            'Look at my Space Adventure scavenger match: ${widget.targetObject}! I scored ${widget.currentScore} points!',
       );
     } catch (e) {
       print('Share failed: $e');
@@ -94,7 +98,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
   }
 
   void _retryQuest() {
-    final history = List<Map<String, dynamic>>.from(widget.completedItemsHistory);
+    final history =
+        List<Map<String, dynamic>>.from(widget.completedItemsHistory);
     if (history.isNotEmpty) {
       history.removeLast();
     }
@@ -170,7 +175,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
     if (childId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a child profile before saving the score.'),
+          content:
+              Text('Please select a child profile before saving the score.'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -224,7 +230,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
           _isFinishing = false;
           _showSummary = true;
           _scoreSaved = true;
-          _savedWallet = wallet is int ? wallet : int.tryParse(wallet?.toString() ?? '');
+          _savedWallet =
+              wallet is int ? wallet : int.tryParse(wallet?.toString() ?? '');
         });
       }
     } catch (e) {
@@ -237,7 +244,6 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
       });
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -270,7 +276,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
               ),
         title: Text(
           isSummary
-              ? ActivityL10n.localizedActivityType(context, activity?.category ?? 'PHYSICAL')
+              ? ActivityL10n.localizedActivityType(
+                  context, activity?.category ?? 'PHYSICAL')
               : 'Scan results',
           style: AppTextStyles.heading(20, color: Colors.black87),
         ),
@@ -317,7 +324,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: widget.isMatch ? Palette.successAlt : Palette.errorStrong,
+                  color:
+                      widget.isMatch ? Palette.successAlt : Palette.errorStrong,
                   width: 3,
                 ),
                 boxShadow: Palette.cardShadow,
@@ -331,7 +339,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                       fit: BoxFit.cover,
                     )
                   : const Center(
-                      child: Icon(Icons.broken_image, color: Colors.black26, size: 64),
+                      child: Icon(Icons.broken_image,
+                          color: Colors.black26, size: 64),
                     ),
             ),
           ),
@@ -356,8 +365,12 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      widget.isMatch ? Icons.stars_rounded : Icons.info_outline_rounded,
-                      color: widget.isMatch ? Palette.successAlt : Palette.errorStrong,
+                      widget.isMatch
+                          ? Icons.stars_rounded
+                          : Icons.info_outline_rounded,
+                      color: widget.isMatch
+                          ? Palette.successAlt
+                          : Palette.errorStrong,
                       size: 26,
                     ),
                     const SizedBox(width: 8),
@@ -365,7 +378,9 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                       widget.isMatch ? 'CORRECT MATCH' : 'MISMATCH DETECTED',
                       style: AppTextStyles.heading(
                         14,
-                        color: widget.isMatch ? Palette.successAlt : Palette.errorStrong,
+                        color: widget.isMatch
+                            ? Palette.successAlt
+                            : Palette.errorStrong,
                       ),
                     ),
                   ],
@@ -381,7 +396,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                 const SizedBox(height: 14),
                 // Points details
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: Palette.sky.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(15),
@@ -438,6 +454,7 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
       ),
     );
   }
+
   Widget _buildSummaryScreen() {
     final l = AppLocalizations.of(context)!;
     final childName =
@@ -527,7 +544,7 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
             ),
           ),
           const SizedBox(height: 18),
-          
+
           // Quest items list
           ...List.generate(widget.completedItemsHistory.length, (index) {
             final result = widget.completedItemsHistory[index];
@@ -561,7 +578,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                         ),
                         Text(
                           isCorrect ? 'Found: $name' : 'Not found',
-                          style: AppTextStyles.body(12, color: Palette.deepGrey),
+                          style:
+                              AppTextStyles.body(12, color: Palette.deepGrey),
                         ),
                       ],
                     ),
@@ -578,11 +596,11 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
               ),
             );
           }),
-          
+
           const SizedBox(height: 20),
           _buildEvidenceSection(),
           const SizedBox(height: 30),
-          
+
           // Action Buttons
           if (!_scoreSaved) ...[
             GradientButton.success(
@@ -606,8 +624,10 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Palette.bluePill,
-                  disabledBackgroundColor: Palette.bluePill.withValues(alpha: 0.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  disabledBackgroundColor:
+                      Palette.bluePill.withValues(alpha: 0.5),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15)),
                 ),
               ),
             ),
@@ -621,14 +641,16 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                   AppRoutes.home,
                   (route) => false,
                 ),
-                icon: const Icon(Icons.home_outlined, color: Palette.sky, size: 22),
+                icon: const Icon(Icons.home_outlined,
+                    color: Palette.sky, size: 22),
                 label: Text(
                   l.result_backToActivitiesBtn,
                   style: AppTextStyles.heading(18, color: Palette.sky),
                 ),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Palette.sky, width: 2),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15)),
                 ),
               ),
             ),
@@ -704,7 +726,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _imagePath != null ? Palette.successAlt : Palette.divider,
+                color:
+                    _imagePath != null ? Palette.successAlt : Palette.divider,
                 width: 1.5,
               ),
             ),
@@ -716,7 +739,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                         child: SizedBox(
                           width: double.infinity,
                           height: double.infinity,
-                          child: Image.file(File(_imagePath!), fit: BoxFit.cover),
+                          child:
+                              Image.file(File(_imagePath!), fit: BoxFit.cover),
                         ),
                       ),
                       Positioned(
@@ -728,12 +752,14 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 16),
                             onPressed: (_isFinishing || _scoreSaved)
                                 ? null
                                 : () => setState(() => _imagePath = null),
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
                           ),
                         ),
                       ),
@@ -743,7 +769,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_photo_alternate_outlined, size: 36, color: Colors.grey),
+                        const Icon(Icons.add_photo_alternate_outlined,
+                            size: 36, color: Colors.grey),
                         const SizedBox(height: 6),
                         Text(
                           l.common_addImage,
@@ -779,7 +806,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _videoPath != null ? Palette.successAlt : Palette.divider,
+                color:
+                    _videoPath != null ? Palette.successAlt : Palette.divider,
                 width: 1.5,
               ),
             ),
@@ -790,11 +818,13 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                       if (_videoThumbnail != null)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(18),
-                          child: Image.memory(_videoThumbnail!, fit: BoxFit.cover),
+                          child:
+                              Image.memory(_videoThumbnail!, fit: BoxFit.cover),
                         )
                       else
                         const Center(
-                          child: Icon(Icons.check_circle_outline, color: Colors.green, size: 36),
+                          child: Icon(Icons.check_circle_outline,
+                              color: Colors.green, size: 36),
                         ),
                       Positioned(
                         top: 4,
@@ -805,7 +835,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 14),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 14),
                             onPressed: (_isFinishing || _scoreSaved)
                                 ? null
                                 : () => setState(() {
@@ -813,7 +844,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                                       _videoThumbnail = null;
                                     }),
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                            constraints: const BoxConstraints(
+                                minWidth: 26, minHeight: 26),
                           ),
                         ),
                       ),
@@ -823,7 +855,8 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_circle_outline, size: 36, color: Colors.grey),
+                        const Icon(Icons.add_circle_outline,
+                            size: 36, color: Colors.grey),
                         const SizedBox(height: 6),
                         Text(
                           l.common_addVideo,
@@ -852,17 +885,18 @@ class _SpaceAdventureResultScreenState extends State<SpaceAdventureResultScreen>
 
       if (pickedFile != null) {
         if (isVideo && !kIsWeb) {
-          final thumb = await VideoThumbnail.thumbnailData(
-            video: pickedFile.path,
-            imageFormat: ImageFormat.JPEG,
-            maxWidth: 400,
-            quality: 70,
-          );
-          if (mounted) {
-            setState(() {
-              _videoPath = pickedFile!.path;
-              _videoThumbnail = thumb;
-            });
+          final videoPath = pickedFile.path;
+          if (mounted) setState(() => _videoPath = videoPath);
+          try {
+            final thumb = await VideoThumbnail.thumbnailData(
+              video: videoPath,
+              imageFormat: ImageFormat.JPEG,
+              maxWidth: 400,
+              quality: 70,
+            );
+            if (mounted) setState(() => _videoThumbnail = thumb);
+          } catch (e) {
+            debugPrint('Video thumbnail generation failed: $e');
           }
         } else {
           setState(() {

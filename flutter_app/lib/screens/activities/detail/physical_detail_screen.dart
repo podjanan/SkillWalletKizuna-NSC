@@ -205,17 +205,18 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
         final String path = pickedFile.path;
 
         if (isVideo && !kIsWeb) {
-          final thumb = await VideoThumbnail.thumbnailData(
-            video: path,
-            imageFormat: ImageFormat.JPEG,
-            maxWidth: 400,
-            quality: 70,
-          );
-          if (mounted)
-            setState(() {
-              _videoPath = path;
-              _videoThumbnail = thumb;
-            });
+          if (mounted) setState(() => _videoPath = path);
+          try {
+            final thumb = await VideoThumbnail.thumbnailData(
+              video: path,
+              imageFormat: ImageFormat.JPEG,
+              maxWidth: 400,
+              quality: 70,
+            );
+            if (mounted) setState(() => _videoThumbnail = thumb);
+          } catch (e) {
+            debugPrint('Video thumbnail generation failed: $e');
+          }
         } else {
           setState(() {
             if (isVideo) {
@@ -844,7 +845,9 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
                         // Image picker
                         Expanded(
                           child: GestureDetector(
-                            onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: false),
+                            onTap: _isSubmitting
+                                ? null
+                                : () => _handleMediaSelection(isVideo: false),
                             child: Container(
                               height: 120,
                               decoration: BoxDecoration(
@@ -885,7 +888,9 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
                         // Video picker
                         Expanded(
                           child: GestureDetector(
-                            onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: true),
+                            onTap: _isSubmitting
+                                ? null
+                                : () => _handleMediaSelection(isVideo: true),
                             child: Container(
                               height: 120,
                               decoration: BoxDecoration(

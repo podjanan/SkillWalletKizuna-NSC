@@ -233,12 +233,12 @@ class _DynamicVocabularyGameScreenState
       final bootstrap = await _service.fetchBootstrap();
       final categories = bootstrap.categories;
       final settings = bootstrap.settings;
-      
+
       int? timeLimitMinutes;
       int? maxScore;
       String? difficulty;
       String? wordCategory;
-      
+
       if (activity != null) {
         maxScore = activity.maxScore;
         final diffStr = activity.difficulty.trim().toUpperCase();
@@ -249,12 +249,13 @@ class _DynamicVocabularyGameScreenState
         } else if (diffStr == 'ยาก' || diffStr == 'HARD') {
           difficulty = 'hard';
         }
-        
+
         if (activity.segments is Map) {
           final segmentsMap = activity.segments as Map;
           final timeLimitSec = segmentsMap['timeLimit'];
           if (timeLimitSec != null) {
-            timeLimitMinutes = (int.tryParse(timeLimitSec.toString()) ?? 60) ~/ 60;
+            timeLimitMinutes =
+                (int.tryParse(timeLimitSec.toString()) ?? 60) ~/ 60;
             if (timeLimitMinutes == 0) timeLimitMinutes = 1;
           }
           final wordCat = segmentsMap['wordCategory'];
@@ -267,7 +268,7 @@ class _DynamicVocabularyGameScreenState
       timeLimitMinutes ??= _positiveInt(settings['timeLimitMinutes']);
       maxScore ??= _positiveInt(settings['maxScore']);
       final coverImageUrl = settings['coverImageUrl']?.toString().trim();
-      
+
       if (!mounted) return;
       setState(() {
         _categories = categories.isEmpty
@@ -390,7 +391,8 @@ class _DynamicVocabularyGameScreenState
           final segmentsMap = activity.segments as Map;
           final timeLimitSec = segmentsMap['timeLimit'];
           if (timeLimitSec != null) {
-            activityTimeLimitSeconds = int.tryParse(timeLimitSec.toString()) ?? 60;
+            activityTimeLimitSeconds =
+                int.tryParse(timeLimitSec.toString()) ?? 60;
           }
         }
       }
@@ -603,9 +605,11 @@ class _DynamicVocabularyGameScreenState
           .replaceAll(RegExp(r'[.,\/#!$%\^&\*;:{}=\-_`~()]'), '')
           .toLowerCase()
           .trim();
-      
-      final hasWord = cleanTranscribed.split(RegExp(r'\s+')).contains(cleanTarget);
-      final wordCorrect = cleanTranscribed == cleanTarget || hasWord || similarityScore >= 60.0;
+
+      final hasWord =
+          cleanTranscribed.split(RegExp(r'\s+')).contains(cleanTarget);
+      final wordCorrect =
+          cleanTranscribed == cleanTarget || hasWord || similarityScore >= 60.0;
       final wordMaxScore = _wordMaxScore(_currentIndex);
       final wordScore = wordCorrect
           ? (similarityScore >= 80.0
@@ -917,7 +921,8 @@ class _DynamicVocabularyGameScreenState
       return _VoiceQuestWordResult.fromJson(j as Map<String, dynamic>);
     }).toList();
 
-    final List<int> restoredScores = List<int>.from(data['wordScores'] as List<dynamic>? ?? []);
+    final List<int> restoredScores =
+        List<int>.from(data['wordScores'] as List<dynamic>? ?? []);
 
     setState(() {
       _words = restoredWords;
@@ -927,8 +932,10 @@ class _DynamicVocabularyGameScreenState
       _score = data['score'] as int? ?? 0;
       _secondsLeft = data['secondsLeft'] as int? ?? _sessionTimeLimitSeconds;
       _difficulty = data['difficulty'] as String? ?? _difficulty;
-      _selectedCategory = data['selectedCategory'] as String? ?? _selectedCategory;
-      _screen = _ScreenState.gameplayScreen; // Skip start screen, go straight to gameplay
+      _selectedCategory =
+          data['selectedCategory'] as String? ?? _selectedCategory;
+      _screen = _ScreenState
+          .gameplayScreen; // Skip start screen, go straight to gameplay
       _isLoading = false;
     });
 
@@ -943,14 +950,15 @@ class _DynamicVocabularyGameScreenState
     if (childId == null) return;
     final activity = ModalRoute.of(context)?.settings.arguments as Activity?;
 
-    final activityJson = activity?.toJson() ?? Activity(
-      id: 'ai-word-game',
-      name: 'Voice Quest',
-      category: 'ด้านภาษา',
-      difficulty: _difficulty,
-      maxScore: _sessionMaxScore,
-      content: 'AI Word Game',
-    ).toJson();
+    final activityJson = activity?.toJson() ??
+        Activity(
+          id: 'ai-word-game',
+          name: 'Voice Quest',
+          category: 'ด้านภาษา',
+          difficulty: _difficulty,
+          maxScore: _sessionMaxScore,
+          content: 'AI Word Game',
+        ).toJson();
 
     await DraftService.saveDraft(
       childId: childId,
@@ -986,7 +994,8 @@ class _DynamicVocabularyGameScreenState
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(l.draft_leaveBtn, style: const TextStyle(color: Palette.sky)),
+            child: Text(l.draft_leaveBtn,
+                style: const TextStyle(color: Palette.sky)),
           ),
         ],
       ),
@@ -1028,53 +1037,54 @@ class _DynamicVocabularyGameScreenState
         appBar: _isTvMode && _screen == _ScreenState.gameplayScreen
             ? null
             : AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: Icon(
-              isSummary ? Icons.close : Icons.arrow_back_ios_new,
-              color: Colors.black87,
-            ),
-            onPressed: _handleBackPressed,
-          ),
-          centerTitle: true,
-          title: Text(
-            isSummary
-                ? ActivityL10n.localizedActivityType(context, activity?.category ?? 'ด้านภาษา')
-                : 'Voice Quest',
-            style: AppTextStyles.heading(20, color: Palette.text),
-          ),
-          actions: [
-            if (_screen == _ScreenState.gameplayScreen || _isTvMode)
-              IconButton(
-                tooltip: _isTvMode ? 'Exit TV Mode' : 'TV Mode',
-                icon: Icon(
-                  _isTvMode
-                      ? Icons.fullscreen_exit_rounded
-                      : Icons.tv_rounded,
-                  color: Palette.sky,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: IconButton(
+                  icon: Icon(
+                    isSummary ? Icons.close : Icons.arrow_back_ios_new,
+                    color: Colors.black87,
+                  ),
+                  onPressed: _handleBackPressed,
                 ),
-                onPressed: _toggleTvMode,
-              ),
-            if (isSummary)
-              IconButton(
-                icon: const Icon(Icons.share, color: Palette.sky),
-                onPressed: () {
-                  showShareBottomSheet(
-                    context,
-                    ShareResultData(
-                      activityName: activity?.name ?? 'Voice Quest',
-                      score: _score,
-                      maxScore: _maxScore,
-                      timeSpentSeconds: 0,
-                      category: activity?.category,
-                      evidenceImagePath: _imagePath,
+                centerTitle: true,
+                title: Text(
+                  isSummary
+                      ? ActivityL10n.localizedActivityType(
+                          context, activity?.category ?? 'ด้านภาษา')
+                      : 'Voice Quest',
+                  style: AppTextStyles.heading(20, color: Palette.text),
+                ),
+                actions: [
+                  if (_screen == _ScreenState.gameplayScreen || _isTvMode)
+                    IconButton(
+                      tooltip: _isTvMode ? 'Exit TV Mode' : 'TV Mode',
+                      icon: Icon(
+                        _isTvMode
+                            ? Icons.fullscreen_exit_rounded
+                            : Icons.tv_rounded,
+                        color: Palette.sky,
+                      ),
+                      onPressed: _toggleTvMode,
                     ),
-                  );
-                },
+                  if (isSummary)
+                    IconButton(
+                      icon: const Icon(Icons.share, color: Palette.sky),
+                      onPressed: () {
+                        showShareBottomSheet(
+                          context,
+                          ShareResultData(
+                            activityName: activity?.name ?? 'Voice Quest',
+                            score: _score,
+                            maxScore: _maxScore,
+                            timeSpentSeconds: 0,
+                            category: activity?.category,
+                            evidenceImagePath: _imagePath,
+                          ),
+                        );
+                      },
+                    ),
+                ],
               ),
-          ],
-        ),
         body: SafeArea(
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
@@ -1178,8 +1188,7 @@ class _DynamicVocabularyGameScreenState
                           const SizedBox(width: 4),
                           Text(
                             'Language',
-                            style:
-                                AppTextStyles.label(11, color: Colors.white),
+                            style: AppTextStyles.label(11, color: Colors.white),
                           ),
                         ],
                       ),
@@ -1199,7 +1208,8 @@ class _DynamicVocabularyGameScreenState
                   initialValue: _selectedCategory ?? _categories.first.id,
                   decoration: InputDecoration(
                     labelText: 'Choose Category',
-                    labelStyle: AppTextStyles.label(14, color: Palette.deepGrey),
+                    labelStyle:
+                        AppTextStyles.label(14, color: Palette.deepGrey),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(color: Colors.grey.shade300),
@@ -1210,7 +1220,8 @@ class _DynamicVocabularyGameScreenState
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Palette.sky, width: 2),
+                      borderSide:
+                          const BorderSide(color: Palette.sky, width: 2),
                     ),
                   ),
                   items: _categories.map((c) {
@@ -1228,7 +1239,8 @@ class _DynamicVocabularyGameScreenState
                   initialValue: _difficulty,
                   decoration: InputDecoration(
                     labelText: 'Choose Difficulty',
-                    labelStyle: AppTextStyles.label(14, color: Palette.deepGrey),
+                    labelStyle:
+                        AppTextStyles.label(14, color: Palette.deepGrey),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide(color: Colors.grey.shade300),
@@ -1239,7 +1251,8 @@ class _DynamicVocabularyGameScreenState
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Palette.sky, width: 2),
+                      borderSide:
+                          const BorderSide(color: Palette.sky, width: 2),
                     ),
                   ),
                   items: const [
@@ -1247,7 +1260,8 @@ class _DynamicVocabularyGameScreenState
                         value: 'easy', child: Text('🟩 Easy (ง่าย)')),
                     DropdownMenuItem(
                         value: 'medium', child: Text('🟨 Medium (ปานกลาง)')),
-                    DropdownMenuItem(value: 'hard', child: Text('🟥 Hard (ยาก)')),
+                    DropdownMenuItem(
+                        value: 'hard', child: Text('🟥 Hard (ยาก)')),
                   ],
                   onChanged: (value) {
                     setState(() => _difficulty = value ?? 'easy');
@@ -1437,8 +1451,8 @@ class _DynamicVocabularyGameScreenState
               children: [
                 Text(
                   '${_currentIndex + 1} / ${_words.length}',
-                  style: const TextStyle(
-                      color: Color(0xFF24AEFF), fontSize: 13),
+                  style:
+                      const TextStyle(color: Color(0xFF24AEFF), fontSize: 13),
                 ),
                 const Spacer(),
                 const Icon(Icons.timer_rounded,
@@ -2083,7 +2097,7 @@ class _DynamicVocabularyGameScreenState
             ),
           ),
           const SizedBox(height: 18),
-          
+
           // Words list
           ...List.generate(_words.length, (index) {
             final result = _wordResults[index];
@@ -2120,14 +2134,14 @@ class _DynamicVocabularyGameScreenState
                               : 'No speech recorded',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.body(12, color: Palette.deepGrey),
+                          style:
+                              AppTextStyles.body(12, color: Palette.deepGrey),
                         ),
                       ],
                     ),
                   ),
                   if (result != null &&
-                      (result.audioPath != null ||
-                          result.audioBytes != null))
+                      (result.audioPath != null || result.audioBytes != null))
                     IconButton(
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
@@ -2150,11 +2164,11 @@ class _DynamicVocabularyGameScreenState
               ),
             );
           }),
-          
+
           const SizedBox(height: 20),
           _buildEvidenceSection(),
           const SizedBox(height: 30),
-          
+
           // Action Buttons
           if (!_scoreSaved) ...[
             GradientButton.success(
@@ -2188,8 +2202,10 @@ class _DynamicVocabularyGameScreenState
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Palette.bluePill,
-                  disabledBackgroundColor: Palette.bluePill.withValues(alpha: 0.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  disabledBackgroundColor:
+                      Palette.bluePill.withValues(alpha: 0.5),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15)),
                 ),
               ),
             ),
@@ -2210,7 +2226,8 @@ class _DynamicVocabularyGameScreenState
                 ),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: Palette.sky, width: 2),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15)),
                 ),
               ),
             ),
@@ -2286,7 +2303,8 @@ class _DynamicVocabularyGameScreenState
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _imagePath != null ? Palette.successAlt : Palette.divider,
+                color:
+                    _imagePath != null ? Palette.successAlt : Palette.divider,
                 width: 1.5,
               ),
             ),
@@ -2298,7 +2316,8 @@ class _DynamicVocabularyGameScreenState
                         child: SizedBox(
                           width: double.infinity,
                           height: double.infinity,
-                          child: Image.file(File(_imagePath!), fit: BoxFit.cover),
+                          child:
+                              Image.file(File(_imagePath!), fit: BoxFit.cover),
                         ),
                       ),
                       Positioned(
@@ -2310,12 +2329,14 @@ class _DynamicVocabularyGameScreenState
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 16),
                             onPressed: (_isSavingScore || _scoreSaved)
                                 ? null
                                 : () => setState(() => _imagePath = null),
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
                           ),
                         ),
                       ),
@@ -2325,7 +2346,8 @@ class _DynamicVocabularyGameScreenState
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_photo_alternate_outlined, size: 36, color: Colors.grey),
+                        const Icon(Icons.add_photo_alternate_outlined,
+                            size: 36, color: Colors.grey),
                         const SizedBox(height: 6),
                         Text(
                           l.common_addImage,
@@ -2361,7 +2383,8 @@ class _DynamicVocabularyGameScreenState
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _videoPath != null ? Palette.successAlt : Palette.divider,
+                color:
+                    _videoPath != null ? Palette.successAlt : Palette.divider,
                 width: 1.5,
               ),
             ),
@@ -2372,11 +2395,13 @@ class _DynamicVocabularyGameScreenState
                       if (_videoThumbnail != null)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(18),
-                          child: Image.memory(_videoThumbnail!, fit: BoxFit.cover),
+                          child:
+                              Image.memory(_videoThumbnail!, fit: BoxFit.cover),
                         )
                       else
                         const Center(
-                          child: Icon(Icons.check_circle_outline, color: Colors.green, size: 36),
+                          child: Icon(Icons.check_circle_outline,
+                              color: Colors.green, size: 36),
                         ),
                       Positioned(
                         top: 4,
@@ -2387,7 +2412,8 @@ class _DynamicVocabularyGameScreenState
                             shape: BoxShape.circle,
                           ),
                           child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 14),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 14),
                             onPressed: (_isSavingScore || _scoreSaved)
                                 ? null
                                 : () => setState(() {
@@ -2395,7 +2421,8 @@ class _DynamicVocabularyGameScreenState
                                       _videoThumbnail = null;
                                     }),
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                            constraints: const BoxConstraints(
+                                minWidth: 26, minHeight: 26),
                           ),
                         ),
                       ),
@@ -2405,7 +2432,8 @@ class _DynamicVocabularyGameScreenState
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_circle_outline, size: 36, color: Colors.grey),
+                        const Icon(Icons.add_circle_outline,
+                            size: 36, color: Colors.grey),
                         const SizedBox(height: 6),
                         Text(
                           l.common_addVideo,
@@ -2434,17 +2462,18 @@ class _DynamicVocabularyGameScreenState
 
       if (pickedFile != null) {
         if (isVideo && !kIsWeb) {
-          final thumb = await VideoThumbnail.thumbnailData(
-            video: pickedFile.path,
-            imageFormat: ImageFormat.JPEG,
-            maxWidth: 400,
-            quality: 70,
-          );
-          if (mounted) {
-            setState(() {
-              _videoPath = pickedFile!.path;
-              _videoThumbnail = thumb;
-            });
+          final videoPath = pickedFile.path;
+          if (mounted) setState(() => _videoPath = videoPath);
+          try {
+            final thumb = await VideoThumbnail.thumbnailData(
+              video: videoPath,
+              imageFormat: ImageFormat.JPEG,
+              maxWidth: 400,
+              quality: 70,
+            );
+            if (mounted) setState(() => _videoThumbnail = thumb);
+          } catch (e) {
+            debugPrint('Video thumbnail generation failed: $e');
           }
         } else {
           setState(() {
