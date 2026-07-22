@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:skill_wallet_kizuna/l10n/app_localizations.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
+import '../../services/api_config.dart';
 import '../../widgets/share_result_helper.dart';
 import '../../theme/palette.dart';
 import '../../theme/app_text_styles.dart';
@@ -66,8 +69,8 @@ class PlayingResultDetailScreen extends StatelessWidget {
 
     final loc = AppLocalizations.of(context)!;
     final createdAt = record['created_at'] as String?;
-    final activityName =
-        record['activity']?['name_activity'] as String? ?? loc.playingresult_activity;
+    final activityName = record['activity']?['name_activity'] as String? ??
+        loc.playingresult_activity;
     final category = record['activity']?['category'] as String? ?? '';
     final maxScore = record['activity']?['maxscore'];
     int maxScoreInt = 0;
@@ -86,8 +89,10 @@ class PlayingResultDetailScreen extends StatelessWidget {
     }
 
     final diary = evidence?['description'] as String? ?? '';
-    final imagePath = evidence?['imagePathLocal'] as String?;
-    final videoPath = evidence?['videoPathLocal'] as String?;
+    final imagePath =
+        (evidence?['imageUrl'] ?? evidence?['imagePathLocal']) as String?;
+    final videoPath =
+        (evidence?['videoUrl'] ?? evidence?['videoPathLocal']) as String?;
 
     // ตรวจสอบ category
     final isLanguageCategory = category == 'ด้านภาษา';
@@ -175,7 +180,8 @@ class PlayingResultDetailScreen extends StatelessWidget {
                         ),
                         child: Text(
                           maxScoreInt > 0 ? '$score/$maxScoreInt' : '$score',
-                          style: AppTextStyles.heading(24, color: Colors.black87),
+                          style:
+                              AppTextStyles.heading(24, color: Colors.black87),
                         ),
                       )
                     ],
@@ -243,25 +249,13 @@ class PlayingResultDetailScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       Container(
                         width: double.infinity,
-                        height: 100,
+                        height: 220,
                         decoration: BoxDecoration(
                           color: Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.videocam,
-                                  size: 40, color: Colors.grey),
-                              const SizedBox(height: 8),
-                              Text(
-                                loc.playingresult_videoAttached,
-                                style: AppTextStyles.body(14, color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: _EvidenceVideoPlayer(source: videoPath),
                       ),
                       const SizedBox(height: 25),
                     ],
@@ -341,6 +335,15 @@ class PlayingResultDetailScreen extends StatelessWidget {
 
   Widget _buildImageWidget(String? imagePath, AppLocalizations loc) {
     // ถ้ามี local path และไฟล์ยังอยู่
+    if (imagePath != null &&
+        imagePath.isNotEmpty &&
+        (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Image.network(ApiConfig.resolveAssetUrl(imagePath),
+            fit: BoxFit.cover, width: double.infinity, height: 200),
+      );
+    }
     if (imagePath != null && imagePath.isNotEmpty) {
       final file = File(imagePath);
       if (file.existsSync()) {
@@ -404,7 +407,8 @@ class PlayingResultDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLanguageSegmentItem(int number, Map<String, dynamic> segment, AppLocalizations loc) {
+  Widget _buildLanguageSegmentItem(
+      int number, Map<String, dynamic> segment, AppLocalizations loc) {
     final text = segment['text'] as String? ?? '';
     final recognizedText = segment['recognizedText'] as String? ?? '';
     final maxScoreRaw = segment['maxScore'];
@@ -492,9 +496,12 @@ class PlayingResultDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            recognizedText.isNotEmpty ? recognizedText : loc.playingresult_noData,
+            recognizedText.isNotEmpty
+                ? recognizedText
+                : loc.playingresult_noData,
             style: AppTextStyles.body(16,
-                color: recognizedText.isNotEmpty ? Colors.black87 : Colors.grey),
+                color:
+                    recognizedText.isNotEmpty ? Colors.black87 : Colors.grey),
           ),
         ],
       ),
@@ -554,8 +561,10 @@ class PlayingResultDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAnalysisQuestionItem(int number, Map<String, dynamic> segment, AppLocalizations loc) {
-    final text = segment['text'] as String? ?? loc.playingresult_questionFallback(number);
+  Widget _buildAnalysisQuestionItem(
+      int number, Map<String, dynamic> segment, AppLocalizations loc) {
+    final text = segment['text'] as String? ??
+        loc.playingresult_questionFallback(number);
     final maxScoreRaw = segment['maxScore'];
     int itemScore = 0;
     if (maxScoreRaw is int) {
@@ -628,4 +637,41 @@ class PlayingResultDetailScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+class _EvidenceVideoPlayer extends StatefulWidget {
+  final String source;
+  const _EvidenceVideoPlayer({required this.source});
+
+  @override
+  State<_EvidenceVideoPlayer> createState() => _EvidenceVideoPlayerState();
+}
+
+class _EvidenceVideoPlayerState extends State<_EvidenceVideoPlayer> {
+  late final Player _player;
+  late final VideoController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = Player();
+    _controller = VideoController(_player);
+    final source = widget.source.startsWith('http')
+        ? ApiConfig.resolveAssetUrl(widget.source)
+        : widget.source;
+    _player.open(Media(source), play: false);
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Video(
+        controller: _controller,
+        controls: MaterialVideoControls,
+        fit: BoxFit.contain,
+      );
 }

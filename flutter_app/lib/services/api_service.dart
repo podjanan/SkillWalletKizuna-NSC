@@ -197,8 +197,7 @@ class ApiService {
     // ลบ Content-Type ออก — multipart จะตั้งค่า boundary เอง
     headers.remove('Content-Type');
 
-    final request =
-        http.MultipartRequest('POST', Uri.parse('$_baseUrl$path'));
+    final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl$path'));
     request.headers.addAll(headers);
     request.files.add(http.MultipartFile.fromBytes(
       fieldName,
@@ -207,7 +206,7 @@ class ApiService {
       contentType: MediaType.parse(contentType),
     ));
 
-    final streamed = await request.send().timeout(const Duration(seconds: 30));
+    final streamed = await request.send().timeout(const Duration(minutes: 2));
     final response = await http.Response.fromStream(streamed);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {

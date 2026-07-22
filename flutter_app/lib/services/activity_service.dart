@@ -333,6 +333,49 @@ class ActivityService {
   }
 
   /// 4.2 คำนวณคะแนนรวมและส่ง Payload ไปบันทึกใน CMS
+  Future<Map<String, dynamic>?> _uploadEvidenceMedia(
+      Map<String, dynamic>? evidence) async {
+    if (evidence == null) return null;
+    final result = Map<String, dynamic>.from(evidence);
+    if (kIsWeb) return result;
+
+    for (final entry in const [
+      ('imagePathLocal', 'imageUrl', 'image'),
+      ('videoPathLocal', 'videoUrl', 'video'),
+    ]) {
+      final path = result[entry.$1]?.toString();
+      if (path == null || path.isEmpty) continue;
+      final file = File(path);
+      if (!await file.exists()) continue;
+
+      final extension = path.split('.').last.toLowerCase().split('?').first;
+      final contentType = entry.$3 == 'video'
+          ? ({
+                'mov': 'video/quicktime',
+                'webm': 'video/webm',
+                'm4v': 'video/x-m4v'
+              }[extension] ??
+              'video/mp4')
+          : ({
+                'png': 'image/png',
+                'webp': 'image/webp',
+                'heic': 'image/heic',
+                'heif': 'image/heif'
+              }[extension] ??
+              'image/jpeg');
+      final uploaded = await _apiService.postMultipart(
+        '/evidence-media',
+        bytes: await file.readAsBytes(),
+        fieldName: 'file',
+        filename: 'evidence.$extension',
+        contentType: contentType,
+      );
+      result[entry.$2] = uploaded['url'];
+      result.remove(entry.$1);
+    }
+    return result;
+  }
+
   Future<Map<String, dynamic>> finalizeQuest({
     required String childId,
     required String activityId,
@@ -384,13 +427,14 @@ class ActivityService {
     print('  - evidence: $evidence');
 
     // 3. สร้าง Payload
+    final uploadedEvidence = await _uploadEvidenceMedia(evidence);
     final payload = {
       'childId': childId,
       'activityId': activityId,
       'totalScoreEarned': finalScore,
       'timeSpent': timeSpent,
       'segmentResults': segmentResults.map((r) => r.toJson()).toList(),
-      'evidence': evidence,
+      'evidence': uploadedEvidence,
       'parentScore': parentScore,
     };
     print('📦 Payload to Backend: $payload');
@@ -415,6 +459,7 @@ class ActivityService {
     int? timeSpent,
     Map<String, dynamic>? customEvidence,
   }) async {
+    final uploadedEvidence = await _uploadEvidenceMedia(customEvidence);
     final payload = {
       'childId': childId,
       'totalScoreEarned': totalScoreEarned,
@@ -426,7 +471,7 @@ class ActivityService {
       'evidence': {
         'wordCount': segmentResults.length,
         'correctCount': segmentResults.where((r) => r.maxScore > 0).length,
-        if (customEvidence != null) ...customEvidence,
+        if (uploadedEvidence != null) ...uploadedEvidence,
       },
     };
 
@@ -450,7 +495,8 @@ class ActivityService {
       'questions': questions,
       if (mimeType != null) 'mimeType': mimeType,
     };
-    return _apiService.post('/activities/verify-handwriting', payload, timeout: const Duration(seconds: 60));
+    return _apiService.post('/activities/verify-handwriting', payload,
+        timeout: const Duration(seconds: 60));
   }
 
   Future<Map<String, dynamic>> generateMathImages({
@@ -459,7 +505,8 @@ class ActivityService {
     final payload = {
       'questions': questions,
     };
-    return _apiService.post('/activities/generate-math-images', payload, timeout: const Duration(seconds: 120));
+    return _apiService.post('/activities/generate-math-images', payload,
+        timeout: const Duration(seconds: 120));
   }
 
   Future<Map<String, dynamic>> createActivity({

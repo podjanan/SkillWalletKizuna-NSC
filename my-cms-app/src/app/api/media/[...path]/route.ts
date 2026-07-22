@@ -22,7 +22,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const sourceUrl = `${minioOrigin}/${objectPath}${request.nextUrl.search}`;
 
   try {
-    const source = await fetch(sourceUrl, { cache: 'no-store' });
+    const range = request.headers.get('range');
+    const source = await fetch(sourceUrl, {
+      cache: 'no-store',
+      headers: range ? { Range: range } : undefined,
+    });
     if (!source.ok || !source.body) {
       return NextResponse.json(
         { error: 'Media not found' },
@@ -41,8 +45,12 @@ export async function GET(request: NextRequest, context: RouteContext) {
     );
     const contentLength = source.headers.get('content-length');
     if (contentLength) headers.set('Content-Length', contentLength);
+    const contentRange = source.headers.get('content-range');
+    if (contentRange) headers.set('Content-Range', contentRange);
+    const acceptRanges = source.headers.get('accept-ranges');
+    if (acceptRanges) headers.set('Accept-Ranges', acceptRanges);
 
-    return new NextResponse(source.body, { status: 200, headers });
+    return new NextResponse(source.body, { status: source.status, headers });
   } catch (error) {
     console.error('Media proxy error:', error);
     return NextResponse.json({ error: 'Unable to load media' }, { status: 502 });
