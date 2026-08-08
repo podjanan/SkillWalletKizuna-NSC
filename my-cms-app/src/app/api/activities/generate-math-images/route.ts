@@ -45,7 +45,13 @@ export async function POST(request: NextRequest) {
 
       const generated = await createMathSimulationImage(questionText, question.equation);
       const key = `math-simulation/${crypto.randomUUID()}.png`;
-      const imageUrl = await uploadToMinio(key, new Uint8Array(generated.buffer), 'image/png');
+      let imageUrl = '';
+      try {
+        imageUrl = await uploadToMinio(key, new Uint8Array(generated.buffer), 'image/png');
+      } catch (err) {
+        console.warn('uploadToMinio failed, falling back to data URL:', err);
+        imageUrl = `data:image/png;base64,${generated.buffer.toString('base64')}`;
+      }
 
       segments.push({
         ...question,

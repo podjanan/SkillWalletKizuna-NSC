@@ -170,6 +170,25 @@ services:
       db:
         condition: service_healthy
 
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+      args:
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+        DATABASE_URL: ${DATABASE_URL}
+        DIRECT_URL: ${DIRECT_URL}
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://skillwallet_user:super_secret@db:5432/skillwallet
+      - DIRECT_URL=postgresql://skillwallet_user:super_secret@db:5432/skillwallet
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
   app:
     container_name: swk-cms
     build:
@@ -210,6 +229,8 @@ services:
         condition: service_healthy
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       yolo-detector:
         condition: service_healthy
       ollama:

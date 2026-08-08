@@ -30,25 +30,25 @@ export function fallbackQuestion(equation: ParsedEquation) {
   const { left, right, operator } = equation;
   if (operator === '+') {
     return {
-      question: `น้องมีแอปเปิ้ล ${left} ลูก และได้รับเพิ่มอีก ${right} ลูก ตอนนี้น้องมีแอปเปิ้ลทั้งหมดกี่ลูก?`,
-      hint: `นำจำนวนแอปเปิ้ลเดิม ${left} มาบวกกับจำนวนที่ได้รับเพิ่ม ${right}`,
+      question: `มีขนม ${left} ชิ้น แม่ให้อีก ${right} ชิ้น รวมมีขนมกี่ชิ้น?`,
+      hint: `นำ ${left} มาบวกกับ ${right}`,
     };
   }
   if (operator === '-') {
     return {
-      question: `น้องมีแอปเปิ้ล ${left} ลูก กินไป ${right} ลูก น้องจะเหลือแอปเปิ้ลกี่ลูก?`,
-      hint: `นำจำนวนแอปเปิ้ลที่กินไป ${right} ออกจากจำนวนเดิม ${left}`,
+      question: `มีแอปเปิ้ล ${left} ลูก กินไป ${right} ลูก เหลือแอปเปิ้ลกี่ลูก?`,
+      hint: `นำ ${left} ลบด้วย ${right}`,
     };
   }
   if (operator === '*') {
     return {
-      question: `มีตะกร้า ${left} ใบ แต่ละใบมีส้ม ${right} ลูก ในตะกร้าทั้งหมดมีส้มกี่ลูก?`,
-      hint: `นำจำนวนตะกร้า ${left} คูณกับจำนวนส้มในแต่ละตะกร้า ${right}`,
+      question: `มีจาน ${left} ใบ แต่ละใบมีส้ม ${right} ลูก รวมมีส้มกี่ลูก?`,
+      hint: `นำ ${left} คูณด้วย ${right}`,
     };
   }
   return {
-    question: `มีส้ม ${left} ลูก แบ่งให้เพื่อน ${right} คนเท่า ๆ กัน เพื่อนแต่ละคนจะได้ส้มกี่ลูก?`,
-    hint: `นำจำนวนส้มทั้งหมด ${left} หารด้วยจำนวนเพื่อน ${right}`,
+    question: `มีส้ม ${left} ลูก แบ่งให้เพื่อน ${right} คน เท่าๆ กัน จะได้คนละกี่ลูก?`,
+    hint: `นำ ${left} หารด้วย ${right}`,
   };
 }
 

@@ -12,6 +12,18 @@ RUN npm ci
 
 
 # ============================================
+# Migration runner
+# ============================================
+# Uses the dependency layer only, so migrations do not need a Next.js build.
+FROM deps AS migrator
+
+# Keep the auth modules available for the optional admin seed command.
+COPY src/lib ./src/lib
+
+CMD ["npx", "prisma", "migrate", "deploy"]
+
+
+# ============================================
 # Stage 2: Build the Next.js application
 # ============================================
 FROM node:20-slim AS builder

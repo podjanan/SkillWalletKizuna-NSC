@@ -36,8 +36,8 @@ loadEnv()
 import { auth } from '../src/lib/auth'
 const prisma = new PrismaClient()
 
-const ADMIN_EMAIL = 'admin@swk.local'
-const ADMIN_PASSWORD = 'SwkAdmin2026!'
+const ADMIN_EMAIL = 'podjanan123@gmail.com'
+const ADMIN_PASSWORD = 'podjanan123'
 const ADMIN_NAME = 'SWK Admin'
 
 async function main() {

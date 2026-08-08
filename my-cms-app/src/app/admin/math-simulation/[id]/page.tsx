@@ -458,6 +458,15 @@ export default function EditMathSimulationPage() {
                       <p className="body-xs-regular text-secondary--text">
                         ภาพประกอบเด็กเรียนรู้วิเคราะห์คณิตวาดโดย AI ตามโจทย์เลขข้อนี้
                       </p>
+                      {q.imageProvider && (
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          q.imageProvider.includes('gemini') ? 'bg-blue-100 text-blue-700' :
+                          q.imageProvider.includes('pollinations') ? 'bg-green-100 text-green-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          🤖 Provider: {q.imageProvider}
+                        </span>
+                      )}
                       {q.imageUrl && (
                         <button
                           type="button"

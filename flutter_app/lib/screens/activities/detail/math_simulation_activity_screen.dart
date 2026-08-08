@@ -74,9 +74,16 @@ class _MathSimulationActivityScreenState
   final Map<int, bool?> _answerStatus = {};
   final Map<int, TextEditingController> _answerControllers = {};
 
+  // Per-Question Photo & OCR Scanning State
+  final Map<int, String?> _questionImagePaths = {};
+  final Map<int, Uint8List?> _questionImageBytes = {};
+  final Map<int, bool> _isScanningQuestion = {};
+  final Map<int, String?> _questionOcrEngine = {};
+
   bool _isSubmitting = false;
   bool _isTvMode = false;
   int _totalScoreEarned = 0;
+
 
   @override
   void initState() {
@@ -254,6 +261,17 @@ class _MathSimulationActivityScreenState
         final idx = int.tryParse(k);
         if (idx != null && _answerControllers[idx] != null) {
           _answerControllers[idx]!.text = v?.toString() ?? '';
+          if (_segmentResults[idx].recognizedText == null || _segmentResults[idx].recognizedText!.isEmpty) {
+            _segmentResults[idx] = _segmentResults[idx].copyWith(recognizedText: v?.toString() ?? '');
+          }
+        }
+      });
+
+      final qImages = data['questionImagePaths'] as Map<String, dynamic>? ?? {};
+      qImages.forEach((k, v) {
+        final idx = int.tryParse(k);
+        if (idx != null && v != null) {
+          _questionImagePaths[idx] = v.toString();
         }
       });
     });
@@ -270,6 +288,10 @@ class _MathSimulationActivityScreenState
     _answerStatus.forEach((k, v) => answers['$k'] = v);
     final typedAnswers = <String, String>{};
     _answerControllers.forEach((k, v) => typedAnswers['$k'] = v.text);
+    final qImages = <String, String>{};
+    _questionImagePaths.forEach((k, v) {
+      if (v != null) qImages['$k'] = v;
+    });
 
     await DraftService.saveDraft(
       childId: childId,
@@ -286,6 +308,7 @@ class _MathSimulationActivityScreenState
         'scores': scores,
         'answerStatus': answers,
         'typedAnswers': typedAnswers,
+        'questionImagePaths': qImages,
       },
     );
   }
@@ -325,6 +348,126 @@ class _MathSimulationActivityScreenState
   }
 
   // ── Handwriting OCR Scanning Pipeline ────────────────────
+
+  Future<void> _scanSingleQuestion(int index) async {
+    final picker = ImagePicker();
+    try {
+      final source = await _showSourceDialog();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+      if (pickedFile == null) return;
+
+      final bytes = await pickedFile.readAsBytes();
+
+      setState(() {
+        _questionImagePaths[index] = pickedFile.path;
+        _questionImageBytes[index] = bytes;
+        _isScanningQuestion[index] = true;
+      });
+
+      final base64Image = base64Encode(bytes);
+      final lowerPath = pickedFile.path.toLowerCase();
+      final imageMimeType = pickedFile.mimeType ??
+          (lowerPath.endsWith('.png')
+              ? 'image/png'
+              : lowerPath.endsWith('.webp')
+                  ? 'image/webp'
+                  : 'image/jpeg');
+
+      final segment = _segments[index];
+      final targetQuestion = [
+        {
+          'id': index + 1,
+          'questionIndex': index + 1,
+          'question': MathOpDetector.normalizeQuestion(
+            segment['question']?.toString() ?? segment['text']?.toString() ?? '',
+          ),
+          'answer': segment['answer']?.toString() ?? '',
+        }
+      ];
+
+      final response = await _activityService.verifyHandwriting(
+        base64Image: base64Image,
+        questions: targetQuestion,
+        mimeType: imageMimeType,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isScanningQuestion[index] = false;
+        });
+      }
+
+      if (response['results'] != null &&
+          (response['results'] as List).isNotEmpty) {
+        final item = (response['results'] as List).first;
+        final detectedText =
+            item['detectedText']?.toString() ?? item['detectedAnswer']?.toString() ?? '';
+        final isCorrect = item['isCorrect'] as bool? ?? false;
+        final engine = response['engine']?.toString() ?? 'Gemini Vision AI';
+
+        if (mounted) {
+          setState(() {
+            _segmentResults[index] = _segmentResults[index].copyWith(
+              recognizedText: detectedText,
+              maxScore: isCorrect ? (_originalScores[index] ?? 10) : 0,
+            );
+            _answerStatus[index] = isCorrect;
+            _questionOcrEngine[index] = engine;
+            if (_answerControllers[index] != null) {
+              _answerControllers[index]!.text = detectedText;
+            }
+          });
+
+          await _saveDraft();
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(
+                      isCorrect ? Icons.check_circle : Icons.info_outline,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isCorrect
+                            ? 'ตรวจข้อ ${index + 1}: อ่านได้ "$detectedText" (ถูกต้อง ✓)'
+                            : 'ตรวจข้อ ${index + 1}: อ่านได้ "$detectedText" (ไม่ตรงกับเฉลย)',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: isCorrect ? Palette.success : Palette.pink,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      } else {
+        throw Exception('ไม่พบผลการอ่านจากภาพ');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isScanningQuestion[index] = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาดในการสแกนข้อ ${index + 1}: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _scanAnswerSheet() async {
     final picker = ImagePicker();
@@ -1097,26 +1240,44 @@ class _MathSimulationActivityScreenState
     );
     final imageUrl =
         ApiConfig.resolveAssetUrl(segment['imageUrl']?.toString() ?? '');
+
     return Column(
       children: [
-        // Top indicators bar
+        // Top indicators bar (interactive dots)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Row(
             children: List.generate(totalQuestions, (index) {
               final isActive = index == _currentQuestionIndex;
-              final isCompleted = index < _currentQuestionIndex;
+              final status = _answerStatus[index];
+              final Color color = isActive
+                  ? Palette.sky
+                  : status == true
+                      ? Palette.success
+                      : status == false
+                          ? Palette.pink
+                          : Colors.grey.shade300;
+
               return Expanded(
-                child: Container(
-                  height: 6,
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? Palette.sky
-                        : isCompleted
-                            ? Palette.success
-                            : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(3),
+                child: InkWell(
+                  onTap: () => setState(() => _currentQuestionIndex = index),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    height: isActive ? 8 : 6,
+                    margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: isActive
+                          ? [
+                              BoxShadow(
+                                color: Palette.sky.withValues(alpha: 0.4),
+                                blurRadius: 4,
+                                spreadRadius: 1,
+                              )
+                            ]
+                          : [],
+                    ),
                   ),
                 ),
               );
@@ -1124,7 +1285,7 @@ class _MathSimulationActivityScreenState
           ),
         ),
 
-        // Timer Pill & Counter
+        // Timer Pill & Question Counter
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
           child: Row(
@@ -1160,70 +1321,77 @@ class _MathSimulationActivityScreenState
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24)),
-              elevation: 4,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Situation Image
-                  if (imageUrl.isNotEmpty)
-                    ClipRRect(
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(24)),
-                      child: AspectRatio(
-                        // Crop the duplicate question banner from images
-                        // generated before the banner was removed.
-                        aspectRatio: 2.1,
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          alignment: Alignment.bottomCenter,
-                          errorBuilder: (ctx, err, stack) => Container(
-                            color: Colors.grey.shade100,
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.broken_image,
-                                size: 50, color: Colors.grey),
+            child: Column(
+              children: [
+                Card(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24)),
+                  elevation: 4,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Situation Image
+                      if (imageUrl.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(24)),
+                          child: AspectRatio(
+                            aspectRatio: 2.1,
+                            child: Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.bottomCenter,
+                              errorBuilder: (ctx, err, stack) => Container(
+                                color: Colors.grey.shade100,
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.broken_image,
+                                    size: 50, color: Colors.grey),
+                              ),
+                            ),
                           ),
+                        )
+                      else
+                        Container(
+                          height: 180,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(24)),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(Icons.image,
+                              size: 60, color: Colors.grey.shade400),
                         ),
-                      ),
-                    )
-                  else
-                    Container(
-                      height: 180,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(24)),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(Icons.image,
-                          size: 60, color: Colors.grey.shade400),
-                    ),
 
-                  // Proposition Text box
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'สถานการณ์ปัญหาวิเคราะห์ (PROPOSITION)',
-                          style: AppTextStyles.heading(14,
-                              color: Colors.amber.shade800),
+                      // Proposition Text box
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'สถานการณ์ปัญหาวิเคราะห์ (PROPOSITION)',
+                              style: AppTextStyles.heading(14,
+                                  color: Colors.amber.shade800),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              questionText,
+                              style: AppTextStyles.body(17,
+                                  weight: FontWeight.w600),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          questionText,
-                          style:
-                              AppTextStyles.body(17, weight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Question-by-Question OCR Camera & Evaluation Card
+                _buildQuestionOcrCard(_currentQuestionIndex, segment),
+              ],
             ),
           ),
         ),
@@ -1235,74 +1403,6 @@ class _MathSimulationActivityScreenState
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Scan Answer / Manual Check Button (Only on the last question)
-                if (_currentQuestionIndex == totalQuestions - 1) ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Palette.sky.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.task_alt_rounded,
-                            color: Palette.sky, size: 22),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'ทำครบทุกข้อแล้ว เลือกวิธีตรวจคำตอบ',
-                            style: AppTextStyles.body(14,
-                                color: Palette.sky, weight: FontWeight.w600),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: _scanAnswerSheet,
-                      icon: const Icon(Icons.camera_alt, color: Colors.white),
-                      label: const Text('สแกนกระดาษคำตอบ',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B5E20), // Dark green
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                        elevation: 2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton.icon(
-                      onPressed: _openManualReview,
-                      icon: Icon(Icons.fact_check_outlined, color: Palette.sky),
-                      label: Text(
-                        'ตรวจด้วยตนเอง',
-                        style: AppTextStyles.heading(15, color: Palette.sky),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Palette.sky, width: 1.5),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                // Prev / Next actions
                 Row(
                   children: [
                     if (_currentQuestionIndex > 0)
@@ -1313,7 +1413,7 @@ class _MathSimulationActivityScreenState
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: Palette.sky, width: 1.5),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                                borderRadius: BorderRadius.circular(14)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: Text(l.math_simulation_prevBtn,
@@ -1321,27 +1421,37 @@ class _MathSimulationActivityScreenState
                                   color: Palette.sky)),
                         ),
                       ),
-                    if (_currentQuestionIndex > 0 &&
-                        _currentQuestionIndex < totalQuestions - 1)
-                      const SizedBox(width: 12),
-                    if (_currentQuestionIndex < totalQuestions - 1)
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () =>
-                              setState(() => _currentQuestionIndex++),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Palette.sky,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: Text(l.math_simulation_nextBtn,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold)),
+                    if (_currentQuestionIndex > 0) const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_currentQuestionIndex < totalQuestions - 1) {
+                            setState(() => _currentQuestionIndex++);
+                          } else {
+                            // On last question, open overall review summary
+                            setState(() => _phase = _Phase.reviewing);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              _currentQuestionIndex == totalQuestions - 1
+                                  ? Palette.success
+                                  : Palette.sky,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Text(
+                          _currentQuestionIndex < totalQuestions - 1
+                              ? l.math_simulation_nextBtn
+                              : 'ตรวจสรุปผลทั้งหมด',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
+                    ),
                   ],
                 ),
               ],
@@ -1349,6 +1459,270 @@ class _MathSimulationActivityScreenState
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildQuestionOcrCard(int index, dynamic segment) {
+    final status = _answerStatus[index];
+    final isScanning = _isScanningQuestion[index] == true;
+    final recognizedText = _segmentResults[index].recognizedText ?? '';
+    final hasImage = _questionImageBytes[index] != null ||
+        (_questionImagePaths[index] != null && !kIsWeb);
+
+    final Color cardBorderColor = isScanning
+        ? Palette.sky
+        : status == true
+            ? Palette.success
+            : status == false
+                ? Palette.pink
+                : Colors.grey.shade300;
+
+    final Color badgeBg = status == true
+        ? Palette.success.withValues(alpha: 0.1)
+        : status == false
+            ? Palette.pink.withValues(alpha: 0.1)
+            : Palette.sky.withValues(alpha: 0.08);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cardBorderColor, width: 1.5),
+        boxShadow: Palette.cardShadow,
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  isScanning
+                      ? Icons.sync
+                      : status == true
+                          ? Icons.check_circle_rounded
+                          : status == false
+                              ? Icons.cancel_rounded
+                              : Icons.camera_alt_outlined,
+                  color: status == true
+                      ? Palette.success
+                      : status == false
+                          ? Palette.pink
+                          : Palette.sky,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ตรวจคำตอบด้วยกล้องถ่ายรูป (ข้อที่ ${index + 1})',
+                      style: AppTextStyles.heading(15, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isScanning
+                          ? 'กำลังอ่านลายมือจากภาพถ่าย...'
+                          : status == true
+                              ? 'อ่านได้ "$recognizedText" (ถูกต้อง ✓)'
+                              : status == false
+                                  ? 'อ่านได้ "$recognizedText" (ไม่ตรงเฉลย)'
+                                  : 'ถ่ายรูปเขียนมือเฉพาะข้อนี้เพื่อตรวจทันที',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: status == true
+                            ? Palette.success
+                            : status == false
+                                ? Palette.pink
+                                : Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          if (hasImage) ...[
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                height: 120,
+                width: double.infinity,
+                color: Colors.grey.shade100,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    _questionImageBytes[index] != null
+                        ? Image.memory(_questionImageBytes[index]!,
+                            fit: BoxFit.cover, width: double.infinity)
+                        : Image.file(File(_questionImagePaths[index]!),
+                            fit: BoxFit.cover, width: double.infinity),
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.photo_camera,
+                                color: Colors.white, size: 14),
+                            SizedBox(width: 4),
+                            Text('ภาพข้อนี้',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 14),
+
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: isScanning ? null : () => _scanSingleQuestion(index),
+              icon: isScanning
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2.5),
+                    )
+                  : Icon(
+                      hasImage ? Icons.camera_alt_rounded : Icons.photo_camera_rounded,
+                      color: Colors.white),
+              label: Text(
+                isScanning
+                    ? 'กำลังอ่านลายมือด้วย AI...'
+                    : hasImage
+                        ? 'ถ่ายรูปตรวจข้อนี้ใหม่'
+                        : 'ถ่ายรูป / สแกนตรวจข้อนี้',
+                style: AppTextStyles.heading(15, color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: status == true
+                    ? Palette.success
+                    : Palette.sky,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                elevation: 2,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _showEditOcrDialog(index),
+                  icon: Icon(Icons.edit, color: Palette.sky, size: 18),
+                  label: Text('แก้ไขตัวเลข',
+                      style: AppTextStyles.body(13, color: Palette.sky)),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Palette.sky.withValues(alpha: 0.6)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () => setState(() {
+                  _answerStatus[index] = true;
+                  _segmentResults[index] = _segmentResults[index]
+                      .copyWith(maxScore: _originalScores[index] ?? 10);
+                  _saveDraft();
+                }),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: status == true
+                        ? Palette.success
+                        : Palette.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check,
+                          size: 16,
+                          color: status == true ? Colors.white : Palette.success),
+                      const SizedBox(width: 4),
+                      Text('ถูก',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: status == true
+                                  ? Colors.white
+                                  : Palette.success)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              InkWell(
+                onTap: () => setState(() {
+                  _answerStatus[index] = false;
+                  _segmentResults[index] =
+                      _segmentResults[index].copyWith(maxScore: 0);
+                  _saveDraft();
+                }),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: status == false
+                        ? Palette.pink
+                        : Palette.pink.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.close,
+                          size: 16,
+                          color: status == false ? Colors.white : Palette.pink),
+                      const SizedBox(width: 4),
+                      Text('ผิด',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: status == false
+                                  ? Colors.white
+                                  : Palette.pink)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
