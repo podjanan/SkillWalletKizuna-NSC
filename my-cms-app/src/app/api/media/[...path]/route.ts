@@ -35,9 +35,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     const headers = new Headers();
+    headers.set('Access-Control-Allow-Origin', '*');
+    headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     headers.set(
       'Content-Type',
-      source.headers.get('content-type') ?? 'application/octet-stream',
+      source.headers.get('content-type') ?? 'audio/mpeg',
     );
     headers.set(
       'Cache-Control',

@@ -99,6 +99,12 @@ class ActivityCard extends StatelessWidget {
           activity.content == 'space-adventure') {
         Navigator.pushNamed(context, AppRoutes.spaceAdventure,
             arguments: activity);
+      } else if (activity.id == 'bilingual-songs' ||
+          activity.id == 'bilingual_songs' ||
+          activity.content == 'Bilingual Songs' ||
+          activity.content == 'bilingual_songs' ||
+          activity.content == 'bilingual-songs') {
+        Navigator.pushNamed(context, AppRoutes.bilingualSongs);
       } else if (category == 'ด้านภาษา' || category == 'LANGUAGE') {
         Navigator.pushNamed(context, AppRoutes.languageDetail,
             arguments: activity);

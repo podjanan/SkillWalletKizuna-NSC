@@ -200,6 +200,8 @@ services:
       - OBJECT_DETECTION_MIN_CONFIDENCE=${OBJECT_DETECTION_MIN_CONFIDENCE:-0.18}
       - OBJECT_DETECTION_MAX_OBJECTS=${OBJECT_DETECTION_MAX_OBJECTS:-20}
       - OBJECT_DETECTION_TIMEOUT_MS=${OBJECT_DETECTION_TIMEOUT_MS:-20000}
+      - SUNO_API_KEY=${SUNO_API_KEY:-}
+      - SUNO_API_URL=${SUNO_API_URL:-https://api.goapi.ai/suno/v1/music}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

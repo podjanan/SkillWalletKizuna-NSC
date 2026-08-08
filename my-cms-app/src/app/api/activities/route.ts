@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import {
   shouldInjectAiWordActivity,
+  shouldInjectBilingualSongs,
   shouldInjectSpaceAdventure,
 } from '@/lib/ai-word-game';
 
@@ -184,6 +185,10 @@ export async function GET(request: Request) {
     }
     if (!contentFilter || contentFilter === 'space_adventure') {
       const v = await shouldInjectSpaceAdventure(category, ownedBy);
+      if (v) virtualActivities.push(v);
+    }
+    if (!contentFilter || contentFilter === 'bilingual_songs') {
+      const v = await shouldInjectBilingualSongs(category, ownedBy);
       if (v) virtualActivities.push(v);
     }
 

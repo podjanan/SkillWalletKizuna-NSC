@@ -68,11 +68,14 @@ class AuthService {
 
   /// Email + password sign-in
   Future<User> signInWithEmail(String email, String password) async {
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanPassword = password.trim();
+
     final response = await http
         .post(
           Uri.parse('$_authUrl/sign-in/email'),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'email': email, 'password': password}),
+          body: jsonEncode({'email': cleanEmail, 'password': cleanPassword}),
         )
         .timeout(const Duration(seconds: 15));
 
@@ -90,11 +93,14 @@ class AuthService {
   /// Email + password sign-up
   Future<User> signUpWithEmail(
       String email, String password, String name) async {
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanPassword = password.trim();
+
     final response = await http
         .post(
           Uri.parse('$_authUrl/sign-up/email'),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({'email': email, 'password': password, 'name': name}),
+          body: jsonEncode({'email': cleanEmail, 'password': cleanPassword, 'name': name}),
         )
         .timeout(const Duration(seconds: 15));
 

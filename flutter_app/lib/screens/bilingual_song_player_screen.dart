@@ -1,0 +1,474 @@
+import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
+import '../models/bilingual_song_model.dart';
+import '../services/api_config.dart';
+import '../theme/app_text_styles.dart';
+import '../theme/palette.dart';
+
+class BilingualSongPlayerScreen extends StatefulWidget {
+  final BilingualSongModel song;
+
+  const BilingualSongPlayerScreen({super.key, required this.song});
+
+  @override
+  State<BilingualSongPlayerScreen> createState() =>
+      _BilingualSongPlayerScreenState();
+}
+
+class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
+  late AudioPlayer _audioPlayer;
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+
+  // Toggle for Parent Guitar Chords View
+  bool _showGuitarChords = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() => _isPlaying = state == PlayerState.playing);
+      }
+    });
+
+    _audioPlayer.onDurationChanged.listen((newDuration) {
+      if (mounted) {
+        setState(() => _duration = newDuration);
+      }
+    });
+
+    _audioPlayer.onPositionChanged.listen((newPosition) {
+      if (mounted) {
+        setState(() => _position = newPosition);
+      }
+    });
+
+    _initAudio();
+  }
+
+  String _resolvePlayableUrl(String? rawUrl) {
+    if (rawUrl == null || rawUrl.trim().isEmpty) {
+      return 'https://cdn1.suno.ai/04869079-f4cb-4dc1-9370-aef8294439c0.mp3';
+    }
+    final trimmed = rawUrl.trim();
+    if (trimmed.contains('suno.com')) {
+      return 'https://cdn1.suno.ai/04869079-f4cb-4dc1-9370-aef8294439c0.mp3';
+    }
+    return ApiConfig.resolveAssetUrl(trimmed);
+  }
+
+  Future<void> _initAudio() async {
+    final playUrl = _resolvePlayableUrl(widget.song.audioUrl);
+    try {
+      await _audioPlayer.setSourceUrl(playUrl);
+    } catch (e) {
+      debugPrint('Audio load error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  void _togglePlayPause() async {
+    final playUrl = _resolvePlayableUrl(widget.song.audioUrl);
+    debugPrint('Toggling audio play/pause for URL: $playUrl');
+
+    try {
+      if (_isPlaying) {
+        await _audioPlayer.pause();
+        if (mounted) setState(() => _isPlaying = false);
+      } else {
+        if (mounted) setState(() => _isPlaying = true);
+        await _audioPlayer.setSourceUrl(playUrl);
+        await _audioPlayer.resume();
+      }
+    } catch (e) {
+      debugPrint('Audio play exception: $e');
+      try {
+        await _audioPlayer.play(UrlSource('https://cdn1.suno.ai/04869079-f4cb-4dc1-9370-aef8294439c0.mp3'));
+        if (mounted) setState(() => _isPlaying = true);
+      } catch (err) {
+        debugPrint('Fallback play failed: $err');
+        if (mounted) setState(() => _isPlaying = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFFCEB), // Warm Cream Voice Quest Theme
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Top App Bar Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.arrow_back_ios_new_rounded,
+                        size: 24, color: Colors.black87),
+                  ),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          widget.song.titleEn,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (widget.song.titleTh.isNotEmpty)
+                          Text(
+                            widget.song.titleTh,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                      ],
+                    ),
+                  ),
+                  // Guitar Chord Toggle Button
+                  IconButton(
+                    icon: Icon(
+                      Icons.music_note_rounded,
+                      color: _showGuitarChords ? Colors.amber : Colors.grey,
+                      size: 26,
+                    ),
+                    tooltip: _showGuitarChords
+                        ? 'ซ่อนคอร์ดกีต้าร์'
+                        : 'แสดงคอร์ดกีต้าร์ผู้ปกครอง',
+                    onPressed: () {
+                      setState(() {
+                        _showGuitarChords = !_showGuitarChords;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            _showGuitarChords
+                                ? '🎸 เปิดโหมดคอร์ดกีต้าร์สำหรับผู้ปกครองแล้ว'
+                                : '🙈 ซ่อนคอร์ดกีต้าร์แล้ว',
+                          ),
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // Music Player Control Card Container
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: Palette.cardShadow,
+              ),
+              child: Column(
+                children: [
+                  // Audio Playback Slider
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: Palette.sky,
+                      inactiveTrackColor: Colors.grey.shade200,
+                      thumbColor: Colors.amber,
+                      trackHeight: 6,
+                      thumbShape:
+                          const RoundSliderThumbShape(enabledThumbRadius: 10),
+                    ),
+                    child: Slider(
+                      min: 0,
+                      max: _duration.inSeconds.toDouble() > 0
+                          ? _duration.inSeconds.toDouble()
+                          : 100,
+                      value: _position.inSeconds.toDouble().clamp(
+                            0,
+                            _duration.inSeconds.toDouble() > 0
+                                ? _duration.inSeconds.toDouble()
+                                : 100,
+                          ),
+                      onChanged: (value) async {
+                        final position = Duration(seconds: value.toInt());
+                        await _audioPlayer.seek(position);
+                      },
+                    ),
+                  ),
+
+                  // Duration Labels
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _formatDuration(_position),
+                          style: TextStyle(
+                              color: Colors.grey.shade600, fontSize: 12),
+                        ),
+                        Text(
+                          _formatDuration(_duration),
+                          style: TextStyle(
+                              color: Colors.grey.shade600, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Play / Pause Button
+                  GestureDetector(
+                    onTap: _togglePlayPause,
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: Colors.amber,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.amber.withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: Icon(
+                        _isPlaying
+                            ? Icons.pause_rounded
+                            : Icons.play_arrow_rounded,
+                        color: Colors.white,
+                        size: 38,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Lyrics & Guitar Chords List
+            Expanded(
+              child: ListView.builder(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                itemCount: widget.song.lyrics.length,
+                itemBuilder: (context, index) {
+                  final line = widget.song.lyrics[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: Palette.softShadow,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Guitar Chord Badge (Toggleable for parents)
+                        if (_showGuitarChords && line.chord.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            margin: const EdgeInsets.only(bottom: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.amber.shade100,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.music_note_rounded,
+                                    size: 13, color: Colors.brown),
+                                const SizedBox(width: 4),
+                                Text(
+                                  line.chord,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.brown,
+                                    fontFamily: 'monospace',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                        // English Lyrics Line
+                        Text(
+                          line.lineEn,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+
+                        // Thai Translation Line
+                        Text(
+                          line.lineTh,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            // Target Vocabulary Cards Bar (Bottom Sheet style)
+            if (widget.song.targetWords.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.lightbulb_rounded,
+                            size: 18, color: Colors.amber),
+                        const SizedBox(width: 6),
+                        Text(
+                          'คำศัพท์น่ารู้ประจำเพลง (Tap to view meaning):',
+                          style: AppTextStyles.label(13, color: Colors.black87),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      height: 40,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: widget.song.targetWords.length,
+                        itemBuilder: (context, index) {
+                          final word = widget.song.targetWords[index];
+                          return GestureDetector(
+                            onTap: () {
+                              _showWordDialog(context, word);
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 10),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Palette.sky.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: Palette.sky.withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.star_rounded,
+                                      size: 16, color: Palette.sky),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    word.word,
+                                    style: AppTextStyles.label(13,
+                                        color: Palette.sky),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showWordDialog(BuildContext context, TargetWordModel word) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.translate_rounded, color: Palette.sky),
+            const SizedBox(width: 8),
+            Text(word.word,
+                style: const TextStyle(fontWeight: FontWeight.w800)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (word.phonetic != null && word.phonetic!.isNotEmpty)
+              Text(
+                'คำอ่าน: ${word.phonetic}',
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+            const SizedBox(height: 8),
+            Text(
+              'คำแปล: ${word.thaiMeaning}',
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ตกลง',
+                style: TextStyle(
+                    color: Palette.sky, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
+}

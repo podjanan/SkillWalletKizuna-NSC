@@ -62,6 +62,7 @@ export async function proxy(req: NextRequest) {
     pathname.startsWith('/api/auth') ||
     pathname.startsWith('/api/media/') ||
     pathname.startsWith('/api/dynamic-vocabulary') ||
+    pathname.startsWith('/api/admin/bilingual-songs') ||
     pathname === '/api/activities/generate-math-question' ||
     pathname.startsWith('/_next') ||
     pathname === '/favicon.ico'

@@ -329,8 +329,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text;
+      final email = _emailController.text.trim().toLowerCase();
+      final password = _passwordController.text.trim();
 
       if (_mode == _AuthMode.login) {
         final user = await AuthService().signInWithEmail(email, password);

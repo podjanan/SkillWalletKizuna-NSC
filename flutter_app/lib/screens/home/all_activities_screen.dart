@@ -215,6 +215,15 @@ class _ActivityGridCard extends StatelessWidget {
         return;
       }
 
+      if (activity.id == 'bilingual-songs' ||
+          activity.id == 'bilingual_songs' ||
+          activity.content == 'Bilingual Songs' ||
+          activity.content == 'bilingual_songs' ||
+          activity.content == 'bilingual-songs') {
+        Navigator.pushNamed(context, AppRoutes.bilingualSongs);
+        return;
+      }
+
       if (category == 'ด้านภาษา' || category == 'LANGUAGE') {
         Navigator.pushNamed(context, AppRoutes.languageDetail,
             arguments: activity);

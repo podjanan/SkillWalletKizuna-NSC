@@ -551,6 +551,40 @@ export async function shouldInjectSpaceAdventure(category: string | null, ownedB
   return buildVirtualSpaceAdventure();
 }
 
+export function buildVirtualBilingualSongs() {
+  return {
+    activityId: 'bilingual-songs',
+    nameActivity: 'Bilingual Songs & AI Guitar',
+    category: 'LANGUAGE',
+    descriptionActivity: 'เพลงเรียนรู้สองภาษา (ไทย-อังกฤษ) และคอร์ดกีต้าร์สำหรับผู้ปกครอง',
+    createdAt: new Date().toISOString(),
+    responses: 0,
+    id: 'bilingual-songs',
+    name: 'Bilingual Songs & AI Guitar',
+    difficulty: 'EASY',
+    maxScore: 100,
+    content: 'bilingual_songs',
+    description: 'เพลงเรียนรู้สองภาษา (ไทย-อังกฤษ) และคอร์ดกีต้าร์สำหรับผู้ปกครอง',
+    videoUrl: '',
+    thumbnailUrl: '/bilingual-songs-cover.png',
+    tiktokHtmlContent: '',
+    segments: null,
+    playCount: 95,
+    parentId: null,
+    isPublic: true,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export async function shouldInjectBilingualSongs(category: string | null, ownedBy: string | null) {
+  if (ownedBy) return null;
+  const normalized = (category || '').trim().toUpperCase();
+  if (normalized && normalized !== 'ALL' && normalized !== 'LANGUAGE' && category !== 'ด้านภาษา') {
+    return null;
+  }
+  return buildVirtualBilingualSongs();
+}
+
 export async function ensureSpaceAdventureSettings() {
   await prisma.$executeRaw`
     CREATE TABLE IF NOT EXISTS "GameSetting" (

@@ -589,6 +589,15 @@ class _HomeScreenState extends State<HomeScreen> {
           return;
         }
 
+        if (activity.id == 'bilingual-songs' ||
+            activity.id == 'bilingual_songs' ||
+            activity.content == 'Bilingual Songs' ||
+            activity.content == 'bilingual_songs' ||
+            activity.content == 'bilingual-songs') {
+          Navigator.pushNamed(context, AppRoutes.bilingualSongs);
+          return;
+        }
+
         String routeName;
         if (category == 'ด้านภาษา' || category == 'LANGUAGE') {
           routeName = AppRoutes.languageDetail;

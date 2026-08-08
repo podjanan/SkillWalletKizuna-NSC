@@ -28,6 +28,7 @@ import '../screens/activities/detail/math_simulation_activity_screen.dart';
 // --- Child Management Screens ---
 import '../screens/child/child_setting_screen.dart';
 import '../screens/child/add_child_screen.dart';
+import '../screens/bilingual_songs_screen.dart';
 
 class AppRoutes {
   // --- Core Routes ---
@@ -46,6 +47,7 @@ class AppRoutes {
   static const String result = '/result';
   static const String dynamicVocabularyGame = '/dynamic-vocabulary-game';
   static const String spaceAdventure = '/space-adventure';
+  static const String bilingualSongs = '/bilingual-songs';
 
   static const String videoDetail = '/video-detail';
   static const String languageDetail = '/language-detail';
@@ -135,6 +137,7 @@ class AppRoutes {
 
         // Space Adventure Game
         spaceAdventure: (_) => const SpaceAdventureScanScreen(),
+        bilingualSongs: (_) => const BilingualSongsScreen(),
 
         // Result
         result: (_) => const ResultScreen(),
