@@ -1012,15 +1012,13 @@ class _MathSimulationActivityScreenState
                 ),
                 child: imageUrl.isNotEmpty
                     ? AspectRatio(
-                        // Older generated images contain a duplicate question
-                        // banner at the top. The wider TV viewport crops that
-                        // header and keeps only the visual counting scene.
-                        aspectRatio: 2.1,
+                        // Match the generated 1280x768 canvas so labels and
+                        // countable objects are never cropped.
+                        aspectRatio: 5 / 3,
                         child: Image.network(
                           imageUrl,
                           width: double.infinity,
-                          fit: BoxFit.cover,
-                          alignment: Alignment.bottomCenter,
+                          fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) =>
                               _buildTvImagePlaceholder(),
                         ),
@@ -1336,11 +1334,10 @@ class _MathSimulationActivityScreenState
                           borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(24)),
                           child: AspectRatio(
-                            aspectRatio: 2.1,
+                            aspectRatio: 5 / 3,
                             child: Image.network(
                               imageUrl,
-                              fit: BoxFit.cover,
-                              alignment: Alignment.bottomCenter,
+                              fit: BoxFit.contain,
                               errorBuilder: (ctx, err, stack) => Container(
                                 color: Colors.grey.shade100,
                                 alignment: Alignment.center,

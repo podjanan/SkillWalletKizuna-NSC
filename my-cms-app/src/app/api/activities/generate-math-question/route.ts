@@ -6,6 +6,7 @@ import {
   operatorDescription,
   parseEquation,
   questionMatchesEquation,
+  randomStoryItem,
 } from '@/lib/math-question';
 
 const corsHeaders = {
@@ -61,12 +62,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const fallback = fallbackQuestion(equation);
+    const storyItem = randomStoryItem(equation.operator);
+    const fallback = fallbackQuestion(equation, storyItem);
     const prompt = `คุณเป็นครูสอนภาษาไทยและคณิตศาสตร์เด็กเล็ก (อนุบาล - ประถมต้น)
 จงแต่งโจทย์ปัญหาคณิตศาสตร์ภาษาไทยที่ **สั้น กระชับ เป็นธรรมชาติ ไวยากรณ์และลักษณะนามถูกต้อง 100%** ให้ตรงกับสมการ ${equation.left} ${equation.operator} ${equation.right}
 
 บริบทกิจกรรม: ${activityTitle}
 ความหมาย: ${operatorDescription(equation.operator)}
+${storyItem ? `ชนิดสิ่งของที่ระบบสุ่มไว้: **${storyItem.name}** ต้องใช้คำนี้เท่านั้น ห้ามเปลี่ยนเป็นสิ่งของชนิดอื่น` : ''}
 
 ข้อกำหนดทางภาษาและลักษณะนาม (สำคัญมาก):
 - ต้องใช้ **ลักษณะนาม (Classifier Noun)** ให้ถูกต้องตามชนิดของสิ่งของหรือคำนามนั้นๆ อย่างเคร่งครัด เช่น:
@@ -97,7 +100,12 @@ export async function POST(request: NextRequest) {
           ? parsed.solution.trim()
           : '';
 
-      if (generatedQuestion && questionMatchesEquation(generatedQuestion, equation)) {
+      const usesSelectedItem = !storyItem || generatedQuestion.includes(storyItem.name);
+      const classifierCount = storyItem
+        ? generatedQuestion.split(storyItem.classifier).length - 1
+        : 0;
+      const usesCorrectClassifier = !storyItem || classifierCount >= 2;
+      if (generatedQuestion && usesSelectedItem && usesCorrectClassifier && questionMatchesEquation(generatedQuestion, equation)) {
         question = generatedQuestion;
         solution = generatedHint || fallback.hint;
         generationSource = 'ollama';

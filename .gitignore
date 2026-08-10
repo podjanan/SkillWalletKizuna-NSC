@@ -25,6 +25,9 @@ build/
 out/
 **/out/
 
+# Local image generation runtime and downloaded model weights
+my-cms-app/tmp/
+
 # Native/mobile generated files
 Pods/
 **/Pods/

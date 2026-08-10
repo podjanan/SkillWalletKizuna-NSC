@@ -442,7 +442,7 @@ export default function EditMathSimulationPage() {
                         <img
                           src={q.imageUrl}
                           alt={`Question ${q.id} illustration`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                         />
                       ) : (
                         <span className="body-xs-regular text-secondary--text text-center px-2">
@@ -453,10 +453,10 @@ export default function EditMathSimulationPage() {
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2">
                         <ImageIcon size={16} className="text-purple" />
-                        <h5 className="body-small-semibold text-dark">รูปภาพสถานการณ์จำลอง (AI Illustration)</h5>
+                        <h5 className="body-small-semibold text-dark">ภาพเล่าเรื่องคณิตศาสตร์ (Template + จัดวางจำนวนจริง)</h5>
                       </div>
                       <p className="body-xs-regular text-secondary--text">
-                        ภาพประกอบเด็กเรียนรู้วิเคราะห์คณิตวาดโดย AI ตามโจทย์เลขข้อนี้
+                        ใช้ภาพเทมเพลตสำเร็จรูป และจัดวางข้อความกับจำนวนวัตถุด้วยระบบเพื่อให้ตรงกับโจทย์
                       </p>
                       {q.imageProvider && (
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
@@ -464,7 +464,7 @@ export default function EditMathSimulationPage() {
                           q.imageProvider.includes('pollinations') ? 'bg-green-100 text-green-700' :
                           'bg-gray-100 text-gray-600'
                         }`}>
-                          🤖 Provider: {q.imageProvider}
+                          🖥️ Provider: {q.imageProvider}
                         </span>
                       )}
                       {q.imageUrl && (
@@ -474,7 +474,7 @@ export default function EditMathSimulationPage() {
                           className="flex items-center gap-1.5 px-3 py-1.5 border border-purple text-purple rounded-lg body-xs-medium hover:bg-purple--light5"
                         >
                           <RefreshCw size={12} id={`regenerate-loader-${index}`} className="animate-spin hidden" />
-                          สร้างรูปภาพใหม่ด้วย AI (Regenerate Image)
+                          สร้างภาพเล่าเรื่องใหม่ในเครื่อง
                         </button>
                       )}
                     </div>

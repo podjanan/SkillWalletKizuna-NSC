@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, CreateBucketCommand, HeadBucketCommand, PutBucketPolicyCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 
 const s3 = new S3Client({
   region: 'us-east-1', // MinIO requires a region value but ignores it
@@ -33,4 +33,18 @@ export async function uploadToMinio(
 
   // URL format: {PUBLIC_URL}/{bucket}/{key}?v={timestamp}
   return `${PUBLIC_URL}/${BUCKET}/${key}?v=${Date.now()}`;
+}
+
+/** Read an object through the server-side MinIO connection. */
+export async function getFromMinio(key: string): Promise<{
+  body: Uint8Array;
+  contentType: string;
+}> {
+  const object = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+  if (!object.Body) throw new Error(`MinIO object has no body: ${key}`);
+
+  return {
+    body: await object.Body.transformToByteArray(),
+    contentType: object.ContentType ?? 'application/octet-stream',
+  };
 }

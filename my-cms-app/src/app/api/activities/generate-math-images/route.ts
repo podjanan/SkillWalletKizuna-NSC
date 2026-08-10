@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { uploadToMinio } from '@/lib/minio';
+import { getFromMinio, uploadToMinio } from '@/lib/minio';
 import { createMathSimulationImage } from '@/lib/math-simulation-image';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key, x-requested-with',
   'Access-Control-Max-Age': '86400',
 };
@@ -22,6 +22,27 @@ type MathQuestion = {
 
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
+}
+
+export async function GET(request: NextRequest) {
+  const key = request.nextUrl.searchParams.get('key') ?? '';
+  if (!/^math-simulation\/[0-9a-f-]+\.png$/i.test(key)) {
+    return NextResponse.json({ error: 'Invalid math image key' }, { status: 400, headers: corsHeaders });
+  }
+
+  try {
+    const image = await getFromMinio(key);
+    return new NextResponse(Buffer.from(image.body), {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': image.contentType,
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      },
+    });
+  } catch (error) {
+    console.error('GET math simulation image error:', error);
+    return NextResponse.json({ error: 'Math image not found' }, { status: 404, headers: corsHeaders });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -47,7 +68,8 @@ export async function POST(request: NextRequest) {
       const key = `math-simulation/${crypto.randomUUID()}.png`;
       let imageUrl = '';
       try {
-        imageUrl = await uploadToMinio(key, new Uint8Array(generated.buffer), 'image/png');
+        await uploadToMinio(key, new Uint8Array(generated.buffer), 'image/png');
+        imageUrl = `/api/activities/generate-math-images?key=${encodeURIComponent(key)}`;
       } catch (err) {
         console.warn('uploadToMinio failed, falling back to data URL:', err);
         imageUrl = `data:image/png;base64,${generated.buffer.toString('base64')}`;

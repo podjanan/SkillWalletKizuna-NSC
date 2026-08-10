@@ -5,6 +5,32 @@ export type ParsedEquation = {
   answer: number;
 };
 
+export type MathStoryItem = {
+  name: string;
+  classifier: 'ชิ้น' | 'ลูก' | 'พวง';
+};
+
+const ADDITION_SNACKS: MathStoryItem[] = [
+  { name: 'โดนัท', classifier: 'ชิ้น' },
+  { name: 'คุกกี้', classifier: 'ชิ้น' },
+  { name: 'คัพเค้ก', classifier: 'ชิ้น' },
+  { name: 'ลูกอม', classifier: 'ชิ้น' },
+  { name: 'ขนมปัง', classifier: 'ชิ้น' },
+];
+
+const SUBTRACTION_FRUITS: MathStoryItem[] = [
+  { name: 'แอปเปิล', classifier: 'ลูก' },
+  { name: 'ส้ม', classifier: 'ลูก' },
+  { name: 'กล้วย', classifier: 'ลูก' },
+  { name: 'สตรอเบอร์รี่', classifier: 'ลูก' },
+  { name: 'องุ่น', classifier: 'พวง' },
+];
+
+export function randomStoryItem(operator: ParsedEquation['operator']): MathStoryItem | null {
+  const items = operator === '+' ? ADDITION_SNACKS : operator === '-' ? SUBTRACTION_FRUITS : null;
+  return items ? items[Math.floor(Math.random() * items.length)] : null;
+}
+
 export function parseEquation(value: string): ParsedEquation | null {
   const expression = value.split('=')[0].trim().replace(/[xX×]/g, '*').replace(/÷/g, '/');
   const match = expression.match(/^(-?\d+(?:\.\d+)?)\s*([+\-*/])\s*(-?\d+(?:\.\d+)?)$/);
@@ -26,17 +52,19 @@ export function parseEquation(value: string): ParsedEquation | null {
   return Number.isFinite(answer) ? { left, right, operator, answer } : null;
 }
 
-export function fallbackQuestion(equation: ParsedEquation) {
+export function fallbackQuestion(equation: ParsedEquation, storyItem = randomStoryItem(equation.operator)) {
   const { left, right, operator } = equation;
   if (operator === '+') {
+    const item = storyItem ?? ADDITION_SNACKS[0];
     return {
-      question: `มีขนม ${left} ชิ้น แม่ให้อีก ${right} ชิ้น รวมมีขนมกี่ชิ้น?`,
+      question: `มี${item.name} ${left} ${item.classifier} แม่ให้อีก ${right} ${item.classifier} รวมมี${item.name}กี่${item.classifier}?`,
       hint: `นำ ${left} มาบวกกับ ${right}`,
     };
   }
   if (operator === '-') {
+    const item = storyItem ?? SUBTRACTION_FRUITS[0];
     return {
-      question: `มีแอปเปิ้ล ${left} ลูก กินไป ${right} ลูก เหลือแอปเปิ้ลกี่ลูก?`,
+      question: `มี${item.name} ${left} ${item.classifier} กินไป ${right} ${item.classifier} เหลือ${item.name}กี่${item.classifier}?`,
       hint: `นำ ${left} ลบด้วย ${right}`,
     };
   }

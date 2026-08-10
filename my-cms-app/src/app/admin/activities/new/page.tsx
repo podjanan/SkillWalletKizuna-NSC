@@ -55,6 +55,7 @@ export default function NewActivityPage() {
   });
   const [videoId, setVideoId] = useState<string | null>(null);
   const [isResolvingUrl, setIsResolvingUrl] = useState(false);
+  const [tiktokResolveError, setTiktokResolveError] = useState<string | null>(null);
   const resolveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isFetching, setIsFetching] = useState(false);
@@ -129,6 +130,7 @@ export default function NewActivityPage() {
 
     if (name === 'videoUrl') {
       if (resolveTimerRef.current) clearTimeout(resolveTimerRef.current);
+      setTiktokResolveError(null);
       const { id, type } = extractVideoId(value);
       if (type === 'youtube' || (type === 'tiktok' && selectedCategory === 'ด้านร่างกาย')) {
         setVideoId(id);
@@ -150,9 +152,20 @@ export default function NewActivityPage() {
             if (res.ok) {
               const data = await res.json();
               const match = (data.html as string | undefined)?.match(/data-video-id="(\d+)"/);
-              if (match) setVideoId(match[1]);
+              if (match) {
+                setVideoId(match[1]);
+              } else {
+                setTiktokResolveError('ไม่พบรหัสวิดีโอจากลิงก์ TikTok นี้');
+              }
+            } else {
+              const data = await res.json().catch(() => null);
+              setTiktokResolveError(
+                data?.error || 'เชื่อมต่อ TikTok ไม่สำเร็จ กรุณาตรวจสอบเครือข่ายแล้วลองใหม่'
+              );
             }
-          } catch {}
+          } catch {
+            setTiktokResolveError('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ กรุณาตรวจสอบเครือข่ายแล้วลองใหม่');
+          }
           setIsResolvingUrl(false);
         }, 800);
       } else {
@@ -610,6 +623,11 @@ export default function NewActivityPage() {
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
                   </svg>
                   <span className="body-medium-regular">Resolving short URL...</span>
+                </div>
+              )}
+              {tiktokResolveError && !isResolvingUrl && (
+                <div className="mt-4 rounded-lg border border-red bg-red--light1 p-4 body-small-regular text-red">
+                  {tiktokResolveError}
                 </div>
               )}
               {videoId && !isResolvingUrl && (
