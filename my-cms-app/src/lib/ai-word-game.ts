@@ -554,13 +554,13 @@ export async function shouldInjectSpaceAdventure(category: string | null, ownedB
 export function buildVirtualBilingualSongs() {
   return {
     activityId: 'bilingual-songs',
-    nameActivity: 'Bilingual Songs & AI Guitar',
+    nameActivity: 'Sing Together & AI Guitar',
     category: 'LANGUAGE',
     descriptionActivity: 'เพลงเรียนรู้สองภาษา (ไทย-อังกฤษ) และคอร์ดกีต้าร์สำหรับผู้ปกครอง',
     createdAt: new Date().toISOString(),
     responses: 0,
     id: 'bilingual-songs',
-    name: 'Bilingual Songs & AI Guitar',
+    name: 'Sing Together & AI Guitar',
     difficulty: 'EASY',
     maxScore: 100,
     content: 'bilingual_songs',

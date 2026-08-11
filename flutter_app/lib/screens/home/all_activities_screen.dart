@@ -217,9 +217,15 @@ class _ActivityGridCard extends StatelessWidget {
 
       if (activity.id == 'bilingual-songs' ||
           activity.id == 'bilingual_songs' ||
+          activity.id == 'sing-together' ||
+          activity.id == 'sing_together' ||
+          activity.name == 'Sing Together' ||
+          activity.content == 'Sing Together' ||
           activity.content == 'Bilingual Songs' ||
           activity.content == 'bilingual_songs' ||
-          activity.content == 'bilingual-songs') {
+          activity.content == 'bilingual-songs' ||
+          activity.content == 'sing_together' ||
+          activity.content == 'sing-together') {
         Navigator.pushNamed(context, AppRoutes.bilingualSongs);
         return;
       }
@@ -302,6 +308,23 @@ class _ActivityGridCard extends StatelessWidget {
         activity.content == 'space-adventure') {
       return const GameActivityCover(
         type: GameCoverType.spaceAdventure,
+        compact: true,
+      );
+    }
+
+    if (activity.id == 'bilingual-songs' ||
+        activity.id == 'bilingual_songs' ||
+        activity.id == 'sing-together' ||
+        activity.id == 'sing_together' ||
+        activity.name == 'Sing Together' ||
+        activity.content == 'Sing Together' ||
+        activity.content == 'Bilingual Songs' ||
+        activity.content == 'bilingual_songs' ||
+        activity.content == 'bilingual-songs' ||
+        activity.content == 'sing_together' ||
+        activity.content == 'sing-together') {
+      return const GameActivityCover(
+        type: GameCoverType.singTogether,
         compact: true,
       );
     }

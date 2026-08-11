@@ -251,8 +251,33 @@ export default function BilingualSongsAdminPage() {
   const handleAddLyricLine = () => {
     setGeneratedLyrics([
       ...generatedLyrics,
-      { lineEn: 'New English line', lineTh: 'ท่อนเนื้อเพลงภาษาไทยใหม่', chord: 'C' },
+      { lineEn: '', lineTh: '', chord: '' },
     ]);
+  };
+
+  const handleInsertSectionTag = (tag: string, atIndex?: number) => {
+    const newLine: LyricLine = { lineEn: tag, lineTh: '', chord: '' };
+    if (atIndex !== undefined) {
+      const updated = [...generatedLyrics];
+      updated.splice(atIndex, 0, newLine);
+      setGeneratedLyrics(updated);
+    } else {
+      setGeneratedLyrics([...generatedLyrics, newLine]);
+    }
+  };
+
+  const handleInsertLyricLineAbove = (index: number) => {
+    const updated = [...generatedLyrics];
+    updated.splice(index, 0, { lineEn: '', lineTh: '', chord: '' });
+    setGeneratedLyrics(updated);
+  };
+
+  const handleMoveLyricLine = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= generatedLyrics.length) return;
+    const updated = [...generatedLyrics];
+    const [moved] = updated.splice(fromIndex, 1);
+    updated.splice(toIndex, 0, moved);
+    setGeneratedLyrics(updated);
   };
 
   const handleRemoveLyricLine = (index: number) => {
@@ -280,40 +305,34 @@ export default function BilingualSongsAdminPage() {
     const url = resolveMediaUrl(rawUrl);
     if (!url) return;
 
-    if (audioRef && isPlaying) {
-      audioRef.pause();
-      if (bgAudioRef) bgAudioRef.pause();
-      setIsPlaying(false);
-    } else {
-      const newAudio = new Audio(url);
-      const bgMusic = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
-      bgMusic.volume = 0.25;
-      bgMusic.loop = true;
-
-      newAudio.onended = () => {
-        bgMusic.pause();
+    if (audioRef) {
+      if (isPlaying) {
+        audioRef.pause();
         setIsPlaying(false);
-      };
-      newAudio.onerror = (e) => {
-        console.error('Audio playback load error:', e);
-        bgMusic.pause();
-        setIsPlaying(false);
-      };
-
-      setAudioRef(newAudio);
-      setBgAudioRef(bgMusic);
-
-      newAudio
-        .play()
-        .then(() => {
-          bgMusic.play().catch(() => {});
-          setIsPlaying(true);
-        })
-        .catch((err) => {
-          console.warn('Audio play rejected:', err);
-          setIsPlaying(false);
-        });
+        return;
+      }
     }
+
+    const newAudio = new Audio(url);
+    newAudio.onended = () => {
+      setIsPlaying(false);
+    };
+    newAudio.onerror = (e) => {
+      console.error('Audio playback load error:', e);
+      setIsPlaying(false);
+    };
+
+    setAudioRef(newAudio);
+
+    newAudio
+      .play()
+      .then(() => {
+        setIsPlaying(true);
+      })
+      .catch((err) => {
+        console.warn('Audio play rejected:', err);
+        setIsPlaying(false);
+      });
   };
 
   return (
@@ -327,7 +346,7 @@ export default function BilingualSongsAdminPage() {
             </div>
             <div>
               <h1 className="text-3xl font-extrabold text-dark tracking-tight">
-                Bilingual Songs & AI Guitar
+                Sing Together & AI Guitar
               </h1>
               <p className="text-sm text-secondary--text mt-1">
                 สร้างและจัดการเพลงสองภาษา (ไทย-อังกฤษ) สำหรับเด็ก และคอร์ดกีต้าร์สำหรับผู้ปกครองด้วย AI
@@ -473,76 +492,149 @@ export default function BilingualSongsAdminPage() {
                 </span>
               </div>
 
-              {/* Lyrics & Chords Editor */}
+              {/* Lyrics & Structure Editor */}
               <div className="space-y-3">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray4 pb-3">
                   <h3 className="text-sm font-bold text-dark flex items-center gap-2">
-                    <Guitar className="w-4 h-4 text-amber-700" /> แก้ไขเนื้อเพลง & คอร์ดกีต้าร์
+                    <Guitar className="w-4 h-4 text-purple" /> แก้ไขเนื้อเพลง & แทรกท่อนเพลง (Structure)
                   </h3>
-                  <button
-                    onClick={handleAddLyricLine}
-                    className="flex items-center gap-1 text-xs font-bold text-purple hover:underline"
-                  >
-                    <Plus className="w-4 h-4" /> เพิ่มท่อนเนื้อเพลง
-                  </button>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      onClick={() => handleInsertSectionTag('[Key: C Major]')}
+                      className="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-bold rounded-lg transition"
+                      title="แทรก [Key: C Major]"
+                    >
+                      + [Key]
+                    </button>
+                    <button
+                      onClick={() => handleInsertSectionTag('[Intro]')}
+                      className="px-2 py-1 bg-purple--light5 hover:bg-purple--light4 text-purple text-xs font-bold rounded-lg border border-purple/20 transition"
+                    >
+                      + [Intro]
+                    </button>
+                    <button
+                      onClick={() => handleInsertSectionTag('[Verse]')}
+                      className="px-2 py-1 bg-purple--light5 hover:bg-purple--light4 text-purple text-xs font-bold rounded-lg border border-purple/20 transition"
+                    >
+                      + [Verse]
+                    </button>
+                    <button
+                      onClick={() => handleInsertSectionTag('[Chorus]')}
+                      className="px-2 py-1 bg-purple--light5 hover:bg-purple--light4 text-purple text-xs font-bold rounded-lg border border-purple/20 transition"
+                    >
+                      + [Chorus]
+                    </button>
+                    <button
+                      onClick={() => handleInsertSectionTag('[Outro]')}
+                      className="px-2 py-1 bg-purple--light5 hover:bg-purple--light4 text-purple text-xs font-bold rounded-lg border border-purple/20 transition"
+                    >
+                      + [Outro]
+                    </button>
+                    <button
+                      onClick={handleAddLyricLine}
+                      className="flex items-center gap-1 px-2.5 py-1 bg-purple text-white text-xs font-bold rounded-lg shadow-sm hover:bg-purple--light6 transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> เพิ่มท่อน
+                    </button>
+                  </div>
                 </div>
 
-                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                  {generatedLyrics.map((line, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3.5 bg-gray--light1 rounded-xl border border-gray4 space-y-2 relative group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="flex items-center gap-1 bg-amber-100 text-amber-900 px-2.5 py-1 rounded text-xs font-bold font-mono">
-                          <Guitar className="w-3.5 h-3.5 text-amber-700" />
+                <div className="space-y-3 max-h-[420px] overflow-y-auto pr-2">
+                  {generatedLyrics.map((line, idx) => {
+                    const isSectionHeader = line.lineEn.trim().startsWith('[');
+                    return (
+                      <div
+                        key={idx}
+                        className={`p-3.5 rounded-xl border space-y-2 relative group transition ${
+                          isSectionHeader
+                            ? 'bg-purple--light5 border-purple/30 font-bold'
+                            : 'bg-gray--light1 border-gray4 hover:border-purple/20'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1 bg-amber-100 text-amber-900 px-2 py-1 rounded text-xs font-bold font-mono">
+                            <Guitar className="w-3.5 h-3.5 text-amber-700" />
+                            <input
+                              type="text"
+                              value={line.chord}
+                              onChange={(e) => handleLyricChange(idx, 'chord', e.target.value)}
+                              placeholder="Key/คอร์ด"
+                              className="bg-transparent font-bold focus:outline-none w-16 text-center"
+                            />
+                          </span>
+
                           <input
                             type="text"
-                            value={line.chord}
-                            onChange={(e) => handleLyricChange(idx, 'chord', e.target.value)}
-                            placeholder="คอร์ด"
-                            className="bg-transparent font-bold focus:outline-none w-12 text-center"
+                            value={line.lineEn}
+                            onChange={(e) => handleLyricChange(idx, 'lineEn', e.target.value)}
+                            placeholder="เนื้อเพลงภาษาอังกฤษ / [Section เช่น Intro]"
+                            className={`flex-1 font-bold bg-transparent border-b border-dashed border-gray4 focus:outline-none text-sm ${
+                              isSectionHeader ? 'text-purple text-base' : 'text-dark'
+                            }`}
                           />
-                        </span>
-                        <input
-                          type="text"
-                          value={line.lineEn}
-                          onChange={(e) => handleLyricChange(idx, 'lineEn', e.target.value)}
-                          placeholder="เนื้อเพลงภาษาอังกฤษ"
-                          className="flex-1 font-bold text-dark bg-transparent border-b border-dashed border-gray4 focus:outline-none text-sm"
-                        />
-                        <button
-                          onClick={() => handleRemoveLyricLine(idx)}
-                          className="p-1 text-red-400 hover:text-red-600 transition"
-                          title="ลบท่อนนี้"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+
+                          {/* Line Action Tools: Insert Above, Move Up, Move Down, Delete */}
+                          <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
+                            <button
+                              onClick={() => handleInsertLyricLineAbove(idx)}
+                              className="px-2 py-0.5 bg-white border border-gray4 hover:bg-purple--light5 text-[11px] font-semibold text-purple rounded"
+                              title="แทรกท่อนด้านบนบรรทัดนี้"
+                            >
+                              + แทรกบน
+                            </button>
+                            <button
+                              onClick={() => handleMoveLyricLine(idx, idx - 1)}
+                              disabled={idx === 0}
+                              className="p-1 text-gray-500 hover:text-purple disabled:opacity-30"
+                              title="ย้ายขึ้น"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              onClick={() => handleMoveLyricLine(idx, idx + 1)}
+                              disabled={idx === generatedLyrics.length - 1}
+                              className="p-1 text-gray-500 hover:text-purple disabled:opacity-30"
+                              title="ย้ายลง"
+                            >
+                              ↓
+                            </button>
+                            <button
+                              onClick={() => handleRemoveLyricLine(idx)}
+                              className="p-1 text-red-400 hover:text-red-600 transition"
+                              title="ลบท่อนนี้"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {(!isSectionHeader || line.lineTh) && (
+                          <input
+                            type="text"
+                            value={line.lineTh}
+                            onChange={(e) => handleLyricChange(idx, 'lineTh', e.target.value)}
+                            placeholder="ท่อนร้องในวงเล็บ เช่น (แปล - ว่า - ร้อง - เพลง!)"
+                            className="w-full text-xs text-secondary--text bg-transparent focus:outline-none pl-12"
+                          />
+                        )}
                       </div>
-                      <input
-                        type="text"
-                        value={line.lineTh}
-                        onChange={(e) => handleLyricChange(idx, 'lineTh', e.target.value)}
-                        placeholder="คำแปลภาษาไทย"
-                        className="w-full text-xs text-secondary--text bg-transparent focus:outline-none pl-12"
-                      />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Step 2: Audio Generation & MP3 Upload */}
+              {/* Step 2: Audio File Upload */}
               <div className="border-t border-gray4 pt-4 space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <h3 className="text-md font-bold text-dark flex items-center gap-2">
-                    <Volume2 className="w-5 h-5 text-purple" /> 2. ไฟล์เสียงเพลงร้องจริง
+                    <Volume2 className="w-5 h-5 text-purple" /> 2. อัปโหลดไฟล์เสียงเพลง (MP3)
                   </h3>
 
-                  <div className="flex items-center gap-2">
+                  <div>
                     {/* Upload MP3 File Button */}
-                    <label className="flex items-center gap-2 bg-white hover:bg-gray--light1 text-purple border border-purple--light3 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer shadow-sm transition">
-                      <Upload className="w-4 h-4 text-purple" />
-                      {isUploadingFile ? 'กำลังอัปโหลด MP3...' : 'อัปโหลด MP3 จากคอมพิวเตอร์'}
+                    <label className="flex items-center gap-2 bg-purple hover:bg-purple--light6 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer shadow-sm transition">
+                      <Upload className="w-4 h-4 text-white" />
+                      {isUploadingFile ? 'กำลังอัปโหลด MP3...' : 'เลือกไฟล์ MP3 จากคอมพิวเตอร์'}
                       <input
                         type="file"
                         accept="audio/*"
@@ -551,22 +643,6 @@ export default function BilingualSongsAdminPage() {
                         className="hidden"
                       />
                     </label>
-
-                    <button
-                      onClick={handleGenerateAudio}
-                      disabled={isGeneratingAudio}
-                      className="flex items-center gap-2 bg-purple hover:bg-purple--light6 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-sm transition disabled:opacity-50"
-                    >
-                      {isGeneratingAudio ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" /> กำลังแต่งเพลง...
-                        </>
-                      ) : (
-                        <>
-                          <Music className="w-4 h-4" /> เจนเสียงอัตโนมัติด้วย AI
-                        </>
-                      )}
-                    </button>
                   </div>
                 </div>
 

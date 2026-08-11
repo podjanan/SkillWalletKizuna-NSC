@@ -76,7 +76,7 @@ class LanguageHubScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: const [
                             Text(
-                              'Sing & Learn 🎵 เพลงสนุกภาษาอังกฤษ',
+                              'Sing Together 🎵 เพลงสนุกสองภาษา',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,

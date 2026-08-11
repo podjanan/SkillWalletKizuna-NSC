@@ -273,6 +273,23 @@ class ActivityCard extends StatelessWidget {
       );
     }
 
+    if (activity.id == 'bilingual-songs' ||
+        activity.id == 'bilingual_songs' ||
+        activity.id == 'sing-together' ||
+        activity.id == 'sing_together' ||
+        activity.name == 'Sing Together' ||
+        activity.content == 'Sing Together' ||
+        activity.content == 'Bilingual Songs' ||
+        activity.content == 'bilingual_songs' ||
+        activity.content == 'bilingual-songs' ||
+        activity.content == 'sing_together' ||
+        activity.content == 'sing-together') {
+      return const GameActivityCover(
+        type: GameCoverType.singTogether,
+        compact: true,
+      );
+    }
+
     if (activity.isAiWordGame) {
       return const GameActivityCover(
         type: GameCoverType.voiceQuest,

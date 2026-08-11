@@ -89,7 +89,7 @@ export default function Sidebar() {
           }`}
         >
           <Music size={20} className="text-secondary--text" />
-          <span className="body-medium-medium text-primary--text">Bilingual Songs</span>
+          <span className="body-medium-medium ">Sing Together</span>
         </Link>
 
         <Link

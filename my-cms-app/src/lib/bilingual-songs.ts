@@ -71,31 +71,56 @@ export async function generateBilingualLyricsWithQwen(
 }> {
   const phrasesStr = targetPhrases.join(', ');
   const prompt = `You are a creative children's songwriter and language teacher.
-Create a short, catchy bilingual (English and Thai) song for young children ages 4-9 based on these key phrases/words: "${phrasesStr}".
+Create a short, catchy bilingual song for kids ages 4-9 based on these target vocabulary words: "${phrasesStr}".
 
-Music Style: "${genre}"
+CRITICAL LYRICS FORMATTING RULES:
+1. Do NOT generate individual chords per line (leave chord as "").
+2. The FIRST item of lyrics MUST specify the key header: "[Key: C Major]" (or G Major, F Major).
+3. Organize the lyrics into clear section headers: "[Intro]", "[Verse]", "[Chorus]", "[Outro]".
+4. Under each section, each line consists of an English chant/lyric and matching Thai sung lyrics in parentheses (separating syllables with hyphens).
+5. Do NOT include formal prose translations or sentence translations. The Thai part IS the sung rhythmic lyrics!
 
-CRITICAL REQUIREMENTS:
-1. You MUST include EVERY phrase in the list "${phrasesStr}" inside the lyrics.
-2. The song MUST be short (exactly 6 to 10 lines total).
-3. Each line MUST have:
-   - lineEn: Simple English sentence containing the target phrase/vocabulary (e.g. "We can sing and play today!").
-   - lineTh: Matching simple Thai translation (e.g. "พวกเราร้องเพลงและเล่นด้วยกันวันนี้!").
-   - chord: Easy guitar/ukulele chord for parents to play along (e.g., "C", "G", "F", "Am", or "C - G"). Keep chords extremely simple using standard C major key (C, F, G, Am).
-4. Provide a list of target words (targetWords) with English word, Thai meaning, and phonetic pronunciation guide.
-5. Provide a fun song title in English (titleEn) and Thai (titleTh).
+EXACT EXPECTED FORMAT:
+[Key: C Major]
+[Intro]
+(1, 2, 3, Go!)
 
-Return ONLY valid JSON format:
+[Verse]
+Sing! Sing! (แปล - ว่า - ร้อง - เพลง!)
+Play! Play! (แปล - ว่า - เล่น!)
+Happy! Happy! (มี - ความ - สุข!)
+
+[Chorus]
+We can sing! (ร้อง - เพลง!)
+We can play! (เล่น - สนุก!)
+Sing, Play, Happy now! (มี - ความ - สุข - จัง!)
+
+[Outro]
+Sing! Play! Happy! (Jump! Jump! Go!)
+
+Return ONLY valid JSON:
 {
-  "titleEn": "Happy Learning Song",
-  "titleTh": "เพลงเรียนรู้สุดสนุก",
+  "titleEn": "Sing, Play and Happy Song",
+  "titleTh": "เพลง ร้อง เล่น และมีความสุข",
   "targetWords": [
     { "word": "sing", "thaiMeaning": "ร้องเพลง", "phonetic": "sing" },
-    { "word": "play", "thaiMeaning": "เล่น", "phonetic": "play" }
+    { "word": "play", "thaiMeaning": "เล่น", "phonetic": "play" },
+    { "word": "happy", "thaiMeaning": "มีความสุข", "phonetic": "happy" }
   ],
   "lyrics": [
-    { "lineEn": "We can sing a happy song!", "lineTh": "พวกเราร้องเพลงมีความสุขกัน!", "chord": "C" },
-    { "lineEn": "We can play all day long!", "lineTh": "พวกเราเล่นกันได้ทั้งวัน!", "chord": "G" }
+    { "lineEn": "[Key: C Major]", "lineTh": "", "chord": "" },
+    { "lineEn": "[Intro]", "lineTh": "", "chord": "" },
+    { "lineEn": "(1, 2, 3, Go!)", "lineTh": "", "chord": "" },
+    { "lineEn": "[Verse]", "lineTh": "", "chord": "" },
+    { "lineEn": "Sing! Sing!", "lineTh": "(แปล - ว่า - ร้อง - เพลง!)", "chord": "" },
+    { "lineEn": "Play! Play!", "lineTh": "(แปล - ว่า - เล่น!)", "chord": "" },
+    { "lineEn": "Happy! Happy!", "lineTh": "(มี - ความ - สุข!)", "chord": "" },
+    { "lineEn": "[Chorus]", "lineTh": "", "chord": "" },
+    { "lineEn": "We can sing!", "lineTh": "(ร้อง - เพลง!)", "chord": "" },
+    { "lineEn": "We can play!", "lineTh": "(เล่น - สนุก!)", "chord": "" },
+    { "lineEn": "Sing, Play, Happy now!", "lineTh": "(มี - ความ - สุข - จัง!)", "chord": "" },
+    { "lineEn": "[Outro]", "lineTh": "", "chord": "" },
+    { "lineEn": "Sing! Play! Happy!", "lineTh": "(Jump! Jump! Go!)", "chord": "" }
   ]
 }`;
 
@@ -118,14 +143,11 @@ Return ONLY valid JSON format:
                 phonetic: String(w.phonetic || w.word || ''),
               }))
             : targetPhrases.map((p) => ({ word: p, thaiMeaning: p, phonetic: p })),
-          lyrics: (parsed.lyrics as LyricLine[]).map((l, index) => {
-            const defaultChords = ['C', 'G', 'Am', 'F', 'C', 'G', 'C', 'F'];
-            return {
-              lineEn: String(l.lineEn || ''),
-              lineTh: String(l.lineTh || ''),
-              chord: String(l.chord || defaultChords[index % defaultChords.length]),
-            };
-          }),
+          lyrics: (parsed.lyrics as LyricLine[]).map((l) => ({
+            lineEn: String(l.lineEn || ''),
+            lineTh: String(l.lineTh || ''),
+            chord: String(l.chord || ''),
+          })),
         };
       }
     } catch (error) {
@@ -137,49 +159,64 @@ Return ONLY valid JSON format:
   }
 
   // Dynamic phrase-based fallback template (uses ALL target phrases entered by admin)
-  console.log('[Qwen Lyric Engine] Building dynamic phrase-based lyrics fallback template...');
-  const chords = ['C', 'G', 'Am', 'F', 'C', 'G', 'F', 'C'];
+  console.log('[Lyric Engine] Building structured template...');
+  const wordsList = targetPhrases.map((w) => w.trim()).filter(Boolean);
   
-  const thaiMap: Record<string, string> = {
-    sing: 'ร้องเพลง',
-    play: 'เล่น',
-    sleep: 'นอนหลับ',
-    run: 'วิ่ง',
-    eat: 'กิน',
-    dance: 'เต้นระบำ',
-    jump: 'กระโดด',
+  const thaiMeaningMap: Record<string, string> = {
+    sing: '(แปล - ว่า - ร้อง - เพลง!)',
+    play: '(แปล - ว่า - เล่น!)',
+    happy: '(มี - ความ - สุข!)',
+    sleep: '(แปล - ว่า - นอน - หลับ!)',
+    run: '(แปล - ว่า - วิ่ง!)',
+    eat: '(แปล - ว่า - กิน!)',
+    dance: '(แปล - ว่า - เต้น - ระบำ!)',
+    jump: '(กระ - โดด!)',
+    cat: '(แปล - ว่า - แมว!)',
+    dog: '(แปล - ว่า - สุนัข!)',
   };
 
-  const dynamicLyrics: LyricLine[] = targetPhrases.map((phrase, idx) => {
-    const clean = phrase.trim();
-    let th = `พวกเรา${clean}กัน!`;
-    for (const [enKey, thVal] of Object.entries(thaiMap)) {
-      if (clean.toLowerCase().includes(enKey)) {
-        th = clean.toLowerCase().startsWith('we can')
-          ? `พวกเรา${thVal}ได้!`
-          : `พวกเรา${thVal}กัน!`;
-        break;
-      }
-    }
-    return {
-      lineEn: clean.toLowerCase().startsWith('we can') ? `${clean} together today!` : `We can ${clean} together today!`,
-      lineTh: th,
-      chord: chords[idx % chords.length],
-    };
+  const dynamicLyrics: LyricLine[] = [
+    { lineEn: '[Key: C Major]', lineTh: '', chord: '' },
+    { lineEn: '[Intro]', lineTh: '', chord: '' },
+    { lineEn: '(1, 2, 3, Go!)', lineTh: '', chord: '' },
+    { lineEn: '[Verse]', lineTh: '', chord: '' },
+  ];
+
+  for (const w of wordsList) {
+    const lower = w.toLowerCase();
+    const formattedEn = `${w.substring(0, 1).toUpperCase()}${w.substring(1)}! ${w.substring(0, 1).toUpperCase()}${w.substring(1)}!`;
+    const thMeaning = thaiMeaningMap[lower] || `(แปล - ว่า - ${w}!)`;
+    dynamicLyrics.push({
+      lineEn: formattedEn,
+      lineTh: thMeaning,
+      chord: '',
+    });
+  }
+
+  dynamicLyrics.push({ lineEn: '[Chorus]', lineTh: '', chord: '' });
+  if (wordsList.length >= 2) {
+    dynamicLyrics.push({ lineEn: `We can ${wordsList[0]}!`, lineTh: `(ร้อง - เพลง!)`, chord: '' });
+    dynamicLyrics.push({ lineEn: `We can ${wordsList[1]}!`, lineTh: `(เล่น - สนุก!)`, chord: '' });
+  }
+  const capitalizedWords = wordsList.map((w) => w.substring(0, 1).toUpperCase() + w.substring(1));
+  dynamicLyrics.push({
+    lineEn: `${capitalizedWords.join(', ')} now!`,
+    lineTh: '(มี - ความ - สุข - จัง!)',
+    chord: '',
   });
 
-  // Add closing happy line
+  dynamicLyrics.push({ lineEn: '[Outro]', lineTh: '', chord: '' });
   dynamicLyrics.push({
-    lineEn: 'Happy friends everywhere we go!',
-    lineTh: 'เพื่อนๆ มีความสุขทุกๆ ที่ที่เราไป!',
-    chord: 'C',
+    lineEn: capitalizedWords.join('! ') + '!',
+    lineTh: '(Jump! Jump! Go!)',
+    chord: '',
   });
 
   const formattedWords: TargetWord[] = targetPhrases.map((p) => {
-    const clean = p.trim().toLowerCase().replace(/^we can\s+/, '');
+    const clean = p.trim().toLowerCase();
     return {
       word: p.trim(),
-      thaiMeaning: thaiMap[clean] ? `พวกเรา${thaiMap[clean]}ได้` : p.trim(),
+      thaiMeaning: p.trim(),
       phonetic: clean,
     };
   });

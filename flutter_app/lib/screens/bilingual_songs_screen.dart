@@ -70,7 +70,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                         ),
                         const Expanded(
                           child: Text(
-                            'Bilingual Songs',
+                            'Sing Together',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 22,
@@ -273,7 +273,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                                         size: 24, color: Colors.white),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'START SINGING (ฟังเพลง & เล่นคอร์ด)',
+                                      'START SINGING',
                                       style: AppTextStyles.label(15,
                                           color: Colors.white),
                                     ),

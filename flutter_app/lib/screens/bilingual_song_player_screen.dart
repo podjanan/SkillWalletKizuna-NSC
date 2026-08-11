@@ -52,17 +52,15 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
 
   String _resolvePlayableUrl(String? rawUrl) {
     if (rawUrl == null || rawUrl.trim().isEmpty) {
-      return 'https://cdn1.suno.ai/04869079-f4cb-4dc1-9370-aef8294439c0.mp3';
+      return '';
     }
     final trimmed = rawUrl.trim();
-    if (trimmed.contains('suno.com')) {
-      return 'https://cdn1.suno.ai/04869079-f4cb-4dc1-9370-aef8294439c0.mp3';
-    }
     return ApiConfig.resolveAssetUrl(trimmed);
   }
 
   Future<void> _initAudio() async {
     final playUrl = _resolvePlayableUrl(widget.song.audioUrl);
+    if (playUrl.isEmpty) return;
     try {
       await _audioPlayer.setSourceUrl(playUrl);
     } catch (e) {
@@ -79,6 +77,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
   void _togglePlayPause() async {
     final playUrl = _resolvePlayableUrl(widget.song.audioUrl);
     debugPrint('Toggling audio play/pause for URL: $playUrl');
+    if (playUrl.isEmpty) return;
 
     try {
       if (_isPlaying) {
@@ -86,18 +85,11 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
         if (mounted) setState(() => _isPlaying = false);
       } else {
         if (mounted) setState(() => _isPlaying = true);
-        await _audioPlayer.setSourceUrl(playUrl);
-        await _audioPlayer.resume();
+        await _audioPlayer.play(UrlSource(playUrl));
       }
     } catch (e) {
       debugPrint('Audio play exception: $e');
-      try {
-        await _audioPlayer.play(UrlSource('https://cdn1.suno.ai/04869079-f4cb-4dc1-9370-aef8294439c0.mp3'));
-        if (mounted) setState(() => _isPlaying = true);
-      } catch (err) {
-        debugPrint('Fallback play failed: $err');
-        if (mounted) setState(() => _isPlaying = false);
-      }
+      if (mounted) setState(() => _isPlaying = false);
     }
   }
 
@@ -273,6 +265,42 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                 itemCount: widget.song.lyrics.length,
                 itemBuilder: (context, index) {
                   final line = widget.song.lyrics[index];
+                  final isSectionTag = line.lineEn.trim().startsWith('[');
+                  final isKeyTag = line.lineEn.toLowerCase().contains('[key');
+
+                  if (isSectionTag) {
+                    return Container(
+                      margin: const EdgeInsets.only(top: 8, bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: isKeyTag ? Colors.amber.shade100 : Colors.purple.shade50,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: isKeyTag ? Colors.amber.shade400 : Colors.purple.shade200,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isKeyTag ? Icons.key_rounded : Icons.library_music_rounded,
+                            size: 18,
+                            color: isKeyTag ? Colors.brown : Colors.purple,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            line.lineEn,
+                            style: TextStyle(
+                              fontSize: isKeyTag ? 15 : 14,
+                              fontWeight: FontWeight.w900,
+                              color: isKeyTag ? Colors.brown : Colors.purple.shade800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
@@ -284,8 +312,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Guitar Chord Badge (Toggleable for parents)
-                        if (_showGuitarChords && line.chord.isNotEmpty)
+                        // Guitar Chord Badge (Toggleable for parents if chord exists)
+                        if (_showGuitarChords && line.chord.trim().isNotEmpty)
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
@@ -313,24 +341,30 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                             ),
                           ),
 
-                        // English Lyrics Line
-                        Text(
-                          line.lineEn,
-                          style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-
-                        // Thai Translation Line
-                        Text(
-                          line.lineTh,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
+                        // Combined Rhythmic Sung Lyrics Line (e.g. "Sing! Sing! (แปล - ว่า - ร้อง - เพลง!)")
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: line.lineEn,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              if (line.lineTh.isNotEmpty) ...[
+                                const TextSpan(text: ' '),
+                                TextSpan(
+                                  text: line.lineTh,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.purple.shade700,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ],

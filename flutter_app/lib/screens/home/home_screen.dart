@@ -591,9 +591,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
         if (activity.id == 'bilingual-songs' ||
             activity.id == 'bilingual_songs' ||
+            activity.id == 'sing-together' ||
+            activity.id == 'sing_together' ||
+            activity.name == 'Sing Together' ||
+            activity.content == 'Sing Together' ||
             activity.content == 'Bilingual Songs' ||
             activity.content == 'bilingual_songs' ||
-            activity.content == 'bilingual-songs') {
+            activity.content == 'bilingual-songs' ||
+            activity.content == 'sing_together' ||
+            activity.content == 'sing-together') {
           Navigator.pushNamed(context, AppRoutes.bilingualSongs);
           return;
         }
@@ -627,6 +633,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 activity.content == 'space_adventure' ||
                 activity.content == 'space-adventure')
               const GameActivityCover(type: GameCoverType.spaceAdventure)
+            else if (activity.id == 'bilingual-songs' ||
+                activity.id == 'bilingual_songs' ||
+                activity.id == 'sing-together' ||
+                activity.id == 'sing_together' ||
+                activity.name == 'Sing Together' ||
+                activity.content == 'Sing Together' ||
+                activity.content == 'Bilingual Songs' ||
+                activity.content == 'bilingual_songs' ||
+                activity.content == 'bilingual-songs' ||
+                activity.content == 'sing_together' ||
+                activity.content == 'sing-together')
+              const GameActivityCover(type: GameCoverType.singTogether)
             else if (activity.thumbnailUrl?.startsWith('asset:') ?? false)
               Image.asset(
                 activity.thumbnailUrl!.replaceFirst('asset:', ''),
