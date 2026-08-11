@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../l10n/app_localizations.dart';
 import '../models/bilingual_song_model.dart';
+import '../providers/user_provider.dart';
 import '../services/bilingual_song_service.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/palette.dart';
 import '../widgets/game_activity_cover.dart';
+import '../widgets/child_avatar.dart';
 import 'bilingual_song_player_screen.dart';
 
 class BilingualSongsScreen extends StatefulWidget {
@@ -19,6 +23,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
   List<BilingualSongModel> _songs = [];
   BilingualSongModel? _selectedSong;
   bool _isLoading = true;
+  List<String> _extraChildIds = [];
 
   @override
   void initState() {
@@ -42,7 +47,154 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => BilingualSongPlayerScreen(song: song),
+        builder: (context) => BilingualSongPlayerScreen(
+          song: song,
+          extraChildIds: _extraChildIds,
+        ),
+      ),
+    );
+  }
+
+  void _showAddChildrenSheet() {
+    final userProvider = context.read<UserProvider>();
+    final children = userProvider.children;
+    final currentChildId = userProvider.currentChildId;
+    final l = AppLocalizations.of(context)!;
+
+    final tempSelected = Set<String>.from(_extraChildIds);
+
+    showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Container(
+          decoration: const BoxDecoration(
+            color: Palette.cream,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(l.physical_addChildren,
+                      style: AppTextStyles.heading(20, color: Palette.sky)),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              Text(l.physical_addChildrenDesc,
+                  style: AppTextStyles.body(14, color: Colors.black54)),
+              const SizedBox(height: 16),
+              ...children.map((childData) {
+                final info = childData['child'] as Map<String, dynamic>?;
+                if (info == null) return const SizedBox.shrink();
+                final childId = info['child_id'] as String;
+                final childName = info['name_surname'] as String? ?? '';
+                final isCurrent = childId == currentChildId;
+                final isSelected = isCurrent || tempSelected.contains(childId);
+
+                return GestureDetector(
+                  onTap: isCurrent
+                      ? null
+                      : () {
+                          setModalState(() {
+                            if (tempSelected.contains(childId)) {
+                              tempSelected.remove(childId);
+                            } else {
+                              tempSelected.add(childId);
+                            }
+                          });
+                        },
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Palette.sky.withValues(alpha: 0.1)
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected ? Palette.sky : Colors.grey.shade300,
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          isSelected
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
+                          color: isSelected ? Palette.sky : Colors.grey,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        CircleAvatar(
+                          radius: 18,
+                          backgroundColor: Palette.sky.withValues(alpha: 0.2),
+                          child: Text(
+                            childName.isNotEmpty
+                                ? childName[0].toUpperCase()
+                                : '?',
+                            style:
+                                AppTextStyles.heading(16, color: Palette.sky),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(childName,
+                              style: AppTextStyles.label(16,
+                                  color: Colors.black87)),
+                        ),
+                        if (isCurrent)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Palette.sky,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(l.physical_currentChild,
+                                style: AppTextStyles.label(11,
+                                    color: Colors.white)),
+                          ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _extraChildIds = tempSelected.toList();
+                    });
+                    Navigator.pop(ctx);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Palette.sky,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: Text(l.physical_confirm,
+                      style: AppTextStyles.heading(18, color: Colors.white)),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -244,6 +396,57 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                                       setState(() => _selectedSong = val);
                                     }
                                   },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Multi-Child Selection Card
+                            GestureDetector(
+                              onTap: _showAddChildrenSheet,
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF9FAFB),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Palette.sky.withValues(alpha: 0.4)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Palette.sky.withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.group_add_rounded,
+                                          color: Palette.sky, size: 22),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'เด็กที่จะร้องเพลงด้วยกัน (${_extraChildIds.length + 1} คน)',
+                                            style: AppTextStyles.label(13, color: Palette.text),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            _extraChildIds.isEmpty
+                                                ? 'แตะที่นี่เพื่อเลือกเด็กเพิ่ม'
+                                                : '+ เพิ่มเด็กเรียบร้อยแล้ว ${_extraChildIds.length} คน',
+                                            style: AppTextStyles.body(11,
+                                                color: _extraChildIds.isEmpty
+                                                    ? Colors.grey
+                                                    : Palette.sky),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.arrow_forward_ios_rounded,
+                                        size: 16, color: Colors.grey),
+                                  ],
                                 ),
                               ),
                             ),

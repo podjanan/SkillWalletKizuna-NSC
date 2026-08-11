@@ -4,11 +4,18 @@ import '../models/bilingual_song_model.dart';
 import '../services/api_config.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/palette.dart';
+import '../widgets/sticky_bottom_button.dart';
+import 'activities/detail/bilingual_song_evaluation_screen.dart';
 
 class BilingualSongPlayerScreen extends StatefulWidget {
   final BilingualSongModel song;
+  final List<String> extraChildIds;
 
-  const BilingualSongPlayerScreen({super.key, required this.song});
+  const BilingualSongPlayerScreen({
+    super.key,
+    required this.song,
+    this.extraChildIds = const [],
+  });
 
   @override
   State<BilingualSongPlayerScreen> createState() =>
@@ -23,10 +30,12 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
 
   // Toggle for Parent Guitar Chords View
   bool _showGuitarChords = true;
+  DateTime? _startTime;
 
   @override
   void initState() {
     super.initState();
+    _startTime = DateTime.now();
     _audioPlayer = AudioPlayer();
 
     _audioPlayer.onPlayerStateChanged.listen((state) {
@@ -48,6 +57,23 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
     });
 
     _initAudio();
+  }
+
+  void _handleFinish() {
+    _audioPlayer.pause();
+    final timeSpent = _startTime != null
+        ? DateTime.now().difference(_startTime!).inSeconds
+        : 0;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BilingualSongEvaluationScreen(
+          song: widget.song,
+          extraChildIds: widget.extraChildIds,
+          timeSpentSeconds: timeSpent,
+        ),
+      ),
+    );
   }
 
   String _resolvePlayableUrl(String? rawUrl) {
@@ -141,7 +167,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                     icon: Icon(
                       Icons.music_note_rounded,
                       color: _showGuitarChords ? Colors.amber : Colors.grey,
-                      size: 26,
+                      size: 24,
                     ),
                     tooltip: _showGuitarChords
                         ? 'ซ่อนคอร์ดกีต้าร์'
@@ -451,6 +477,11 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
               ),
           ],
         ),
+      ),
+      bottomNavigationBar: StickyBottomButton(
+        label: 'เสร็จสิ้น & ให้คะแนนเด็ก (Finish & Score)',
+        onPressed: _handleFinish,
+        color: Palette.success,
       ),
     );
   }
