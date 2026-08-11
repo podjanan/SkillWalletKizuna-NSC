@@ -15,11 +15,9 @@ import 'services/storage_service.dart';
 import 'services/mock_auth_service.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/home/home_screen.dart';
-import 'package:media_kit/media_kit.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
 
   await dotenv.load(fileName: ".env");
   await StorageService().init();
@@ -178,7 +176,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     // Check Better Auth session (verifies token is valid with server)
     bool authenticated = false;
-    final session = await AuthService().getSession();
+    final session = await AuthService().getSession().timeout(
+          const Duration(seconds: 4),
+          onTimeout: () => null,
+        );
     if (session != null) {
       authenticated = true;
       debugPrint('✅ Found valid Better Auth session');

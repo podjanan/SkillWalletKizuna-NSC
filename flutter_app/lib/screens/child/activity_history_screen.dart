@@ -62,9 +62,12 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
 
       // กรองเฉพาะ category ที่ต้องการ
       final filteredHistory = history.where((record) {
-        final category = _normalizeCategory(
-          record['activity']?['category'] as String?,
-        );
+        final evidence = record['evidence'] as Map<String, dynamic>?;
+        final rawCat = (record['activity']?['category'] as String?) ??
+            (evidence?['type'] == 'sing_together' || evidence?['songTitle'] != null
+                ? 'PHYSICAL'
+                : null);
+        final category = _normalizeCategory(rawCat);
         return category == _normalizedGameName;
       }).toList();
 
@@ -120,7 +123,9 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
     if (normalized == 'LANGUAGE' || normalized == 'AI WORD GAME') {
       return 'ด้านภาษา';
     }
-    if (normalized == 'PHYSICAL') {
+    if (normalized == 'PHYSICAL' ||
+        normalized == 'SING_TOGETHER' ||
+        normalized == 'SING TOGETHER') {
       return 'ด้านร่างกาย';
     }
     if (normalized == 'CALCULATION' || normalized == 'CALCULATE') {

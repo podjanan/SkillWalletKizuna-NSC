@@ -97,28 +97,6 @@ type WordRow = {
   active: boolean;
 };
 
-function extractGeminiJson(text: string, kind: 'array' | 'object'): unknown | null {
-  const cleaned = text
-    .trim()
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/i, '');
-
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    const match = kind === 'array'
-      ? cleaned.match(/\[[\s\S]*\]/)
-      : cleaned.match(/\{[\s\S]*\}/);
-    if (!match) return null;
-
-    try {
-      return JSON.parse(match[0]);
-    } catch {
-      return null;
-    }
-  }
-}
-
 function normalizeObjectLabel(label: string): string {
   const aliases: Record<string, string> = {
     couch: 'sofa',
@@ -143,7 +121,7 @@ function objectLabelsMatch(detected: string, target: string): boolean {
     targetLabel.includes(detectedLabel);
 }
 
-function normalizeDetectedObjects(parsed: unknown, minConfidence = 0): string[] {
+function normalizeDetectedObjects(parsed: unknown, minConfidence = 0, maxObjects = 20): string[] {
   const rawList = Array.isArray(parsed)
     ? parsed
     : parsed && typeof parsed === 'object'
@@ -176,15 +154,16 @@ function normalizeDetectedObjects(parsed: unknown, minConfidence = 0): string[] 
     .map(normalizeObjectLabel)
     .filter(Boolean)
     .filter((item, index, list) => list.indexOf(item) === index)
-    .slice(0, 10);
+    .slice(0, maxObjects);
 }
 
-async function callObjectDetectionService(base64Image: string): Promise<string[]> {
+async function callObjectDetectionService(base64Image: string, classes?: string[]): Promise<string[]> {
   const detectorUrl = process.env.OBJECT_DETECTION_URL?.trim();
   if (!detectorUrl) return [];
 
   const timeoutMs = Number(process.env.OBJECT_DETECTION_TIMEOUT_MS || 20000);
-  const minConfidence = Number(process.env.OBJECT_DETECTION_MIN_CONFIDENCE || 0.25);
+  const minConfidence = Number(process.env.OBJECT_DETECTION_MIN_CONFIDENCE || 0.18);
+  const maxObjects = Number(process.env.OBJECT_DETECTION_MAX_OBJECTS || 20);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -192,7 +171,7 @@ async function callObjectDetectionService(base64Image: string): Promise<string[]
     const response = await fetch(detectorUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: base64Image, imageBase64: base64Image }),
+      body: JSON.stringify({ image: base64Image, imageBase64: base64Image, classes }),
       signal: controller.signal,
     });
 
@@ -201,9 +180,9 @@ async function callObjectDetectionService(base64Image: string): Promise<string[]
     }
 
     const result = await response.json();
-    return normalizeDetectedObjects(result, minConfidence);
+    return normalizeDetectedObjects(result, minConfidence, maxObjects);
   } catch (error) {
-    console.warn('Object detection service failed, falling back to Ollama:', error);
+    console.warn('Object detection service failed:', error);
     return [];
   } finally {
     clearTimeout(timeout);
@@ -513,7 +492,7 @@ export function buildVirtualAiWordActivity(settings: AiWordSettings) {
     name: settings.title,
     difficulty: 'EASY',
     maxScore: settings.maxScore,
-    content: 'AI Word Game',
+    content: 'Voice Quest',
     description: settings.description,
     videoUrl: '',
     thumbnailUrl: settings.coverImageUrl,
@@ -553,7 +532,7 @@ export function buildVirtualSpaceAdventure() {
     content: 'Space Adventure',
     description: 'Scan your room with Vision AI & find hidden cosmic items!',
     videoUrl: '',
-    thumbnailUrl: '',
+    thumbnailUrl: '/space-adventure-cover.png',
     tiktokHtmlContent: '',
     segments: null,
     playCount: 150,
@@ -572,16 +551,59 @@ export async function shouldInjectSpaceAdventure(category: string | null, ownedB
   return buildVirtualSpaceAdventure();
 }
 
+export function buildVirtualBilingualSongs() {
+  return {
+    activityId: 'bilingual-songs',
+    nameActivity: 'Sing Together',
+    category: 'PHYSICAL',
+    descriptionActivity: 'กิจกรรม Sing Together ร้องเพลงเต้นด้วยกันและคอร์ดกีต้าร์สำหรับผู้ปกครอง',
+    createdAt: new Date().toISOString(),
+    responses: 0,
+    id: 'bilingual-songs',
+    name: 'Sing Together',
+    difficulty: 'EASY',
+    maxScore: 100,
+    content: 'bilingual_songs',
+    description: 'กิจกรรม Sing Together ร้องเพลงเต้นด้วยกันและคอร์ดกีต้าร์สำหรับผู้ปกครอง',
+    videoUrl: '',
+    thumbnailUrl: '/bilingual-songs-cover.png',
+    tiktokHtmlContent: '',
+    segments: null,
+    playCount: 95,
+    parentId: null,
+    isPublic: true,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export async function shouldInjectBilingualSongs(category: string | null, ownedBy: string | null) {
+  if (ownedBy) return null;
+  const normalized = (category || '').trim().toUpperCase();
+  if (normalized && normalized !== 'ALL' && normalized !== 'PHYSICAL' && category !== 'ด้านร่างกาย' && normalized !== 'LANGUAGE') {
+    return null;
+  }
+  return buildVirtualBilingualSongs();
+}
+
 export async function ensureSpaceAdventureSettings() {
   await prisma.$executeRaw`
     CREATE TABLE IF NOT EXISTS "GameSetting" (
       "id" TEXT NOT NULL DEFAULT 'default',
       "scorePerItem" INTEGER NOT NULL DEFAULT 10,
       "timerLimit" INTEGER NOT NULL DEFAULT 60,
+      "maxItems" INTEGER NOT NULL DEFAULT 5,
       "updatedAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       CONSTRAINT "GameSetting_pkey" PRIMARY KEY ("id")
     )
   `;
+
+  try {
+    await prisma.$executeRaw`
+      ALTER TABLE "GameSetting" ADD COLUMN "maxItems" INTEGER NOT NULL DEFAULT 5
+    `;
+  } catch (e) {
+    // Ignore error if column already exists
+  }
 
   await prisma.$executeRaw`
     CREATE TABLE IF NOT EXISTS "GameScore" (
@@ -608,8 +630,8 @@ export async function ensureSpaceAdventureSettings() {
   `;
 
   await prisma.$executeRaw`
-    INSERT INTO "GameSetting" ("id", "scorePerItem", "timerLimit", "updatedAt")
-    VALUES ('default', 10, 60, CURRENT_TIMESTAMP)
+    INSERT INTO "GameSetting" ("id", "scorePerItem", "timerLimit", "maxItems", "updatedAt")
+    VALUES ('default', 10, 60, 5, CURRENT_TIMESTAMP)
     ON CONFLICT ("id") DO NOTHING
   `;
 }
@@ -620,30 +642,33 @@ export async function getSpaceAdventureSettings() {
     id: string;
     scorePerItem: number;
     timerLimit: number;
+    maxItems: number;
     updatedAt: Date;
   }>>`
-    SELECT "id", "scorePerItem", "timerLimit", "updatedAt"
+    SELECT "id", "scorePerItem", "timerLimit", "maxItems", "updatedAt"
     FROM "GameSetting"
     WHERE "id" = 'default'
     LIMIT 1
   `;
-  return settings[0] || { id: 'default', scorePerItem: 10, timerLimit: 60 };
+  return settings[0] || { id: 'default', scorePerItem: 10, timerLimit: 60, maxItems: 5 };
 }
 
-export async function updateSpaceAdventureSettings(scorePerItem: number, timerLimit: number) {
+export async function updateSpaceAdventureSettings(scorePerItem: number, timerLimit: number, maxItems: number) {
   await ensureSpaceAdventureSettings();
   const settings = await prisma.$queryRaw<Array<{
     id: string;
     scorePerItem: number;
     timerLimit: number;
+    maxItems: number;
     updatedAt: Date;
   }>>`
     UPDATE "GameSetting"
     SET "scorePerItem" = ${scorePerItem},
         "timerLimit" = ${timerLimit},
+        "maxItems" = ${maxItems},
         "updatedAt" = CURRENT_TIMESTAMP
     WHERE "id" = 'default'
-    RETURNING "id", "scorePerItem", "timerLimit", "updatedAt"
+    RETURNING "id", "scorePerItem", "timerLimit", "maxItems", "updatedAt"
   `;
   return settings[0];
 }
@@ -741,50 +766,22 @@ export async function deleteSpaceAdventureArea(id: string) {
   `;
 }
 
-export async function scanRoomImage(base64Image: string): Promise<{ objects: string[]; source: 'object_detection' | 'ollama'; fallback: false } | { objects: string[]; source: 'none'; fallback: true; reason: string }> {
-  const detectorObjects = await callObjectDetectionService(base64Image);
-  if (detectorObjects.length >= 3) {
+export async function scanRoomImage(base64Image: string, place = 'general'): Promise<{ objects: string[]; source: 'object_detection'; fallback: false } | { objects: string[]; source: 'none'; fallback: true; reason: string }> {
+  const detectorObjects = await callObjectDetectionService(base64Image, getSpaceAdventureClasses(place));
+  if (detectorObjects.length > 0) {
     return { objects: detectorObjects, source: 'object_detection', fallback: false };
   }
 
-  const prompt = `You are an object detector for a children's scavenger hunt game called "Space Adventure".
-Analyze this room photo and detect 5-10 common everyday objects that a child can easily find and photograph close-up.
-Use simple concrete English nouns only, such as chair, desk, book, bag, window, door, light, bottle, cup, pencil, pillow, bed, toy.
-
-Return ONLY valid JSON in this exact shape:
-{
-  "objects": ["chair", "desk", "window"]
-}`;
-
-  const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
-
-  try {
-    const text = await callOllama(prompt, true, 0.2, {
-      model: process.env.OLLAMA_VISION_MODEL || 'gemma3:4b',
-      images: [cleanBase64],
-    });
-    const parsed = extractGeminiJson(text, 'object') ?? extractGeminiJson(text, 'array');
-    const objects = normalizeDetectedObjects(parsed);
-    if (objects.length > 0) return { objects, source: 'ollama', fallback: false };
-    return {
-      objects: [],
-      source: 'none',
-      fallback: true,
-      reason: 'Ollama did not return a valid list of room objects.'
-    };
-  } catch (e) {
-    console.error('Failed to scan room image with Ollama:', e);
-    return {
-      objects: [],
-      source: 'none',
-      fallback: true,
-      reason: e instanceof Error ? e.message : 'Unknown Ollama scan error.'
-    };
-  }
+  return {
+    objects: [],
+    source: 'none',
+    fallback: true,
+    reason: 'YOLO did not detect any configured objects in this image.'
+  };
 }
 
 export async function verifyTargetItem(base64Image: string, targetObject: string): Promise<{ match: boolean; confidence: number; reason: string }> {
-  const detectorObjects = await callObjectDetectionService(base64Image);
+  const detectorObjects = await callObjectDetectionService(base64Image, [normalizeObjectLabel(targetObject)]);
   if (detectorObjects.length > 0) {
     const matchedLabel = detectorObjects.find((item) => objectLabelsMatch(item, targetObject));
     if (matchedLabel) {
@@ -802,36 +799,41 @@ export async function verifyTargetItem(base64Image: string, targetObject: string
     };
   }
 
-  const prompt = `You are the referee AI for the 'Space Adventure' game. A child was asked to find the object: "${targetObject}". Verify if the uploaded image represents a close-up or clear shot of this target object. It doesn't have to be perfect, but it must be clearly identifiable as the target object. Respond in JSON format ONLY:
-{
-  "match": true/false,
-  "confidence": 0.0 to 1.0,
-  "reason": "Brief feedback in English encouraging the child (e.g., 'Very Good! You found the pillow!') or explaining why it didn't match (e.g., 'Oops, that looks like something else. Try to find the pillow!')"
-}`;
+  return {
+    match: false,
+    confidence: 0,
+    reason: `YOLO could not detect ${normalizeObjectLabel(targetObject)} in this image.`
+  };
+}
 
-  const cleanBase64 = base64Image.replace(/^data:image\/\w+;base64,/, '');
+const SPACE_ADVENTURE_CORE_CLASSES = [
+  'person', 'backpack', 'bag', 'bottle', 'cup', 'book', 'chair', 'table', 'door',
+  'window', 'plant', 'clock', 'phone', 'toy', 'car', 'bicycle', 'motorcycle',
+  'bus', 'truck', 'cat', 'dog', 'bird',
+];
 
-  try {
-    const text = await callOllama(prompt, true, 0.2, {
-      model: process.env.OLLAMA_VISION_MODEL || 'gemma3:4b',
-      images: [cleanBase64],
-    });
-    const parsed = extractGeminiJson(text, 'object') as Record<string, unknown> | null;
-    if (!parsed) throw new Error('Ollama did not return valid verification JSON.');
-    return {
-      match: Boolean(parsed.match),
-      confidence: Number(parsed.confidence ?? 0.8),
-      reason: String(parsed.reason ?? 'Very Good!')
-    };
-  } catch (e) {
-    console.error('Failed to verify item with Ollama:', e);
-    const reason = e instanceof Error ? e.message : 'Unknown Ollama verification error.';
-    return {
-      match: false,
-      confidence: 0,
-      reason: `Verification failed because the AI service returned an error: ${reason}`
-    };
-  }
+const SPACE_ADVENTURE_PLACE_CLASSES: Record<string, string[]> = {
+  general: ['bench', 'sign', 'trash can', 'umbrella', 'box', 'basket', 'statue'],
+  home: ['bed', 'pillow', 'blanket', 'sofa', 'television', 'lamp', 'fan', 'mirror', 'wardrobe', 'cabinet', 'desk', 'shelf', 'refrigerator', 'microwave', 'oven', 'sink', 'toilet', 'towel', 'toothbrush', 'spoon', 'fork', 'knife', 'plate', 'bowl'],
+  school: ['student', 'teacher', 'whiteboard', 'blackboard', 'pencil', 'pen', 'ruler', 'eraser', 'notebook', 'school desk', 'computer', 'calculator', 'globe', 'scissors', 'school uniform'],
+  office_library: ['office chair', 'computer', 'monitor', 'keyboard', 'mouse', 'printer', 'document', 'filing cabinet', 'bookshelf', 'newspaper', 'magazine', 'stapler'],
+  park_playground: ['tree', 'flower', 'grass', 'playground', 'slide', 'swing', 'seesaw', 'fountain', 'pond', 'picnic table', 'kite', 'ball', 'scooter'],
+  zoo_farm: ['elephant', 'giraffe', 'zebra', 'lion', 'tiger', 'bear', 'monkey', 'deer', 'horse', 'cow', 'sheep', 'goat', 'pig', 'chicken', 'duck', 'rabbit', 'cage', 'fence', 'tractor'],
+  street_transport: ['traffic light', 'stop sign', 'crosswalk', 'road sign', 'taxi', 'train', 'airplane', 'boat', 'helmet', 'traffic cone', 'street lamp', 'fire hydrant', 'ticket machine', 'platform'],
+  mall_shop: ['shopping cart', 'shopping basket', 'cash register', 'mannequin', 'clothes', 'shirt', 'shoe', 'hat', 'handbag', 'display case', 'elevator', 'escalator', 'store sign'],
+  restaurant_cafe: ['dining table', 'menu', 'food', 'pizza', 'sandwich', 'cake', 'fruit', 'coffee', 'teapot', 'tray', 'waiter', 'counter', 'straw', 'napkin'],
+  beach_pool: ['sea', 'sand', 'palm tree', 'beach umbrella', 'beach chair', 'swimsuit', 'life jacket', 'surfboard', 'boat', 'swimming pool', 'float', 'towel', 'shell'],
+  temple_museum: ['temple', 'pagoda', 'buddha statue', 'monk', 'shrine', 'bell', 'candle', 'incense', 'painting', 'sculpture', 'artifact', 'display case', 'museum sign'],
+  hospital_clinic: ['doctor', 'nurse', 'patient', 'hospital bed', 'wheelchair', 'stethoscope', 'medicine', 'medical mask', 'syringe', 'thermometer', 'first aid kit'],
+  sports_gym: ['football', 'basketball', 'volleyball', 'tennis racket', 'badminton racket', 'baseball bat', 'goal', 'net', 'dumbbell', 'treadmill', 'bicycle helmet', 'sports shoe'],
+  nature_camping: ['mountain', 'river', 'waterfall', 'forest', 'rock', 'tent', 'campfire', 'flashlight', 'rope', 'hiking backpack', 'binoculars', 'insect', 'butterfly'],
+};
+
+function getSpaceAdventureClasses(place: string): string[] {
+  const selected = place === 'general'
+    ? Object.values(SPACE_ADVENTURE_PLACE_CLASSES).flat()
+    : (SPACE_ADVENTURE_PLACE_CLASSES[place] ?? SPACE_ADVENTURE_PLACE_CLASSES.general);
+  return Array.from(new Set([...SPACE_ADVENTURE_CORE_CLASSES, ...selected]));
 }
 
 export async function saveGameScore(playerName: string, score: number) {

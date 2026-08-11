@@ -46,15 +46,27 @@ export async function POST(request: NextRequest) {
     const currentWallet = Number(child.wallet) || 0;
     const currentUpdateWallet = Number(child.update_wallet) || 0;
 
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isValidUuid = typeof activityId === 'string' && uuidRegex.test(activityId);
+
+    let validActivityId: string | null = null;
+    if (isValidUuid && !isSpaceAdventure) {
+      const existingActivity = await prisma.activity.findUnique({
+        where: { activity_id: activityId },
+        select: { activity_id: true },
+      });
+      if (existingActivity) {
+        validActivityId = existingActivity.activity_id;
+      }
+    }
+
     const activityRecord = await prisma.$transaction(async (tx) => {
       const record = await tx.activity_record.create({
         data: {
           parent_id: parent.parent_id,
           child_id: childId,
-          // Space Adventure is a virtual activity and does not have a UUID row
-          // in the activity table. Keep the relation empty and identify it via
-          // the evidence payload instead.
-          activity_id: isSpaceAdventure ? null : activityId,
+          // Only attach activity_id if it exists in activity table, else null for virtual activities/songs
+          activity_id: validActivityId,
           point: scoreToAdd,
           time_spent: timeSpent || null,
           date: new Date(),
@@ -71,12 +83,12 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Increment play count on the activity
-      if (!isSpaceAdventure) {
+      // Increment play count if valid activity in DB
+      if (validActivityId) {
         await tx.activity.update({
-          where: { activity_id: activityId },
+          where: { activity_id: validActivityId },
           data: { play_count: { increment: 1 } },
-        }).catch(() => { /* ignore if activity not found */ });
+        }).catch(() => { /* ignore if activity update fails */ });
       }
 
       return record;

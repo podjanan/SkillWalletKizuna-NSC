@@ -5,15 +5,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
-
 import '../../../models/activity.dart';
 import '../../../providers/user_provider.dart';
-import '../../../routes/app_routes.dart';
 import '../../../services/activity_service.dart';
+import '../../../services/api_config.dart';
 import '../../../services/draft_service.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/palette.dart';
@@ -41,7 +42,8 @@ class MathSimulationActivityScreen extends StatefulWidget {
       _MathSimulationActivityScreenState();
 }
 
-class _MathSimulationActivityScreenState extends State<MathSimulationActivityScreen>
+class _MathSimulationActivityScreenState
+    extends State<MathSimulationActivityScreen>
     with SingleTickerProviderStateMixin {
   final ActivityService _activityService = ActivityService();
 
@@ -60,6 +62,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   // Evidence / Notes
   String? _videoPath;
   String? _imagePath;
+  Uint8List? _scanImageBytes;
   Uint8List? _videoThumbnail;
   final TextEditingController _descriptionController = TextEditingController();
 
@@ -68,9 +71,18 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   List<dynamic> _segments = [];
   final Map<int, int> _originalScores = {};
   final Map<int, bool?> _answerStatus = {};
+  final Map<int, TextEditingController> _answerControllers = {};
+
+  // Per-Question Photo & OCR Scanning State
+  final Map<int, String?> _questionImagePaths = {};
+  final Map<int, Uint8List?> _questionImageBytes = {};
+  final Map<int, bool> _isScanningQuestion = {};
+  final Map<int, String?> _questionOcrEngine = {};
 
   bool _isSubmitting = false;
+  bool _isTvMode = false;
   int _totalScoreEarned = 0;
+
 
   @override
   void initState() {
@@ -87,27 +99,54 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   void dispose() {
     _uiUpdateTimer?.cancel();
     _scanAnimationController.dispose();
+    if (_isTvMode) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
+    for (final controller in _answerControllers.values) {
+      controller.dispose();
+    }
     _descriptionController.dispose();
     super.dispose();
   }
 
+  Future<void> _toggleTvMode() async {
+    final nextValue = !_isTvMode;
+    await SystemChrome.setEnabledSystemUIMode(
+      nextValue ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge,
+    );
+    if (!mounted) return;
+    setState(() => _isTvMode = nextValue);
+  }
+
   void _loadSegments() {
-    if (widget.activity.segments != null) {
-      if (widget.activity.segments is List) {
-        _segments = widget.activity.segments as List;
-      } else {
-        _segments = [];
+    dynamic raw = widget.activity.segments;
+    if (raw is String) {
+      try {
+        raw = jsonDecode(raw);
+      } catch (e) {
+        debugPrint('Failed decoding activity.segments string: $e');
       }
+    }
+    if (raw is Map) {
+      raw = raw['questions'] ?? raw['segments'] ?? raw['items'];
+    }
+    if (raw is List) {
+      _segments = List<Map<String, dynamic>>.from(
+        raw.map((item) => item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{}),
+      );
+    } else {
+      _segments = [];
     }
 
     for (int i = 0; i < _segments.length; i++) {
       final segment = _segments[i];
-      final int scoreFromSegment = segment['score'] as int? ??
-          segment['maxScore'] as int? ??
-          segment['point'] as int? ??
-          10;
+      final int scoreFromSegment = (segment['score'] ??
+              segment['maxScore'] ??
+              segment['point'] ??
+              10) as int;
 
       _originalScores[i] = scoreFromSegment;
+      _answerControllers[i] = TextEditingController();
 
       _segmentResults.add(SegmentResult(
         id: segment['id']?.toString() ?? '${i + 1}',
@@ -117,6 +156,95 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
         maxScore: 0,
       ));
     }
+  }
+
+  String _getSegmentImageUrl(Map<String, dynamic> segment) {
+    final url = segment['imageUrl']?.toString() ??
+        segment['image_url']?.toString() ??
+        segment['image']?.toString() ??
+        segment['url']?.toString() ??
+        segment['thumbnailUrl']?.toString() ??
+        '';
+    return url.trim();
+  }
+
+  Widget _buildFallbackMathVisual(String questionText) {
+    final numbers = RegExp(r'\d+')
+        .allMatches(questionText)
+        .map((m) => int.tryParse(m.group(0)!) ?? 0)
+        .toList();
+    final leftCount = numbers.isNotEmpty ? numbers[0] : 1;
+    final rightCount = numbers.length > 1 ? numbers[1] : 0;
+    final isMinus = questionText.contains('-') || questionText.contains('ลบ');
+    final operatorStr = isMinus ? '-' : '+';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF9DE),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Palette.yellow.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            questionText.isNotEmpty ? questionText : 'ภาพเล่าเรื่องคณิตศาสตร์',
+            style: AppTextStyles.heading(18, color: Colors.black87),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: Palette.softShadow,
+                ),
+                child: Wrap(
+                  spacing: 6,
+                  children: List.generate(
+                    leftCount.clamp(1, 15),
+                    (_) => const Text('🍪', style: TextStyle(fontSize: 26)),
+                  ),
+                ),
+              ),
+              if (rightCount > 0) ...[
+                Text(
+                  operatorStr,
+                  style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      color: Palette.sky),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: Palette.softShadow,
+                  ),
+                  child: Wrap(
+                    spacing: 6,
+                    children: List.generate(
+                      rightCount.clamp(1, 15),
+                      (_) => const Text('🍪', style: TextStyle(fontSize: 26)),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   // ── Timer ──────────────────────────────────────────────
@@ -160,8 +288,12 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                 _phase = _Phase.ready;
                 _currentQuestionIndex = 0;
                 _answerStatus.clear();
+                for (final controller in _answerControllers.values) {
+                  controller.clear();
+                }
                 for (int i = 0; i < _segmentResults.length; i++) {
-                  _segmentResults[i] = _segmentResults[i].copyWith(maxScore: 0, recognizedText: '');
+                  _segmentResults[i] = _segmentResults[i]
+                      .copyWith(maxScore: 0, recognizedText: '');
                 }
               });
             },
@@ -188,26 +320,26 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     if (!mounted) return;
     final savedStart = data['startTime'] as String?;
     final phaseStr = data['phase'] as String? ?? 'ready';
-    final restoredPhase = _Phase.values.firstWhere((p) => p.name == phaseStr,
-        orElse: () => _Phase.ready);
-    
+    final restoredPhase = _Phase.values
+        .firstWhere((p) => p.name == phaseStr, orElse: () => _Phase.ready);
+
     _baseElapsedSeconds = data['elapsedSeconds'] as int? ?? 0;
     if (savedStart != null && restoredPhase == _Phase.running) {
       final closedAt = DateTime.parse(savedStart);
       _baseElapsedSeconds += DateTime.now().difference(closedAt).inSeconds;
     }
-    
+
     if (restoredPhase == _Phase.running) {
       _uiUpdateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() {});
       });
     }
-    
+
     setState(() {
       _phase = restoredPhase;
       _currentQuestionIndex = data['currentQuestionIndex'] as int? ?? 0;
       _descriptionController.text = data['description'] as String? ?? '';
-      
+
       final scores = data['scores'] as Map<String, dynamic>? ?? {};
       scores.forEach((k, v) {
         final idx = int.tryParse(k);
@@ -216,11 +348,30 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               _segmentResults[idx].copyWith(maxScore: (v as num).toInt());
         }
       });
-      
+
       final answers = data['answerStatus'] as Map<String, dynamic>? ?? {};
       answers.forEach((k, v) {
         final idx = int.tryParse(k);
         if (idx != null) _answerStatus[idx] = v as bool?;
+      });
+
+      final typedAnswers = data['typedAnswers'] as Map<String, dynamic>? ?? {};
+      typedAnswers.forEach((k, v) {
+        final idx = int.tryParse(k);
+        if (idx != null && _answerControllers[idx] != null) {
+          _answerControllers[idx]!.text = v?.toString() ?? '';
+          if (_segmentResults[idx].recognizedText == null || _segmentResults[idx].recognizedText!.isEmpty) {
+            _segmentResults[idx] = _segmentResults[idx].copyWith(recognizedText: v?.toString() ?? '');
+          }
+        }
+      });
+
+      final qImages = data['questionImagePaths'] as Map<String, dynamic>? ?? {};
+      qImages.forEach((k, v) {
+        final idx = int.tryParse(k);
+        if (idx != null && v != null) {
+          _questionImagePaths[idx] = v.toString();
+        }
       });
     });
   }
@@ -234,7 +385,13 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     }
     final answers = <String, bool?>{};
     _answerStatus.forEach((k, v) => answers['$k'] = v);
-    
+    final typedAnswers = <String, String>{};
+    _answerControllers.forEach((k, v) => typedAnswers['$k'] = v.text);
+    final qImages = <String, String>{};
+    _questionImagePaths.forEach((k, v) {
+      if (v != null) qImages['$k'] = v;
+    });
+
     await DraftService.saveDraft(
       childId: childId,
       type: DraftService.typeCalculate,
@@ -244,10 +401,13 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
         'phase': _phase.name,
         'currentQuestionIndex': _currentQuestionIndex,
         'elapsedSeconds': _elapsedSeconds,
-        'startTime': _phase == _Phase.running ? DateTime.now().toIso8601String() : null,
+        'startTime':
+            _phase == _Phase.running ? DateTime.now().toIso8601String() : null,
         'description': _descriptionController.text,
         'scores': scores,
         'answerStatus': answers,
+        'typedAnswers': typedAnswers,
+        'questionImagePaths': qImages,
       },
     );
   }
@@ -288,27 +448,158 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
 
   // ── Handwriting OCR Scanning Pipeline ────────────────────
 
-  Future<void> _scanAnswerSheet() async {
+  Future<void> _scanSingleQuestion(int index) async {
     final picker = ImagePicker();
     try {
+      final source = await _showSourceDialog();
       final pickedFile = await picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 70,
-        maxWidth: 1024,
-        maxHeight: 1024,
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
       );
       if (pickedFile == null) return;
 
+      final bytes = await pickedFile.readAsBytes();
+
+      setState(() {
+        _questionImagePaths[index] = pickedFile.path;
+        _questionImageBytes[index] = bytes;
+        _isScanningQuestion[index] = true;
+      });
+
+      final base64Image = base64Encode(bytes);
+      final lowerPath = pickedFile.path.toLowerCase();
+      final imageMimeType = pickedFile.mimeType ??
+          (lowerPath.endsWith('.png')
+              ? 'image/png'
+              : lowerPath.endsWith('.webp')
+                  ? 'image/webp'
+                  : 'image/jpeg');
+
+      final segment = _segments[index];
+      final targetQuestion = [
+        {
+          'id': index + 1,
+          'questionIndex': index + 1,
+          'question': MathOpDetector.normalizeQuestion(
+            segment['question']?.toString() ?? segment['text']?.toString() ?? '',
+          ),
+          'answer': segment['answer']?.toString() ?? '',
+        }
+      ];
+
+      final response = await _activityService.verifyHandwriting(
+        base64Image: base64Image,
+        questions: targetQuestion,
+        mimeType: imageMimeType,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isScanningQuestion[index] = false;
+        });
+      }
+
+      if (response['results'] != null &&
+          (response['results'] as List).isNotEmpty) {
+        final item = (response['results'] as List).first;
+        final detectedText =
+            item['detectedText']?.toString() ?? item['detectedAnswer']?.toString() ?? '';
+        final isCorrect = item['isCorrect'] as bool? ?? false;
+        final engine = response['engine']?.toString() ?? 'Gemini Vision AI';
+
+        if (mounted) {
+          setState(() {
+            _segmentResults[index] = _segmentResults[index].copyWith(
+              recognizedText: detectedText,
+              maxScore: isCorrect ? (_originalScores[index] ?? 10) : 0,
+            );
+            _answerStatus[index] = isCorrect;
+            _questionOcrEngine[index] = engine;
+            if (_answerControllers[index] != null) {
+              _answerControllers[index]!.text = detectedText;
+            }
+          });
+
+          await _saveDraft();
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    Icon(
+                      isCorrect ? Icons.check_circle : Icons.info_outline,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isCorrect
+                            ? 'ตรวจข้อ ${index + 1}: อ่านได้ "$detectedText" (ถูกต้อง ✓)'
+                            : 'ตรวจข้อ ${index + 1}: อ่านได้ "$detectedText" (ไม่ตรงกับเฉลย)',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: isCorrect ? Palette.success : Palette.pink,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      } else {
+        throw Exception('ไม่พบผลการอ่านจากภาพ');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isScanningQuestion[index] = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('เกิดข้อผิดพลาดในการสแกนข้อ ${index + 1}: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _scanAnswerSheet() async {
+    final picker = ImagePicker();
+    try {
+      final source = await _showSourceDialog();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+      if (pickedFile == null) return;
+
+      // XFile works on Android, iOS and web. dart:io File does not work in a browser.
+      final bytes = await pickedFile.readAsBytes();
+
       setState(() {
         _imagePath = pickedFile.path;
+        _scanImageBytes = bytes;
         _phase = _Phase.scanning;
       });
 
       _scanAnimationController.repeat(reverse: true);
 
       // Call API
-      final bytes = await File(pickedFile.path).readAsBytes();
       final base64Image = base64Encode(bytes);
+      final lowerPath = pickedFile.path.toLowerCase();
+      final imageMimeType = pickedFile.mimeType ??
+          (lowerPath.endsWith('.png')
+              ? 'image/png'
+              : lowerPath.endsWith('.webp')
+                  ? 'image/webp'
+                  : 'image/jpeg');
 
       // Format expected answers list
       final expectedQuestions = _segments.asMap().entries.map((e) {
@@ -324,6 +615,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
       final response = await _activityService.verifyHandwriting(
         base64Image: base64Image,
         questions: expectedQuestions,
+        mimeType: imageMimeType,
       );
 
       _scanAnimationController.stop();
@@ -340,9 +632,10 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
             );
             if (ocrItem != null) {
               final detectedText = ocrItem['detectedText']?.toString() ?? '';
-              final detectedAnswer = ocrItem['detectedAnswer']?.toString() ?? '';
+              final detectedAnswer =
+                  ocrItem['detectedAnswer']?.toString() ?? '';
               final isCorrect = ocrItem['isCorrect'] as bool? ?? false;
-              
+
               _segmentResults[i] = _segmentResults[i].copyWith(
                 recognizedText: detectedText,
                 maxScore: isCorrect ? (_originalScores[i] ?? 10) : 0,
@@ -360,7 +653,6 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
       } else {
         throw Exception('เซิร์ฟเวอร์ส่งข้อมูลกลับในรูปแบบที่ไม่ถูกต้อง');
       }
-
     } catch (e) {
       _scanAnimationController.stop();
       setState(() => _phase = _Phase.running);
@@ -377,25 +669,45 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
   bool _evaluateAnswerLocally(String detected, String expected) {
     final cleanDet = detected.replaceAll(RegExp(r'\s+'), '').toLowerCase();
     final cleanExp = expected.replaceAll(RegExp(r'\s+'), '').toLowerCase();
-    
+
     if (cleanDet == cleanExp) return true;
-    
-    // Check numeric match
-    final detNum = RegExp(r'\d+').stringMatch(cleanDet);
-    final expNum = RegExp(r'\d+').stringMatch(cleanExp);
-    if (detNum != null && expNum != null && detNum == expNum) return true;
-    
+
+    // Check numeric values, including negative and decimal answers.
+    final detNum = double.tryParse(cleanDet.replaceAll(',', ''));
+    final expNum = double.tryParse(cleanExp.replaceAll(',', ''));
+    if (detNum != null &&
+        expNum != null &&
+        (detNum - expNum).abs() < 0.000001) {
+      return true;
+    }
+
     return false;
+  }
+
+  void _openManualReview() {
+    setState(() {
+      for (int i = 0; i < _segments.length; i++) {
+        final typed = _answerControllers[i]?.text.trim() ?? '';
+        _answerStatus[i] = null;
+        _segmentResults[i] = _segmentResults[i].copyWith(
+          recognizedText: typed,
+          maxScore: 0,
+        );
+      }
+      _phase = _Phase.reviewing;
+    });
   }
 
   void _showEditOcrDialog(int index) {
     final l = AppLocalizations.of(context)!;
-    final textCtrl = TextEditingController(text: _segmentResults[index].recognizedText);
+    final textCtrl =
+        TextEditingController(text: _segmentResults[index].recognizedText);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(l.math_simulation_editTitle(index + 1), style: AppTextStyles.heading(18)),
+        title: Text(l.math_simulation_editTitle(index + 1),
+            style: AppTextStyles.heading(18)),
         content: TextField(
           controller: textCtrl,
           decoration: InputDecoration(
@@ -412,9 +724,10 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
           ElevatedButton(
             onPressed: () {
               final newText = textCtrl.text.trim();
-              final expectedAnswer = _segments[index]['answer']?.toString() ?? '';
+              final expectedAnswer =
+                  _segments[index]['answer']?.toString() ?? '';
               final isCorrect = _evaluateAnswerLocally(newText, expectedAnswer);
-              
+
               setState(() {
                 _segmentResults[index] = _segmentResults[index].copyWith(
                   recognizedText: newText,
@@ -425,7 +738,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               Navigator.pop(ctx);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Palette.sky),
-            child: Text(l.profile_save, style: const TextStyle(color: Colors.white)),
+            child: Text(l.profile_save,
+                style: const TextStyle(color: Colors.white)),
           )
         ],
       ),
@@ -448,17 +762,18 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
 
       if (pickedFile != null) {
         if (isVideo && !kIsWeb) {
-          final thumb = await VideoThumbnail.thumbnailData(
-            video: pickedFile.path,
-            imageFormat: ImageFormat.JPEG,
-            maxWidth: 400,
-            quality: 70,
-          );
-          if (mounted) {
-            setState(() {
-              _videoPath = pickedFile!.path;
-              _videoThumbnail = thumb;
-            });
+          final videoPath = pickedFile.path;
+          if (mounted) setState(() => _videoPath = videoPath);
+          try {
+            final thumb = await VideoThumbnail.thumbnailData(
+              video: videoPath,
+              imageFormat: ImageFormat.JPEG,
+              maxWidth: 400,
+              quality: 70,
+            );
+            if (mounted) setState(() => _videoThumbnail = thumb);
+          } catch (e) {
+            debugPrint('Video thumbnail generation failed: $e');
           }
         } else {
           setState(() {
@@ -511,7 +826,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     final String? childId = context.read<UserProvider>().currentChildId;
     if (childId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.calculate_childIdNotFound)),
+        SnackBar(
+            content:
+                Text(AppLocalizations.of(context)!.calculate_childIdNotFound)),
       );
       return;
     }
@@ -520,7 +837,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     setState(() => _isSubmitting = true);
 
     final timeSpentSeconds = _elapsedSeconds;
-    
+
     // Calculate total points
     int correctCount = 0;
     for (int i = 0; i < _segmentResults.length; i++) {
@@ -561,7 +878,6 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
         _phase = _Phase.summary;
         _uiUpdateTimer?.cancel();
       });
-      
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('ส่งคำตอบล้มเหลว: $e')),
@@ -590,13 +906,19 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
         if (shouldPop && mounted) Navigator.pop(context);
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFFFFDF6), // warm cream background
-        appBar: _phase != _Phase.scanning
+        backgroundColor: _isTvMode && _phase == _Phase.running
+            ? const Color(0xFF071A34)
+            : const Color(0xFFFFFCEB), // warm cream background
+        appBar: _phase != _Phase.scanning &&
+                !(_isTvMode && _phase == _Phase.running)
             ? AppBar(
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 leading: IconButton(
-                  icon: Icon(_phase == _Phase.summary ? Icons.close : Icons.arrow_back, color: Colors.black, size: 28),
+                  icon: Icon(
+                      _phase == _Phase.summary ? Icons.close : Icons.arrow_back,
+                      color: Colors.black,
+                      size: 28),
                   onPressed: () async {
                     if (_phase == _Phase.summary) {
                       Navigator.pop(context);
@@ -609,13 +931,26 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                 centerTitle: true,
                 title: Text(
                   _phase == _Phase.summary
-                      ? ActivityL10n.localizedActivityType(context, widget.activity.category)
+                      ? ActivityL10n.localizedActivityType(
+                          context, widget.activity.category)
                       : _phase == _Phase.reviewing
                           ? 'ผลการสแกนการตรวจคำตอบ'
                           : 'กิจกรรมคณิตศาสตร์ตามสถานการณ์จำลอง',
                   style: AppTextStyles.heading(20, color: Colors.black),
                 ),
                 actions: [
+                  if (_phase == _Phase.ready || _phase == _Phase.running)
+                    IconButton(
+                      tooltip:
+                          _isTvMode ? 'ออกจากโหมด Smart TV' : 'โหมด Smart TV',
+                      icon: Icon(
+                        _isTvMode
+                            ? Icons.fullscreen_exit_rounded
+                            : Icons.tv_rounded,
+                        color: Palette.sky,
+                      ),
+                      onPressed: _toggleTvMode,
+                    ),
                   if (_phase == _Phase.summary)
                     IconButton(
                       icon: const Icon(Icons.share, color: Palette.sky),
@@ -625,7 +960,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                           ShareResultData(
                             activityName: widget.activity.name,
                             score: _totalScoreEarned,
-                            maxScore: _segments.length * 10,
+                            maxScore: widget.activity.maxScore,
                             timeSpentSeconds: _elapsedSeconds,
                             category: widget.activity.category,
                             evidenceImagePath: _imagePath,
@@ -641,7 +976,14 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                 child: Text(AppLocalizations.of(context)!.calculate_noQuestions,
                     style: AppTextStyles.heading(20, color: Colors.grey)),
               )
-            : _buildPhaseContent(elapsedSeconds),
+            : Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: _isTvMode ? 1100 : double.infinity,
+                  ),
+                  child: _buildPhaseContent(elapsedSeconds),
+                ),
+              ),
       ),
     );
   }
@@ -651,7 +993,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
       case _Phase.ready:
         return _buildReadyScreen();
       case _Phase.running:
-        return _buildRunningScreen(elapsedSeconds);
+        return _isTvMode
+            ? _buildTvRunningScreen()
+            : _buildRunningScreen(elapsedSeconds);
       case _Phase.scanning:
         return _buildScanningScreen();
       case _Phase.reviewing:
@@ -659,6 +1003,345 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
       case _Phase.summary:
         return _buildSummaryScreen();
     }
+  }
+
+  static final Map<String, Uint8List> _webImageCache = {};
+
+  Future<Uint8List?> _fetchNetworkImageBytes(String url) async {
+    if (_webImageCache.containsKey(url)) {
+      return _webImageCache[url];
+    }
+    try {
+      final apiKey =
+          dotenv.env['API_SECRET_KEY'] ?? 'kizuna-secret-api-key-2025';
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'X-API-Key': apiKey},
+      );
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+        _webImageCache[url] = response.bodyBytes;
+        return response.bodyBytes;
+      }
+      debugPrint(
+          '[MathSim] Web fetch image status: ${response.statusCode} for $url');
+    } catch (e) {
+      debugPrint('[MathSim] Web fetch image error for $url: $e');
+    }
+    return null;
+  }
+
+  Widget _buildSmartImage(
+    String rawUrl, {
+    BoxFit fit = BoxFit.contain,
+    Widget Function(BuildContext, Object, StackTrace?)? errorBuilder,
+  }) {
+    final trimmed = rawUrl.trim();
+    if (trimmed.isEmpty) {
+      return errorBuilder != null
+          ? errorBuilder(context, 'Empty URL', null)
+          : const SizedBox();
+    }
+
+    if (trimmed.startsWith('data:')) {
+      try {
+        final base64Str =
+            trimmed.contains(',') ? trimmed.split(',').last : trimmed;
+        final bytes = base64Decode(base64Str);
+        return Image.memory(
+          bytes,
+          width: double.infinity,
+          fit: fit,
+          errorBuilder: errorBuilder,
+        );
+      } catch (e) {
+        if (errorBuilder != null) return errorBuilder(context, e, null);
+      }
+    }
+
+    final resolved = ApiConfig.resolveAssetUrl(trimmed);
+    debugPrint('[MathSim] Loading image: $trimmed -> $resolved');
+
+    if (kIsWeb) {
+      return FutureBuilder<Uint8List?>(
+        future: _fetchNetworkImageBytes(resolved),
+        builder: (ctx, snapshot) {
+          if (snapshot.hasData && snapshot.data != null) {
+            return Image.memory(
+              snapshot.data!,
+              width: double.infinity,
+              fit: fit,
+              errorBuilder: errorBuilder,
+            );
+          }
+          if (snapshot.connectionState == ConnectionState.done &&
+              snapshot.data == null) {
+            debugPrint('[MathSim] FutureBuilder image fetch returned null for $resolved');
+            return errorBuilder != null
+                ? errorBuilder(ctx, 'Image fetch failed', null)
+                : const SizedBox();
+          }
+          return const Center(
+            child: SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(
+                  strokeWidth: 3, color: Palette.sky),
+            ),
+          );
+        },
+      );
+    }
+
+    return Image.network(
+      resolved,
+      width: double.infinity,
+      fit: fit,
+      errorBuilder: (ctx, err, stack) {
+        debugPrint('[MathSim] Image.network failed for $resolved: $err');
+        return errorBuilder != null
+            ? errorBuilder(ctx, err, stack)
+            : const SizedBox();
+      },
+    );
+  }
+
+  Widget _buildTvRunningScreen() {
+    final segment = _segments[_currentQuestionIndex];
+    final totalQuestions = _segments.length;
+    final imageUrl = segment['imageUrl']?.toString() ??
+        segment['image']?.toString() ??
+        segment['image_url']?.toString() ??
+        segment['url']?.toString() ??
+        '';
+    final progress = (_currentQuestionIndex + 1) / totalQuestions;
+
+    return ColoredBox(
+      color: const Color(0xFF071A34),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Material(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    shape: const CircleBorder(),
+                    child: IconButton(
+                      tooltip: 'ออกจากโหมด Smart TV',
+                      onPressed: _toggleTvMode,
+                      icon: const Icon(Icons.close_rounded,
+                          color: Colors.white, size: 30),
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF103357),
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.tv_rounded,
+                            color: Color(0xFF24AEFF), size: 21),
+                        SizedBox(width: 7),
+                        Text('TV Mode',
+                            style: TextStyle(
+                                color: Color(0xFF24AEFF), fontSize: 16)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 5,
+                  backgroundColor: Colors.white.withValues(alpha: 0.13),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Color(0xFF1DA9FA)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '${_currentQuestionIndex + 1} / $totalQuestions',
+                  style:
+                      const TextStyle(color: Color(0xFF24AEFF), fontSize: 13),
+                ),
+              ),
+              const Spacer(flex: 2),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF35B8FF), Color(0xFF1689DC)],
+                  ),
+                  borderRadius: BorderRadius.circular(28),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Color(0x5524AEFF),
+                        blurRadius: 24,
+                        offset: Offset(0, 8)),
+                  ],
+                ),
+                child: Text(
+                  'ภาพข้อที่ ${_currentQuestionIndex + 1}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 36),
+              Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(maxHeight: 430),
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF163D66), Color(0xFF123557)],
+                  ),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: const Color(0xFF137FC1)),
+                ),
+                child: imageUrl.isNotEmpty
+                    ? AspectRatio(
+                        // Match the generated 1280x768 canvas so labels and
+                        // countable objects are never cropped.
+                        aspectRatio: 5 / 3,
+                        child: _buildSmartImage(
+                          imageUrl,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) =>
+                              _buildTvImagePlaceholder(),
+                        ),
+                      )
+                    : _buildTvImagePlaceholder(),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'เลื่อนไปดูรูปข้อถัดไป',
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.38), fontSize: 14),
+              ),
+              const Spacer(flex: 3),
+              Row(
+                children: [
+                  _tvNavigationButton(
+                    icon: Icons.chevron_left_rounded,
+                    label: _currentQuestionIndex == 0
+                        ? '0'
+                        : '$_currentQuestionIndex',
+                    enabled: _currentQuestionIndex > 0,
+                    onPressed: () => setState(() => _currentQuestionIndex--),
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: List.generate(totalQuestions, (index) {
+                      return Container(
+                        width: index == _currentQuestionIndex ? 22 : 7,
+                        height: 7,
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        decoration: BoxDecoration(
+                          color: index == _currentQuestionIndex
+                              ? const Color(0xFF20AEFF)
+                              : Colors.white.withValues(alpha: 0.28),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      );
+                    }),
+                  ),
+                  const Spacer(),
+                  _tvNavigationButton(
+                    icon: _currentQuestionIndex < totalQuestions - 1
+                        ? Icons.chevron_right_rounded
+                        : Icons.check_rounded,
+                    label: _currentQuestionIndex < totalQuestions - 1
+                        ? '${_currentQuestionIndex + 2}'
+                        : 'จบ',
+                    enabled: true,
+                    primary: true,
+                    iconAfter: true,
+                    onPressed: () {
+                      if (_currentQuestionIndex < totalQuestions - 1) {
+                        setState(() => _currentQuestionIndex++);
+                      } else {
+                        _toggleTvMode();
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTvImagePlaceholder() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.image_not_supported_outlined,
+              color: Colors.white.withValues(alpha: 0.45), size: 54),
+          const SizedBox(height: 10),
+          Text(
+            'ยังไม่มีรูปสำหรับข้อนี้',
+            style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55), fontSize: 15),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tvNavigationButton({
+    required IconData icon,
+    required String label,
+    required bool enabled,
+    required VoidCallback onPressed,
+    bool primary = false,
+    bool iconAfter = false,
+  }) {
+    final foreground =
+        enabled ? Colors.white : Colors.white.withValues(alpha: 0.28);
+    final children = <Widget>[
+      Icon(icon, color: foreground, size: 25),
+      const SizedBox(width: 5),
+      Text(label,
+          style: TextStyle(
+              color: foreground, fontSize: 15, fontWeight: FontWeight.w600)),
+    ];
+    return Material(
+      color: primary
+          ? const Color(0xFF209FEF)
+          : Colors.white.withValues(alpha: enabled ? 0.08 : 0.03),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: enabled ? onPressed : null,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          height: 52,
+          constraints: const BoxConstraints(minWidth: 76),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: iconAfter ? children.reversed.toList() : children,
+          ),
+        ),
+      ),
+    );
   }
 
   // ── Screen: Ready Phase ────────────────────────────────
@@ -671,11 +1354,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
         children: [
           InfoBadges(activity: widget.activity),
           const SizedBox(height: 20),
-          
           Text('รายละเอียดกิจกรรม',
               style: AppTextStyles.heading(18, color: Palette.sky)),
           const SizedBox(height: 8),
-          
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -686,27 +1367,29 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               border: Border.all(color: Palette.divider),
             ),
             child: Text(
-              widget.activity.content.isNotEmpty ? widget.activity.content : 'ฝึกคิดวิเคราะห์และแก้โจทย์คณิตศาสตร์ผ่านภาพสถานการณ์จริง บันทึกคำตอบลงในกระดาษก่อนกดสแกน',
+              widget.activity.content.isNotEmpty
+                  ? widget.activity.content
+                  : 'ฝึกคิดวิเคราะห์และแก้โจทย์คณิตศาสตร์ผ่านภาพสถานการณ์จริง บันทึกคำตอบลงในกระดาษก่อนกดสแกน',
               style: AppTextStyles.body(15),
             ),
           ),
           const SizedBox(height: 32),
-          
           _buildReadyMessage(),
           const SizedBox(height: 48),
-
           Center(
             child: SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
                 onPressed: _startTimer,
-                icon: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 28),
+                icon: const Icon(Icons.play_arrow_rounded,
+                    color: Colors.white, size: 28),
                 label: Text(AppLocalizations.of(context)!.common_start,
                     style: AppTextStyles.heading(18, color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Palette.success,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                   elevation: 2,
                 ),
               ),
@@ -731,10 +1414,12 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
           Icon(Icons.edit_note_rounded, size: 48, color: Palette.sky),
           const SizedBox(height: 12),
           Text(AppLocalizations.of(context)!.calculate_pressStart,
-              style: AppTextStyles.body(15, color: Palette.sky, weight: FontWeight.w600),
+              style: AppTextStyles.body(15,
+                  color: Palette.sky, weight: FontWeight.w600),
               textAlign: TextAlign.center),
           const SizedBox(height: 6),
-          Text('เตรียมกระดาษจริงและดินสอเขียนคำตอบไว้ให้พร้อม\nตัวเลขคำตอบเขียนชัดๆ เพื่อสแกนตรวจคำตอบ',
+          Text(
+              'เตรียมกระดาษจริงและดินสอเขียนคำตอบไว้ให้พร้อม\nตัวเลขคำตอบเขียนชัดๆ เพื่อสแกนตรวจคำตอบ',
               style: AppTextStyles.body(13, color: Palette.deepGrey),
               textAlign: TextAlign.center),
         ],
@@ -748,32 +1433,49 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     final l = AppLocalizations.of(context)!;
     final segment = _segments[_currentQuestionIndex];
     final totalQuestions = _segments.length;
-    
+
     final questionText = MathOpDetector.normalizeQuestion(
       segment['question']?.toString() ?? segment['text']?.toString() ?? '',
     );
-    final imageUrl = segment['imageUrl']?.toString() ?? '';
+    final imageUrl = _getSegmentImageUrl(segment);
 
     return Column(
       children: [
-        // Top indicators bar
+        // Top indicators bar (interactive dots)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           child: Row(
             children: List.generate(totalQuestions, (index) {
               final isActive = index == _currentQuestionIndex;
-              final isCompleted = index < _currentQuestionIndex;
+              final status = _answerStatus[index];
+              final Color color = isActive
+                  ? Palette.sky
+                  : status == true
+                      ? Palette.success
+                      : status == false
+                          ? Palette.pink
+                          : Colors.grey.shade300;
+
               return Expanded(
-                child: Container(
-                  height: 6,
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? Palette.sky
-                        : isCompleted
-                            ? Palette.success
-                            : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(3),
+                child: InkWell(
+                  onTap: () => setState(() => _currentQuestionIndex = index),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    height: isActive ? 8 : 6,
+                    margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(4),
+                      boxShadow: isActive
+                          ? [
+                              BoxShadow(
+                                color: Palette.sky.withValues(alpha: 0.4),
+                                blurRadius: 4,
+                                spreadRadius: 1,
+                              )
+                            ]
+                          : [],
+                    ),
                   ),
                 ),
               );
@@ -781,7 +1483,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
           ),
         ),
 
-        // Timer Pill & Counter
+        // Timer Pill & Question Counter
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
           child: Row(
@@ -792,7 +1494,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                 style: AppTextStyles.heading(16, color: Palette.sky),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 decoration: BoxDecoration(
                   gradient: Palette.skyGradient,
                   borderRadius: BorderRadius.circular(16),
@@ -816,60 +1519,62 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
-            child: Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              elevation: 4,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Situation Image
-                  if (imageUrl.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                      child: AspectRatio(
-                        aspectRatio: 1.6,
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) => Container(
-                            color: Colors.grey.shade100,
-                            alignment: Alignment.center,
-                            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+            child: Column(
+              children: [
+                Card(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24)),
+                  elevation: 4,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Situation Image or Fallback Visual Card
+                      if (imageUrl.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(24)),
+                          child: AspectRatio(
+                            aspectRatio: 5 / 3,
+                            child: _buildSmartImage(
+                              imageUrl,
+                              fit: BoxFit.contain,
+                              errorBuilder: (ctx, err, stack) =>
+                                  _buildFallbackMathVisual(questionText),
+                            ),
                           ),
-                        ),
-                      ),
-                    )
-                  else
-                    Container(
-                      height: 180,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(Icons.image, size: 60, color: Colors.grey.shade400),
-                    ),
+                        )
+                      else
+                        _buildFallbackMathVisual(questionText),
 
-                  // Proposition Text box
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'สถานการณ์ปัญหาวิเคราะห์ (PROPOSITION)',
-                          style: AppTextStyles.heading(14, color: Colors.amber.shade800),
+                      // Proposition Text box
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'สถานการณ์ปัญหาวิเคราะห์ (PROPOSITION)',
+                              style: AppTextStyles.heading(14,
+                                  color: Colors.amber.shade800),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              questionText,
+                              style: AppTextStyles.body(17,
+                                  weight: FontWeight.w600),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          questionText,
-                          style: AppTextStyles.body(17, weight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Question-by-Question OCR Camera & Evaluation Card
+                _buildQuestionOcrCard(_currentQuestionIndex, segment),
+              ],
             ),
           ),
         ),
@@ -881,77 +1586,55 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Scan Answer / Manual Check Button (Only on the last question)
-                if (_currentQuestionIndex == totalQuestions - 1) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: _scanAnswerSheet,
-                      icon: const Icon(Icons.camera_alt, color: Colors.white),
-                      label: Text(l.math_simulation_scanBtn, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1B5E20), // Dark green
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _imagePath = null;
-                          _phase = _Phase.reviewing;
-                        });
-                      },
-                      icon: Icon(Icons.fact_check_outlined, color: Palette.sky),
-                      label: Text(
-                        l.math_simulation_manualCheckBtn,
-                        style: AppTextStyles.heading(15, color: Palette.sky),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Palette.sky, width: 1.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                ],
-
-                // Prev / Next actions
                 Row(
                   children: [
                     if (_currentQuestionIndex > 0)
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () => setState(() => _currentQuestionIndex--),
+                          onPressed: () =>
+                              setState(() => _currentQuestionIndex--),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: Palette.sky, width: 1.5),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14)),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: Text(l.math_simulation_prevBtn, style: AppTextStyles.heading(14, color: Palette.sky)),
+                          child: Text(l.math_simulation_prevBtn,
+                              style: AppTextStyles.heading(14,
+                                  color: Palette.sky)),
                         ),
                       ),
-                    if (_currentQuestionIndex > 0 && _currentQuestionIndex < totalQuestions - 1)
-                      const SizedBox(width: 12),
-                    if (_currentQuestionIndex < totalQuestions - 1)
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => setState(() => _currentQuestionIndex++),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Palette.sky,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: Text(l.math_simulation_nextBtn, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                    if (_currentQuestionIndex > 0) const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_currentQuestionIndex < totalQuestions - 1) {
+                            setState(() => _currentQuestionIndex++);
+                          } else {
+                            // On last question, open overall review summary
+                            setState(() => _phase = _Phase.reviewing);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              _currentQuestionIndex == totalQuestions - 1
+                                  ? Palette.success
+                                  : Palette.sky,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: Text(
+                          _currentQuestionIndex < totalQuestions - 1
+                              ? l.math_simulation_nextBtn
+                              : 'ตรวจสรุปผลทั้งหมด',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
+                    ),
                   ],
                 ),
               ],
@@ -962,19 +1645,285 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     );
   }
 
+  Widget _buildQuestionOcrCard(int index, dynamic segment) {
+    final status = _answerStatus[index];
+    final isScanning = _isScanningQuestion[index] == true;
+    final recognizedText = _segmentResults[index].recognizedText ?? '';
+    final hasImage = _questionImageBytes[index] != null ||
+        (_questionImagePaths[index] != null && !kIsWeb);
+
+    final Color cardBorderColor = isScanning
+        ? Palette.sky
+        : status == true
+            ? Palette.success
+            : status == false
+                ? Palette.pink
+                : Colors.grey.shade300;
+
+    final Color badgeBg = status == true
+        ? Palette.success.withValues(alpha: 0.1)
+        : status == false
+            ? Palette.pink.withValues(alpha: 0.1)
+            : Palette.sky.withValues(alpha: 0.08);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cardBorderColor, width: 1.5),
+        boxShadow: Palette.cardShadow,
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: badgeBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  isScanning
+                      ? Icons.sync
+                      : status == true
+                          ? Icons.check_circle_rounded
+                          : status == false
+                              ? Icons.cancel_rounded
+                              : Icons.camera_alt_outlined,
+                  color: status == true
+                      ? Palette.success
+                      : status == false
+                          ? Palette.pink
+                          : Palette.sky,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ตรวจคำตอบด้วยกล้องถ่ายรูป (ข้อที่ ${index + 1})',
+                      style: AppTextStyles.heading(15, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isScanning
+                          ? 'กำลังอ่านลายมือจากภาพถ่าย...'
+                          : status == true
+                              ? 'อ่านได้ "$recognizedText" (ถูกต้อง ✓)'
+                              : status == false
+                                  ? 'อ่านได้ "$recognizedText" (ไม่ตรงเฉลย)'
+                                  : 'ถ่ายรูปเขียนมือเฉพาะข้อนี้เพื่อตรวจทันที',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: status == true
+                            ? Palette.success
+                            : status == false
+                                ? Palette.pink
+                                : Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          if (hasImage) ...[
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                height: 120,
+                width: double.infinity,
+                color: Colors.grey.shade100,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    _questionImageBytes[index] != null
+                        ? Image.memory(_questionImageBytes[index]!,
+                            fit: BoxFit.cover, width: double.infinity)
+                        : Image.file(File(_questionImagePaths[index]!),
+                            fit: BoxFit.cover, width: double.infinity),
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.65),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.photo_camera,
+                                color: Colors.white, size: 14),
+                            SizedBox(width: 4),
+                            Text('ภาพข้อนี้',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 14),
+
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton.icon(
+              onPressed: isScanning ? null : () => _scanSingleQuestion(index),
+              icon: isScanning
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2.5),
+                    )
+                  : Icon(
+                      hasImage ? Icons.camera_alt_rounded : Icons.photo_camera_rounded,
+                      color: Colors.white),
+              label: Text(
+                isScanning
+                    ? 'กำลังอ่านลายมือด้วย AI...'
+                    : hasImage
+                        ? 'ถ่ายรูปตรวจข้อนี้ใหม่'
+                        : 'ถ่ายรูป / สแกนตรวจข้อนี้',
+                style: AppTextStyles.heading(15, color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: status == true
+                    ? Palette.success
+                    : Palette.sky,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+                elevation: 2,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _showEditOcrDialog(index),
+                  icon: Icon(Icons.edit, color: Palette.sky, size: 18),
+                  label: Text('แก้ไขตัวเลข',
+                      style: AppTextStyles.body(13, color: Palette.sky)),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: Palette.sky.withValues(alpha: 0.6)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () => setState(() {
+                  _answerStatus[index] = true;
+                  _segmentResults[index] = _segmentResults[index]
+                      .copyWith(maxScore: _originalScores[index] ?? 10);
+                  _saveDraft();
+                }),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: status == true
+                        ? Palette.success
+                        : Palette.success.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check,
+                          size: 16,
+                          color: status == true ? Colors.white : Palette.success),
+                      const SizedBox(width: 4),
+                      Text('ถูก',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: status == true
+                                  ? Colors.white
+                                  : Palette.success)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              InkWell(
+                onTap: () => setState(() {
+                  _answerStatus[index] = false;
+                  _segmentResults[index] =
+                      _segmentResults[index].copyWith(maxScore: 0);
+                  _saveDraft();
+                }),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: status == false
+                        ? Palette.pink
+                        : Palette.pink.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.close,
+                          size: 16,
+                          color: status == false ? Colors.white : Palette.pink),
+                      const SizedBox(width: 4),
+                      Text('ผิด',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: status == false
+                                  ? Colors.white
+                                  : Palette.pink)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Screen: Scanning Phase (Animated green line) ───────
 
   Widget _buildScanningScreen() {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFFF4FAF6),
       body: Stack(
         children: [
           // Background photo
-          if (_imagePath != null)
+          if (_scanImageBytes != null || (_imagePath != null && !kIsWeb))
             Positioned.fill(
               child: Opacity(
-                opacity: 0.65,
-                child: Image.file(File(_imagePath!), fit: BoxFit.contain),
+                opacity: 0.82,
+                child: _scanImageBytes != null
+                    ? Image.memory(_scanImageBytes!, fit: BoxFit.contain)
+                    : Image.file(File(_imagePath!), fit: BoxFit.contain),
               ),
             ),
 
@@ -982,7 +1931,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.35), width: 28),
+                border: Border.all(
+                    color: Palette.success.withValues(alpha: 0.18), width: 12),
               ),
             ),
           ),
@@ -992,16 +1942,17 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
             animation: _scanAnimationController,
             builder: (context, child) {
               return Positioned(
-                top: MediaQuery.of(context).size.height * _scanAnimationController.value,
+                top: MediaQuery.of(context).size.height *
+                    _scanAnimationController.value,
                 left: 0,
                 right: 0,
                 child: Container(
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.greenAccent,
+                    color: Palette.success,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.greenAccent.withValues(alpha: 0.8),
+                        color: Palette.success.withValues(alpha: 0.55),
                         blurRadius: 15,
                         spreadRadius: 2,
                       ),
@@ -1018,24 +1969,46 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               padding: const EdgeInsets.all(24),
               margin: const EdgeInsets.symmetric(horizontal: 36),
               decoration: BoxDecoration(
-                color: Colors.black87,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 10)],
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                border:
+                    Border.all(color: Palette.success.withValues(alpha: 0.18)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.14),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  )
+                ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const CircularProgressIndicator(color: Colors.greenAccent),
-                  const SizedBox(height: 20),
+                  Container(
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: Palette.success.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(15),
+                      child: CircularProgressIndicator(
+                        color: Palette.success,
+                        strokeWidth: 3,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   Text(
-                    'กำลังสแกนวิเคราะห์คำตอบจากลายมือ...',
-                    style: AppTextStyles.heading(16, color: Colors.white),
+                    'กำลังอ่านคำตอบจากภาพ',
+                    style: AppTextStyles.heading(17, color: Colors.black87),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Gemini กำลังอ่านข้อความเขียนและประเมินผลเลข',
-                    style: AppTextStyles.body(13, color: Colors.grey),
+                    'กรุณารอสักครู่ ระบบกำลังค้นหาตัวเลขทั้งหมด',
+                    style: AppTextStyles.body(13, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -1053,25 +2026,44 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     final l = AppLocalizations.of(context)!;
     return Column(
       children: [
-        // Detected answers header banner
+        // Review header banner
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          color: Palette.sky.withValues(alpha: 0.08),
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Palette.sky.withValues(alpha: 0.12),
+                Palette.success.withValues(alpha: 0.08),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
+          ),
           child: Row(
             children: [
-              Icon(Icons.analytics_outlined, color: Palette.sky, size: 24),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(Icons.fact_check_rounded,
+                    color: Palette.sky, size: 23),
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      l.math_simulation_detectedHeader(_segments.length),
-                      style: AppTextStyles.heading(15, color: Palette.sky),
+                      'ตรวจคำตอบทั้งหมด',
+                      style: AppTextStyles.heading(16, color: Colors.black87),
                     ),
                     Text(
-                      l.math_simulation_detectedHint,
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      'ตรวจสอบและแก้ไขผลก่อนกดเสร็จสิ้น',
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.black54),
                     ),
                   ],
                 ),
@@ -1087,13 +2079,15 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // List of question cards
-                Text(l.math_simulation_sectionTitle, style: AppTextStyles.heading(15, color: Colors.black54)),
+                Text('รายการคำตอบ',
+                    style: AppTextStyles.heading(16, color: Colors.black87)),
                 const SizedBox(height: 10),
-                
+
                 ...List.generate(_segments.length, (index) {
                   final segment = _segments[index];
                   final ocrText = _segmentResults[index].recognizedText ?? '';
-                  final status = _answerStatus[index]; // bool? (true, false, null)
+                  final status =
+                      _answerStatus[index]; // bool? (true, false, null)
                   final isCorrect = status == true;
                   final isIncorrect = status == false;
 
@@ -1108,7 +2102,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: status != null ? Palette.buttonShadow : Palette.cardShadow,
+                      boxShadow: status != null
+                          ? Palette.buttonShadow
+                          : Palette.cardShadow,
                     ),
                     clipBehavior: Clip.hardEdge,
                     child: IntrinsicHeight(
@@ -1131,7 +2127,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                         width: 32,
                                         height: 32,
                                         decoration: BoxDecoration(
-                                          color: accentColor.withValues(alpha: 0.12),
+                                          color: accentColor.withValues(
+                                              alpha: 0.12),
                                           shape: BoxShape.circle,
                                         ),
                                         alignment: Alignment.center,
@@ -1148,48 +2145,61 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                       // Text block
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              l.math_simulation_questionPrefix(segment['question']?.toString() ?? ''),
-                                              style: AppTextStyles.body(14, weight: FontWeight.w600),
+                                              segment['question']?.toString() ??
+                                                  '',
+                                              style: AppTextStyles.body(14,
+                                                  weight: FontWeight.w600),
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              l.math_simulation_correctAnswerPrefix(segment['answer']?.toString() ?? ''),
-                                              style: AppTextStyles.label(12, color: Palette.success),
+                                              'เฉลย: ${segment['answer']?.toString() ?? ''}',
+                                              style: AppTextStyles.label(12,
+                                                  color: Palette.success),
                                             ),
                                           ],
                                         ),
                                       ),
-                                      
+
                                       // Edit button
                                       IconButton(
-                                        icon: Icon(Icons.edit, color: Palette.sky, size: 20),
-                                        onPressed: () => _showEditOcrDialog(index),
+                                        icon: Icon(Icons.edit,
+                                            color: Palette.sky, size: 20),
+                                        onPressed: () =>
+                                            _showEditOcrDialog(index),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 12),
-                                  
+
                                   // Scanned/Typed answer display
                                   Container(
                                     width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
                                     decoration: BoxDecoration(
                                       color: Colors.grey.shade50,
                                       borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.grey.shade200),
+                                      border: Border.all(
+                                          color: Colors.grey.shade200),
                                     ),
                                     child: Row(
                                       children: [
-                                        Text(l.math_simulation_ocrLabel, style: AppTextStyles.body(13, color: Colors.grey.shade600)),
+                                        Text('คำตอบ: ',
+                                            style: AppTextStyles.body(13,
+                                                color: Colors.grey.shade600)),
                                         Expanded(
                                           child: Text(
-                                            ocrText.isNotEmpty ? ocrText : l.math_simulation_noData,
-                                            style: AppTextStyles.body(14, weight: FontWeight.bold),
+                                            ocrText.isNotEmpty
+                                                ? ocrText
+                                                : 'ยังไม่พบคำตอบ',
+                                            style: AppTextStyles.body(14,
+                                                weight: FontWeight.bold),
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
@@ -1207,31 +2217,40 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                             _answerStatus[index] = true;
                                             _segmentResults[index] =
                                                 _segmentResults[index].copyWith(
-                                                    maxScore: _originalScores[index] ?? 10);
+                                                    maxScore: _originalScores[
+                                                            index] ??
+                                                        10);
                                           }),
                                           child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 200),
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                            duration: const Duration(
+                                                milliseconds: 200),
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 12),
                                             decoration: BoxDecoration(
                                               color: isCorrect
                                                   ? Palette.success
                                                   : Colors.white,
-                                              borderRadius: BorderRadius.circular(14),
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
                                               border: Border.all(
                                                   color: Palette.success,
                                                   width: isCorrect ? 0 : 1.5),
                                               boxShadow: isCorrect
                                                   ? [
                                                       BoxShadow(
-                                                        color: Palette.success.withValues(alpha: 0.3),
+                                                        color: Palette.success
+                                                            .withValues(
+                                                                alpha: 0.3),
                                                         blurRadius: 6,
-                                                        offset: const Offset(0, 2),
+                                                        offset:
+                                                            const Offset(0, 2),
                                                       )
                                                     ]
                                                   : [],
                                             ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
                                                 Icon(Icons.check_circle_rounded,
                                                     size: 20,
@@ -1240,8 +2259,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                                         : Palette.success),
                                                 const SizedBox(width: 6),
                                                 Text(
-                                                  l.calculate_correct,
-                                                  style: AppTextStyles.heading(14,
+                                                  'ถูกต้อง',
+                                                  style: AppTextStyles.heading(
+                                                      14,
                                                       color: isCorrect
                                                           ? Colors.white
                                                           : Palette.success),
@@ -1257,31 +2277,39 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                           onTap: () => setState(() {
                                             _answerStatus[index] = false;
                                             _segmentResults[index] =
-                                                _segmentResults[index].copyWith(maxScore: 0);
+                                                _segmentResults[index]
+                                                    .copyWith(maxScore: 0);
                                           }),
                                           child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 200),
-                                            padding: const EdgeInsets.symmetric(vertical: 12),
+                                            duration: const Duration(
+                                                milliseconds: 200),
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 12),
                                             decoration: BoxDecoration(
                                               color: isIncorrect
                                                   ? Palette.pink
                                                   : Colors.white,
-                                              borderRadius: BorderRadius.circular(14),
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
                                               border: Border.all(
                                                   color: Palette.pink,
                                                   width: isIncorrect ? 0 : 1.5),
                                               boxShadow: isIncorrect
                                                   ? [
                                                       BoxShadow(
-                                                        color: Palette.pink.withValues(alpha: 0.3),
+                                                        color: Palette.pink
+                                                            .withValues(
+                                                                alpha: 0.3),
                                                         blurRadius: 6,
-                                                        offset: const Offset(0, 2),
+                                                        offset:
+                                                            const Offset(0, 2),
                                                       )
                                                     ]
                                                   : [],
                                             ),
                                             child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
                                                 Icon(Icons.cancel_rounded,
                                                     size: 20,
@@ -1290,8 +2318,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                                                         : Palette.pink),
                                                 const SizedBox(width: 6),
                                                 Text(
-                                                  l.calculate_incorrect,
-                                                  style: AppTextStyles.heading(14,
+                                                  'ไม่ถูกต้อง',
+                                                  style: AppTextStyles.heading(
+                                                      14,
                                                       color: isIncorrect
                                                           ? Colors.white
                                                           : Palette.pink),
@@ -1314,30 +2343,31 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                 }),
 
                 const SizedBox(height: 16),
-                
+
                 // Retake action button
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: _scanAnswerSheet,
                     icon: const Icon(Icons.camera_alt_outlined),
-                    label: Text(l.math_simulation_retakeBtn),
+                    label: const Text('สแกนใหม่'),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: Palette.sky, width: 1.5),
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ),
 
                 const SizedBox(height: 30),
-                
+
                 // Evidence Attachments block
                 Text(l.common_evidence,
                     style: AppTextStyles.heading(20, color: Palette.error)),
                 const SizedBox(height: 15),
                 _buildEvidenceSection(),
-                
+
                 const SizedBox(height: 48),
               ],
             ),
@@ -1347,7 +2377,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
         // Bottom submit all answers button
         StickyBottomButton(
           onPressed: _handleSubmit,
-          label: l.common_finish,
+          label: 'เสร็จสิ้น',
           color: Palette.success,
           isLoading: _isSubmitting,
         ),
@@ -1401,7 +2431,9 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
             style: AppTextStyles.heading(18, color: Colors.black54)),
         const SizedBox(height: 5),
         GestureDetector(
-          onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: false),
+          onTap: _isSubmitting
+              ? null
+              : () => _handleMediaSelection(isVideo: false),
           child: Container(
             height: 120,
             width: double.infinity,
@@ -1409,7 +2441,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _imagePath != null ? Palette.success : Colors.grey.shade300,
+                color:
+                    _imagePath != null ? Palette.success : Colors.grey.shade300,
                 width: 2,
               ),
             ),
@@ -1421,19 +2454,25 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                         child: SizedBox(
                           width: double.infinity,
                           height: double.infinity,
-                          child: Image.file(File(_imagePath!), fit: BoxFit.cover),
+                          child:
+                              Image.file(File(_imagePath!), fit: BoxFit.cover),
                         ),
                       ),
                       Positioned(
                         top: 4,
                         right: 4,
                         child: Container(
-                          decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                          decoration: const BoxDecoration(
+                              color: Colors.black54, shape: BoxShape.circle),
                           child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 16),
-                            onPressed: _isSubmitting ? null : () => setState(() => _imagePath = null),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 16),
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => setState(() => _imagePath = null),
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                            constraints: const BoxConstraints(
+                                minWidth: 28, minHeight: 28),
                           ),
                         ),
                       ),
@@ -1443,9 +2482,11 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.grey),
+                        const Icon(Icons.add_photo_alternate_outlined,
+                            size: 40, color: Colors.grey),
                         const SizedBox(height: 8),
-                        Text(l.common_addImage, style: AppTextStyles.body(12, color: Colors.grey)),
+                        Text(l.common_addImage,
+                            style: AppTextStyles.body(12, color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -1464,7 +2505,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
             style: AppTextStyles.heading(18, color: Colors.black54)),
         const SizedBox(height: 5),
         GestureDetector(
-          onTap: _isSubmitting ? null : () => _handleMediaSelection(isVideo: true),
+          onTap:
+              _isSubmitting ? null : () => _handleMediaSelection(isVideo: true),
           child: Container(
             height: 120,
             width: double.infinity,
@@ -1472,7 +2514,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _videoPath != null ? Palette.success : Colors.grey.shade300,
+                color:
+                    _videoPath != null ? Palette.success : Colors.grey.shade300,
                 width: 2,
               ),
             ),
@@ -1483,20 +2526,31 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                       if (_videoThumbnail != null)
                         ClipRRect(
                           borderRadius: BorderRadius.circular(18),
-                          child: Image.memory(_videoThumbnail!, fit: BoxFit.cover),
+                          child:
+                              Image.memory(_videoThumbnail!, fit: BoxFit.cover),
                         )
                       else
-                        const Center(child: Icon(Icons.check_circle_outline, color: Colors.green, size: 36)),
+                        const Center(
+                            child: Icon(Icons.check_circle_outline,
+                                color: Colors.green, size: 36)),
                       Positioned(
                         top: 4,
                         right: 4,
                         child: Container(
-                          decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                          decoration: const BoxDecoration(
+                              color: Colors.black54, shape: BoxShape.circle),
                           child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white, size: 14),
-                            onPressed: _isSubmitting ? null : () => setState(() { _videoPath = null; _videoThumbnail = null; }),
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 14),
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => setState(() {
+                                      _videoPath = null;
+                                      _videoThumbnail = null;
+                                    }),
                             padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                            constraints: const BoxConstraints(
+                                minWidth: 26, minHeight: 26),
                           ),
                         ),
                       ),
@@ -1506,9 +2560,11 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.add_circle_outline, size: 40, color: Colors.grey),
+                        const Icon(Icons.add_circle_outline,
+                            size: 40, color: Colors.grey),
                         const SizedBox(height: 8),
-                        Text(l.common_addVideo, style: AppTextStyles.body(12, color: Colors.grey)),
+                        Text(l.common_addVideo,
+                            style: AppTextStyles.body(12, color: Colors.grey)),
                       ],
                     ),
                   ),
@@ -1528,7 +2584,7 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFFDF6),
+      backgroundColor: const Color(0xFFFFFCEB),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -1543,13 +2599,15 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                   color: Colors.amber.shade100,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.star_rounded, size: 54, color: Colors.amber),
+                child: const Icon(Icons.star_rounded,
+                    size: 54, color: Colors.amber),
               ),
               const SizedBox(height: 12),
-              
+
               Text(
                 'เก่งมากเลย! (Well Done)',
-                style: AppTextStyles.heading(28, color: const Color(0xFF1B5E20)),
+                style:
+                    AppTextStyles.heading(28, color: const Color(0xFF1B5E20)),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
@@ -1595,7 +2653,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
               // Detailed summary checklist
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('รายละเอียดการทำกิจกรรม', style: AppTextStyles.heading(16, color: Colors.black54)),
+                child: Text('รายละเอียดการทำกิจกรรม',
+                    style: AppTextStyles.heading(16, color: Colors.black54)),
               ),
               const SizedBox(height: 10),
 
@@ -1619,13 +2678,18 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                         width: 28,
                         height: 28,
                         decoration: BoxDecoration(
-                          color: isCorrect ? Palette.success.withValues(alpha: 0.1) : Palette.pink.withValues(alpha: 0.1),
+                          color: isCorrect
+                              ? Palette.success.withValues(alpha: 0.1)
+                              : Palette.pink.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           '${index + 1}',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: isCorrect ? Palette.success : Palette.pink, fontSize: 13),
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: isCorrect ? Palette.success : Palette.pink,
+                              fontSize: 13),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -1633,9 +2697,13 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(segment['question']?.toString() ?? '', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                            Text(segment['question']?.toString() ?? '',
+                                style: const TextStyle(
+                                    fontSize: 12, color: Colors.grey)),
                             const SizedBox(height: 2),
-                            Text(ocrVal, style: AppTextStyles.body(14, weight: FontWeight.w600)),
+                            Text(ocrVal,
+                                style: AppTextStyles.body(14,
+                                    weight: FontWeight.w600)),
                           ],
                         ),
                       ),
@@ -1667,8 +2735,12 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                       _videoPath = null;
                       _videoThumbnail = null;
                       _descriptionController.clear();
+                      for (final controller in _answerControllers.values) {
+                        controller.clear();
+                      }
                       for (int i = 0; i < _segmentResults.length; i++) {
-                        _segmentResults[i] = _segmentResults[i].copyWith(maxScore: 0, recognizedText: '');
+                        _segmentResults[i] = _segmentResults[i]
+                            .copyWith(maxScore: 0, recognizedText: '');
                       }
                     });
                   },
@@ -1679,7 +2751,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Palette.bluePill,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
                   ),
                 ),
               ),
@@ -1696,7 +2769,8 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
                   ),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Palette.sky, width: 2),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
                   ),
                 ),
               ),
@@ -1728,13 +2802,15 @@ class _MathSimulationActivityScreenState extends State<MathSimulationActivityScr
           const SizedBox(height: 8),
           Text(
             value,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color),
+            style: TextStyle(
+                fontSize: 20, fontWeight: FontWeight.bold, color: color),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+                fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w600),
           ),
         ],
       ),

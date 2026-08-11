@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
@@ -18,16 +17,6 @@ class ApiConfig {
   }
 
   static String _normalizeLocalhostForPlatform(String rawUrl) {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
-      return rawUrl;
-    }
-
-    final uri = Uri.tryParse(rawUrl);
-    if (uri == null) return rawUrl;
-
-    if (uri.host == 'localhost' || uri.host == '127.0.0.1') {
-      return uri.replace(host: '10.0.2.2').toString();
-    }
     return rawUrl;
   }
 }

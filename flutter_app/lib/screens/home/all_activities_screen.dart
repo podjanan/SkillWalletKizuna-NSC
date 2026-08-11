@@ -301,6 +301,18 @@ class _ActivityGridCard extends StatelessWidget {
       );
     }
 
+    if (activity.id == 'bilingual-songs' ||
+        activity.id == 'bilingual_songs' ||
+        activity.content == 'bilingual_songs' ||
+        activity.content == 'bilingual-songs' ||
+        activity.content == 'sing_together' ||
+        activity.name == 'Sing Together') {
+      return const GameActivityCover(
+        type: GameCoverType.singTogether,
+        compact: true,
+      );
+    }
+
     if (activity.thumbnailUrl?.startsWith('asset:') ?? false) {
       return Image.asset(
         activity.thumbnailUrl!.replaceFirst('asset:', ''),
