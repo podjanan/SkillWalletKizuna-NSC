@@ -1,5 +1,5 @@
-// lib/screens/activities/detail/bilingual_song_evaluation_screen.dart
-
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,17 +11,22 @@ import '../../../theme/app_text_styles.dart';
 import '../../../theme/palette.dart';
 import '../../../widgets/child_avatar.dart';
 import '../../../widgets/sticky_bottom_button.dart';
+import '../../bilingual_song_player_screen.dart';
 
 class BilingualSongEvaluationScreen extends StatefulWidget {
   final BilingualSongModel song;
   final List<String> extraChildIds;
   final int timeSpentSeconds;
+  final String? videoPath;
+  final String? imagePath;
 
   const BilingualSongEvaluationScreen({
     super.key,
     required this.song,
     this.extraChildIds = const [],
     required this.timeSpentSeconds,
+    this.videoPath,
+    this.imagePath,
   });
 
   @override
@@ -102,6 +107,8 @@ class _BilingualSongEvaluationScreenState
       'status': 'Completed',
       'description': notes.isNotEmpty ? notes : 'Sing Together Completed',
       'songTitle': widget.song.titleEn,
+      'videoPathLocal': widget.videoPath,
+      'imagePathLocal': widget.imagePath,
     };
 
     try {
@@ -375,6 +382,59 @@ class _BilingualSongEvaluationScreenState
                         ],
                       ),
                     ),
+
+                    // Attached Media Evidence Card (If photo or video was captured)
+                    if (widget.videoPath != null || widget.imagePath != null) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        height: 160,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: const Color(0xDD000000),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                              color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
+                          boxShadow: Palette.cardShadow,
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: widget.imagePath != null
+                              ? SizedBox.expand(
+                                  child: kIsWeb
+                                      ? Image.network(widget.imagePath!,
+                                          fit: BoxFit.cover)
+                                      : Image.file(File(widget.imagePath!),
+                                          fit: BoxFit.cover),
+                                )
+                              : GestureDetector(
+                                  onTap: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => BilingualVideoPlayerDialog(
+                                          videoPath: widget.videoPath!),
+                                    );
+                                  },
+                                  child: Container(
+                                    color: const Color(0xDD000000),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.play_circle_fill_rounded,
+                                              size: 56, color: Palette.sky),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'คลิกเพื่อเปิดดูคลิปวิดีโอ 🎥',
+                                            style: AppTextStyles.label(13, color: Colors.white),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 24),
 
                     // Section Title

@@ -1,11 +1,17 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:media_kit/media_kit.dart' hide PlayerState;
+import 'package:media_kit_video/media_kit_video.dart';
 import '../models/bilingual_song_model.dart';
 import '../services/api_config.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/palette.dart';
 import '../widgets/sticky_bottom_button.dart';
 import 'activities/detail/bilingual_song_evaluation_screen.dart';
+import 'activities/gameplay/sing_together_camera_screen.dart';
 
 class BilingualSongPlayerScreen extends StatefulWidget {
   final BilingualSongModel song;
@@ -27,6 +33,10 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+
+  // Media Evidence Capture State
+  String? _videoPath;
+  String? _imagePath;
 
   // Toggle for Parent Guitar Chords View
   bool _showGuitarChords = true;
@@ -59,6 +69,44 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
     _initAudio();
   }
 
+  Future<void> _handleMediaSelection({required bool isVideo}) async {
+    try {
+      if (isVideo) {
+        // Open In-App Studio Camera Screen with Live Audio Playback & Karaoke Overlay
+        await _audioPlayer.pause();
+        final String? videoPath = await Navigator.push<String>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SingTogetherCameraScreen(
+              song: widget.song,
+              audioPlayer: _audioPlayer,
+            ),
+          ),
+        );
+
+        if (videoPath != null && videoPath.isNotEmpty && mounted) {
+          setState(() {
+            _videoPath = videoPath;
+            _imagePath = null;
+          });
+        }
+      } else {
+        final ImagePicker picker = ImagePicker();
+        final XFile? pickedFile =
+            await picker.pickImage(source: ImageSource.camera);
+
+        if (pickedFile != null && mounted) {
+          setState(() {
+            _imagePath = pickedFile.path;
+            _videoPath = null;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Media selection error: $e');
+    }
+  }
+
   void _handleFinish() {
     _audioPlayer.pause();
     final timeSpent = _startTime != null
@@ -71,6 +119,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
           song: widget.song,
           extraChildIds: widget.extraChildIds,
           timeSpentSeconds: timeSpent,
+          videoPath: _videoPath,
+          imagePath: _imagePath,
         ),
       ),
     );
@@ -194,8 +244,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
 
             // Music Player Control Card Container
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              padding: const EdgeInsets.all(20),
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
@@ -278,6 +328,121 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Media Capture Buttons Row (Record Video & Take Photo)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _handleMediaSelection(isVideo: true),
+                          icon: const Icon(Icons.videocam_rounded, size: 18, color: Palette.sky),
+                          label: const Text('อัดคลิปวิดีโอ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Palette.sky)),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Palette.sky.withValues(alpha: 0.5)),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _handleMediaSelection(isVideo: false),
+                          icon: const Icon(Icons.camera_alt_rounded, size: 18, color: Colors.amber),
+                          label: const Text('ถ่ายรูปภาพ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber)),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.amber.withValues(alpha: 0.8)),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Attached Media Evidence Preview Card
+                  if (_videoPath != null || _imagePath != null) ...[
+                    Container(
+                      margin: const EdgeInsets.only(top: 10),
+                      height: 125,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xDD000000),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                            color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
+                        boxShadow: Palette.cardShadow,
+                      ),
+                      child: Stack(
+                        children: [
+                          if (_imagePath != null)
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: SizedBox.expand(
+                                child: kIsWeb
+                                    ? Image.network(_imagePath!, fit: BoxFit.cover)
+                                    : Image.file(File(_imagePath!), fit: BoxFit.cover),
+                              ),
+                            )
+                          else if (_videoPath != null)
+                            GestureDetector(
+                              onTap: () async {
+                                await _audioPlayer.pause();
+                                if (mounted) setState(() => _isPlaying = false);
+                                if (mounted) {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => BilingualVideoPlayerDialog(videoPath: _videoPath!),
+                                  );
+                                }
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(15),
+                                child: Container(
+                                  color: const Color(0xDD000000),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.play_circle_fill_rounded,
+                                            size: 52, color: Palette.sky),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          'คลิกเพื่อเปิดดูคลิปวิดีโอ 🎥',
+                                          style: AppTextStyles.label(13, color: Colors.white),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                          // Top Right Clear/Delete Button
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: GestureDetector(
+                              onTap: () => setState(() {
+                                _videoPath = null;
+                                _imagePath = null;
+                              }),
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xB3000000),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.close_rounded,
+                                    size: 18, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -535,5 +700,75 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
     final minutes = twoDigits(duration.inMinutes.remainder(60));
     final seconds = twoDigits(duration.inSeconds.remainder(60));
     return '$minutes:$seconds';
+  }
+}
+
+class BilingualVideoPlayerDialog extends StatefulWidget {
+  final String videoPath;
+  const BilingualVideoPlayerDialog({super.key, required this.videoPath});
+
+  @override
+  State<BilingualVideoPlayerDialog> createState() =>
+      _BilingualVideoPlayerDialogState();
+}
+
+class _BilingualVideoPlayerDialogState
+    extends State<BilingualVideoPlayerDialog> {
+  late final Player _player;
+  late final VideoController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    try {
+      MediaKit.ensureInitialized();
+    } catch (_) {}
+    _player = Player();
+    _controller = VideoController(_player);
+    _player.open(Media(widget.videoPath), play: true);
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.black,
+      insetPadding: const EdgeInsets.all(16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: Stack(
+            children: [
+              Video(
+                controller: _controller,
+                controls: MaterialVideoControls,
+              ),
+              Positioned(
+                top: 10,
+                right: 10,
+                child: GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(
+                      color: Color(0xB3000000),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close, color: Colors.white, size: 20),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

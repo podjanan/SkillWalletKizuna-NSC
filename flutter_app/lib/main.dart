@@ -19,7 +19,15 @@ import 'package:media_kit/media_kit.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
+  
+  // Non-blocking asynchronous initialization of MediaKit in background
+  unawaited(Future(() {
+    try {
+      MediaKit.ensureInitialized();
+    } catch (e) {
+      debugPrint('MediaKit background init note: $e');
+    }
+  }));
 
   await dotenv.load(fileName: ".env");
   await StorageService().init();
@@ -176,9 +184,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
       }
     }
 
-    // Check Better Auth session (verifies token is valid with server)
+    // Check Better Auth session with 2s timeout guard to prevent network hang on physical devices
     bool authenticated = false;
-    final session = await AuthService().getSession();
+    final session = await AuthService().getSession().timeout(
+      const Duration(seconds: 2),
+      onTimeout: () => null,
+    );
     if (session != null) {
       authenticated = true;
       debugPrint('✅ Found valid Better Auth session');
