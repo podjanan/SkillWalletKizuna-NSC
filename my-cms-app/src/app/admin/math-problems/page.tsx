@@ -1,4 +1,4 @@
-// src/app/admin/math-simulation/page.tsx
+// src/app/admin/math-problems/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -18,10 +18,10 @@ interface Activity {
   isPublic: boolean;
   difficulty?: string;
   maxScore?: number;
-  segments?: any;
+  segments?: unknown[];
 }
 
-export default function MathSimulationDashboard() {
+export default function MathProblemsDashboard() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -34,16 +34,16 @@ export default function MathSimulationDashboard() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    fetchSimulationActivities();
+    fetchMathProblemsActivities();
   }, [page, searchQuery]);
 
-  const fetchSimulationActivities = async () => {
+  const fetchMathProblemsActivities = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '10',
-        content: 'math_simulation',
+        content: 'math_problems',
         ...(searchQuery && { search: searchQuery }),
       });
 
@@ -58,7 +58,7 @@ export default function MathSimulationDashboard() {
         setActivities([]);
       }
     } catch (error) {
-      console.error('Failed to fetch math simulation activities:', error);
+      console.error('Failed to fetch math problems activities:', error);
       setActivities([]);
     } finally {
       setLoading(false);
@@ -73,7 +73,7 @@ export default function MathSimulationDashboard() {
       });
       if (res.ok) {
         setDeleteTargetId(null);
-        fetchSimulationActivities();
+        fetchMathProblemsActivities();
       } else {
         alert('Failed to delete activity');
       }
@@ -92,19 +92,19 @@ export default function MathSimulationDashboard() {
         <div>
           <h1 className="heading-h3 text-dark flex items-center gap-2">
             <Brain className="text-purple" size={32} />
-            Math Simulation
+            Math Problems
           </h1>
           <p className="body-medium-regular text-secondary--text mt-1">
-            คลังและแบบจัดการคณิตศาสตร์สถานการณ์จำลอง (มีภาพประกอบการ์ตูน AI & สแกนคำตอบด้วยกล้อง)
+            คลังโจทย์ปัญหาคณิตศาสตร์สำหรับฝึกคิด วิเคราะห์ และคำนวณ
           </p>
         </div>
         <div className="flex items-center gap-4">
           <Link
-            href="/admin/math-simulation/new"
+            href="/admin/math-problems/new"
             className="flex items-center gap-2 px-4 py-2 bg-purple text-white rounded-lg body-medium-medium hover:bg-purple--dark transition-colors shadow-md"
           >
             <Plus size={20} />
-            Create Simulation Activity
+            Create Math Problems Activity
           </Link>
           <UserProfile />
         </div>
@@ -137,8 +137,8 @@ export default function MathSimulationDashboard() {
             <Sparkles size={24} />
           </div>
           <div>
-            <h4 className="body-small-semibold text-secondary--text">AI Generation Mode</h4>
-            <p className="heading-h5 text-dark font-semibold mt-1">Exact Local Images</p>
+            <h4 className="body-small-semibold text-secondary--text">Problem Type</h4>
+            <p className="heading-h5 text-dark font-semibold mt-1">Story Problems</p>
           </div>
         </div>
       </div>
@@ -151,7 +151,7 @@ export default function MathSimulationDashboard() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary--text" size={18} />
             <input
               type="text"
-              placeholder="Search math simulation activities..."
+              placeholder="Search math problems activities..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray6 rounded-xl body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple focus:border-transparent"
@@ -167,7 +167,7 @@ export default function MathSimulationDashboard() {
             </div>
           ) : activities.length === 0 ? (
             <div className="text-center py-20 text-secondary--text body-medium-regular">
-              No math simulation activities found. Create one to get started!
+              No math problems activities found. Create one to get started!
             </div>
           ) : (
             <table className="w-full text-left border-collapse">
@@ -224,7 +224,7 @@ export default function MathSimulationDashboard() {
                         {openMenuId === activity.activityId && (
                           <div className="absolute right-6 top-12 bg-white rounded-xl shadow-lg border border-gray4 py-2 w-32 z-10">
                             <Link
-                              href={`/admin/math-simulation/${activity.activityId}`}
+                              href={`/admin/math-problems/${activity.activityId}`}
                               className="flex items-center gap-2 px-4 py-2 body-small-medium text-dark hover:bg-gray--light1"
                             >
                               <Edit size={16} />
@@ -274,7 +274,7 @@ export default function MathSimulationDashboard() {
         <ConfirmModal
           isOpen={deleteTargetId !== null}
           title="Delete Activity"
-          message="Are you sure you want to delete this math simulation activity template? This action cannot be undone."
+          message="Are you sure you want to delete this math problems activity template? This action cannot be undone."
           confirmLabel="Delete"
           isLoading={isDeleting}
           onConfirm={() => handleDelete(deleteTargetId)}

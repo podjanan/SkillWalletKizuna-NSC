@@ -91,7 +91,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
   bool get _isPhysical => _selectedActivityType == 'physical';
   bool get _isCalculate => _selectedActivityType == 'calculate';
-  bool get _isMathSimulation => _selectedActivityType == 'math_simulation';
+  bool get _isMathProblems => _selectedActivityType == 'math_problems';
   bool get _isVoiceQuest => _selectedActivityType == 'voice_quest';
   bool get _isSpaceAdventure => _selectedActivityType == 'space_adventure';
 
@@ -151,7 +151,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         _showSnack(l.createActivity_contentRequired);
         return;
       }
-    } else if (_isCalculate) {
+    } else if (_isCalculate || _isMathProblems) {
       if (_questions.isEmpty) {
         _showSnack(l.createActivity_needQuestions);
         return;
@@ -208,9 +208,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             'score': int.tryParse(q['score']!.text) ?? 1,
           };
         }).toList();
-      } else if (_isMathSimulation) {
+      } else if (_isMathProblems) {
         maxScore = _analysisMaxScore;
-        contentStr = 'math_simulation';
+        contentStr = 'math_problems';
         final rawQuestions = _questions.asMap().entries.map((e) {
           final idx = e.key;
           final q = e.value;
@@ -223,19 +223,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           };
         }).toList();
 
-        _showSnack('กำลังสร้างรูปภาพโจทย์คณิตศาสตร์ด้วย AI กรุณารอสักครู่ (อาจใช้เวลา 5-15 วินาที)...');
-        
-        try {
-          final genResult = await _activityService.generateMathImages(questions: rawQuestions);
-          if (genResult['success'] == true && genResult['segments'] != null) {
-            segments = genResult['segments'];
-          } else {
-            segments = rawQuestions;
-          }
-        } catch (e) {
-          debugPrint('Error generating math images: $e');
-          segments = rawQuestions;
-        }
+        segments = rawQuestions;
       } else if (_isVoiceQuest) {
         maxScore = int.tryParse(_maxScoreCtrl.text) ?? 100;
         contentStr = 'voice_quest';
@@ -328,8 +316,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                                   ? 'สร้างกิจกรรม ด้านร่างกาย'
                                   : (_isCalculate
                                       ? 'สร้างกิจกรรม ด้านคำนวณ'
-                                      : (_isMathSimulation
-                                          ? 'สร้างกิจกรรม Math Simulation'
+                                      : (_isMathProblems
+                                          ? 'สร้างกิจกรรม Math Problems'
                                           : (_isVoiceQuest
                                               ? 'สร้างกิจกรรม Voice Quest'
                                               : 'สร้างกิจกรรม Space Adventure')))),
@@ -461,7 +449,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         ? Palette.physicalPlaceholder
                         : (_isCalculate
                             ? Palette.blueChip
-                            : (_isMathSimulation
+                            : (_isMathProblems
                                 ? Palette.pink
                                 : (_isVoiceQuest ? Palette.teal : Palette.sky))),
                     borderRadius: BorderRadius.circular(20),
@@ -471,8 +459,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         ? l.createActivity_physical
                         : (_isCalculate
                             ? l.createActivity_calculate
-                            : (_isMathSimulation
-                                ? 'Math Simulation'
+                            : (_isMathProblems
+                                ? 'Math Problems'
                                 : (_isVoiceQuest ? 'Voice Quest' : 'Space Adventure'))),
                     style: AppTextStyles.label(13, color: Colors.white),
                   ),
@@ -490,7 +478,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 const SizedBox(height: 12),
 
                 // Difficulty
-                if (!_isMathSimulation) ...[
+                if (!_isMathProblems) ...[
                   _label(l.createActivity_difficulty),
                   _buildDifficultyChips(),
                   const SizedBox(height: 12),
@@ -616,13 +604,13 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 ],
 
                 // Content / Instructions
-                if (_isPhysical || _isCalculate || _isMathSimulation) ...[
+                if (_isPhysical || _isCalculate || _isMathProblems) ...[
                   _label(l.createActivity_content),
                   _textField(_contentCtrl, maxLines: 4),
                   const SizedBox(height: 16),
                 ],
 
-                if (_isCalculate || _isMathSimulation) ...[
+                if (_isCalculate || _isMathProblems) ...[
                   // Questions section
                   _label('${l.createActivity_question}  '
                       '(${l.createActivity_maxScore}: $_analysisMaxScore)'),

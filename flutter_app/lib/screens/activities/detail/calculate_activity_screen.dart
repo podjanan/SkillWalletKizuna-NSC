@@ -451,6 +451,13 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
   @override
   Widget build(BuildContext context) {
     final elapsedSeconds = _elapsedSeconds;
+    final isMathProblems = widget.activity.content == 'math_problems' ||
+        widget.activity.content == 'math_simulation';
+    final displayDescription = isMathProblems
+        ? (widget.activity.description?.trim().isNotEmpty == true
+            ? widget.activity.description!.trim()
+            : '')
+        : widget.activity.content.trim();
 
     return PopScope(
       canPop: false,
@@ -497,7 +504,7 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                           const SizedBox(height: 16),
 
                           // ── Content / Instructions ──
-                          if (widget.activity.content.isNotEmpty) ...[
+                          if (displayDescription.isNotEmpty) ...[
                             Text(
                                 AppLocalizations.of(context)!
                                     .calculate_descriptionLabel,
@@ -512,7 +519,7 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
                                 borderRadius: BorderRadius.circular(14),
                                 boxShadow: Palette.cardShadow,
                               ),
-                              child: Text(widget.activity.content,
+                              child: Text(displayDescription,
                                   style: AppTextStyles.body(14)),
                             ),
                             const SizedBox(height: 16),

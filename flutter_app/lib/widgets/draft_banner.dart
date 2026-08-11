@@ -70,8 +70,8 @@ class _DraftBannerState extends State<DraftBanner> {
       DraftService.typeSpaceAdventure => AppRoutes.spaceAdventure,
       _ => AppRoutes.itemIntro,
     };
-    if (activity.content == 'math_simulation') {
-      route = AppRoutes.mathSimulationActivity;
+    if (activity.content == 'math_problems' || activity.content == 'math_simulation') {
+      route = AppRoutes.mathProblemsActivity;
     }
     if (!mounted) return;
     Navigator.pushNamed(context, route, arguments: activity);

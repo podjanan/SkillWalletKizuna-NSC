@@ -58,26 +58,43 @@ export function fallbackQuestion(equation: ParsedEquation, storyItem = randomSto
     const item = storyItem ?? ADDITION_SNACKS[0];
     return {
       question: `มี${item.name} ${left} ${item.classifier} แม่ให้อีก ${right} ${item.classifier} รวมมี${item.name}กี่${item.classifier}?`,
-      hint: `นำ ${left} มาบวกกับ ${right}`,
+      solution: buildMathSolution(equation, item),
     };
   }
   if (operator === '-') {
     const item = storyItem ?? SUBTRACTION_FRUITS[0];
     return {
       question: `มี${item.name} ${left} ${item.classifier} กินไป ${right} ${item.classifier} เหลือ${item.name}กี่${item.classifier}?`,
-      hint: `นำ ${left} ลบด้วย ${right}`,
+      solution: buildMathSolution(equation, item),
     };
   }
   if (operator === '*') {
     return {
       question: `มีจาน ${left} ใบ แต่ละใบมีส้ม ${right} ลูก รวมมีส้มกี่ลูก?`,
-      hint: `นำ ${left} คูณด้วย ${right}`,
+      solution: buildMathSolution(equation),
     };
   }
   return {
     question: `มีส้ม ${left} ลูก แบ่งให้เพื่อน ${right} คน เท่าๆ กัน จะได้คนละกี่ลูก?`,
-    hint: `นำ ${left} หารด้วย ${right}`,
+    solution: buildMathSolution(equation),
   };
+}
+
+export function buildMathSolution(
+  equation: ParsedEquation,
+  storyItem?: MathStoryItem | null,
+) {
+  const symbol = equation.operator === '*' ? '×' : equation.operator === '/' ? '÷' : equation.operator;
+  const operation = equation.operator === '+'
+    ? 'นำจำนวนเดิมมาบวกกับจำนวนที่เพิ่มมา'
+    : equation.operator === '-'
+      ? 'นำจำนวนที่เอาออกมาลบจากจำนวนเริ่มต้น'
+      : equation.operator === '*'
+        ? 'นำจำนวนกลุ่มคูณด้วยจำนวนสิ่งของในแต่ละกลุ่ม'
+        : 'นำจำนวนสิ่งของทั้งหมดหารด้วยจำนวนกลุ่ม';
+  const unit = storyItem?.classifier ?? 'ลูก';
+
+  return `${operation}\n${equation.left} ${symbol} ${equation.right} = ${equation.answer}\nดังนั้น คำตอบคือ ${equation.answer} ${unit}`;
 }
 
 export function questionMatchesEquation(question: string, equation: ParsedEquation) {

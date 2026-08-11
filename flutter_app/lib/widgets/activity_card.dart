@@ -111,8 +111,8 @@ class ActivityCard extends StatelessWidget {
       } else if (shouldGoToVideoDetail) {
         Navigator.pushNamed(context, AppRoutes.videoDetail,
             arguments: activity);
-      } else if (activity.content == 'math_simulation') {
-        Navigator.pushNamed(context, AppRoutes.mathSimulationActivity,
+      } else if (activity.content == 'math_problems' || activity.content == 'math_simulation') {
+        Navigator.pushNamed(context, AppRoutes.mathProblemsActivity,
             arguments: activity);
       } else if (category == 'ด้านคำนวณ') {
         Navigator.pushNamed(context, AppRoutes.calculateActivity,

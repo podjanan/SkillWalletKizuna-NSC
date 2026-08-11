@@ -1,9 +1,9 @@
-// src/app/admin/math-simulation/new/page.tsx
+// src/app/admin/math-problems/[id]/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Send, Plus, Trash2, ArrowLeft, Brain, PlusCircle, RefreshCw } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Send, Trash2, PlusCircle, Brain, RefreshCw } from 'lucide-react';
 import UserProfile from '@/components/UserProfile';
 
 interface Question {
@@ -15,15 +15,17 @@ interface Question {
   equation?: string;
 }
 
-export default function CreateMathSimulationPage() {
+export default function EditMathProblemsPage() {
+  const params = useParams();
   const router = useRouter();
+  
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [difficulty, setDifficulty] = useState('ง่าย');
   const [maxScore, setMaxScore] = useState(100);
-  const [additionalInstructions, setAdditionalInstructions] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [generatingIndex, setGeneratingIndex] = useState<number | null>(null);
 
@@ -75,6 +77,40 @@ export default function CreateMathSimulationPage() {
     }
   };
 
+  useEffect(() => {
+    if (params.id) {
+      fetchActivityDetail();
+    }
+  }, [params.id]);
+
+  const fetchActivityDetail = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/activities/${params.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setName(data.name || '');
+        setDescription(data.description || '');
+        setDifficulty(data.difficulty || 'ง่าย');
+        setMaxScore(data.maxScore || 100);
+        
+        if (data.segments) {
+          const parsed = typeof data.segments === 'string'
+            ? JSON.parse(data.segments)
+            : data.segments;
+          setQuestions(parsed || []);
+        }
+      } else {
+        alert('Activity not found');
+        router.push('/admin/math-problems');
+      }
+    } catch (err) {
+      console.error('Failed to load activity details:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const addQuestion = () => {
     setQuestions(prev => [
       ...prev,
@@ -83,7 +119,7 @@ export default function CreateMathSimulationPage() {
         question: '',
         answer: '',
         solution: '',
-        score: Math.max(1, Math.floor(maxScore / (prev.length + 1))),
+        score: 10,
       }
     ]);
   };
@@ -96,7 +132,7 @@ export default function CreateMathSimulationPage() {
     setQuestions(updated);
   };
 
-  const updateQuestion = (index: number, key: keyof Question, value: any) => {
+  const updateQuestion = (index: number, key: keyof Question, value: string | number) => {
     const updated = [...questions];
     updated[index] = {
       ...updated[index],
@@ -112,53 +148,47 @@ export default function CreateMathSimulationPage() {
     if (!description.trim()) return alert('Please enter activity description');
     if (questions.length === 0) return alert('Please add at least one question');
 
-    setIsSubmitting(true);
+    setIsSaving(true);
 
     try {
-      // Step 1: Pre-generate AI cartoon illustration images for each question
-      const genResponse = await fetch('/api/activities/generate-math-images', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questions }),
-      });
-      const genResult = await genResponse.json();
-      
-      let segmentsData = questions;
-      if (genResult.success && genResult.segments) {
-        segmentsData = genResult.segments;
-      }
-
-      // Step 2: Save activity to the database via activities API
-      const activityData = {
+      const dataToSave = {
         name,
         category: 'ด้านคำนวณ',
-        content: 'math_simulation',
+        description,
         difficulty,
         maxScore,
-        description,
-        segments: segmentsData,
-        isPublic: true,
+        content: 'math_problems',
+        segments: questions,
+        videoUrl: '',
       };
 
-      const res = await fetch('/api/activities', {
-        method: 'POST',
+      const res = await fetch(`/api/activities/${params.id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(activityData),
+        body: JSON.stringify(dataToSave),
       });
 
       if (res.ok) {
-        alert('Math Simulation Activity created successfully!');
-        router.push('/admin/math-simulation');
+        alert('Activity updated successfully!');
+        router.push('/admin/math-problems');
       } else {
-        alert('Failed to save activity to database');
+        alert('Failed to update activity template');
       }
     } catch (err) {
       console.error(err);
-      alert('An error occurred during submission');
+      alert('An error occurred during save');
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex-1 bg-gray--light1 p-8 flex items-center justify-center">
+        <div className="text-secondary--text body-large-medium">Loading activity details...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 bg-gray--light1 p-8 overflow-y-auto">
@@ -166,7 +196,7 @@ export default function CreateMathSimulationPage() {
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push('/admin/math-simulation')}
+            onClick={() => router.push('/admin/math-problems')}
             className="p-2 bg-white rounded-lg border border-gray4 hover:bg-gray--light2 text-secondary--text"
           >
             <ArrowLeft size={20} />
@@ -174,10 +204,10 @@ export default function CreateMathSimulationPage() {
           <div>
             <h1 className="heading-h3 text-dark flex items-center gap-2">
               <Brain className="text-purple" size={32} />
-              Create Math Simulation Template
+              Edit Math Problems Template
             </h1>
             <p className="body-medium-regular text-secondary--text mt-1">
-              สร้างคลังโจทย์และรูปวาดคณิตศาสตร์จำลองเพื่อเป็นตัวเลือกให้เด็กๆ เล่นเกมส์คณิตด้วย AI
+              แก้ไขชุดโจทย์ปัญหาคณิตศาสตร์ คำตอบ และวิธีคิด
             </p>
           </div>
         </div>
@@ -194,7 +224,6 @@ export default function CreateMathSimulationPage() {
             <input
               type="text"
               required
-              placeholder="e.g. คณิตวิเคราะห์นมนมแสนสนุก"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple"
@@ -206,7 +235,6 @@ export default function CreateMathSimulationPage() {
             <textarea
               required
               rows={3}
-              placeholder="รายละเอียดสำหรับอธิบายการเรียนการคิดวิเคราะห์..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="w-full px-4 py-2 border border-gray6 rounded-lg body-medium-regular focus:outline-none focus:ring-2 focus:ring-purple resize-none"
@@ -245,7 +273,7 @@ export default function CreateMathSimulationPage() {
             <div>
               <h3 className="body-large-semibold text-dark">รายการโจทย์คำถาม</h3>
               <p className="body-small-regular text-secondary--text">
-                ระบบจะเจนภาพวาด 2D Cartoon ให้แต่ละข้อตามเนื้อหาที่คุณเขียน
+                จัดการโจทย์ปัญหา คำตอบ และคำอธิบายวิธีคิด
               </p>
             </div>
             <button
@@ -260,7 +288,7 @@ export default function CreateMathSimulationPage() {
 
           {questions.length === 0 ? (
             <div className="text-center py-10 border border-dashed border-gray6 rounded-xl text-secondary--text body-medium-regular">
-              ยังไม่มีข้อคำถามในขณะนี้ กด "เพิ่มข้อคำถาม" เพื่อเริ่มเขียนโจทย์
+              ยังไม่มีข้อคำถามในขณะนี้ กด &quot;เพิ่มข้อคำถาม&quot; เพื่อเริ่มเขียนโจทย์
             </div>
           ) : (
             <div className="space-y-6">
@@ -312,7 +340,7 @@ export default function CreateMathSimulationPage() {
                     <label className="body-xs-semibold text-dark block mb-1">โจทย์คำถามวิเคราะห์ *</label>
                     <textarea
                       required
-                      placeholder="e.g. มีนมรสจืด 12 กล่อง และมีนมรสช็อกโกแลต 8 กล่อง รวมมีนมทั้งหมดกี่กล่อง?"
+                      placeholder="e.g. มีนมรสจืด 12 กล่อง และมีนมรสช็อกโกแลต 8 กล่อง..."
                       rows={2}
                       value={q.question}
                       onChange={(e) => updateQuestion(index, 'question', e.target.value)}
@@ -322,18 +350,17 @@ export default function CreateMathSimulationPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="body-xs-semibold text-dark block mb-1">คำตอบ (เฉพาะตัวเลข) *</label>
+                      <label className="body-xs-semibold text-dark block mb-1">คำตอบ *</label>
                       <input
                         type="text"
                         required
-                        placeholder="e.g. 20"
                         value={q.answer}
                         onChange={(e) => updateQuestion(index, 'answer', e.target.value)}
                         className="w-full px-3 py-2 border border-gray6 rounded-lg body-small-regular focus:outline-none focus:ring-2 focus:ring-purple bg-white"
                       />
                     </div>
                     <div>
-                      <label className="body-xs-semibold text-dark block mb-1">คะแนนประจำข้อ *</label>
+                      <label className="body-xs-semibold text-dark block mb-1">คะแนน *</label>
                       <input
                         type="number"
                         min="1"
@@ -347,13 +374,13 @@ export default function CreateMathSimulationPage() {
                   <div>
                     <label className="body-xs-semibold text-dark block mb-1">คำแนะนำ / อธิบายเฉลย</label>
                     <textarea
-                      placeholder="e.g. นมรสจืด 12 บวก นมรสช็อกโกแลต 8 จะได้ 12 + 8 = 20 กล่อง"
                       rows={2}
                       value={q.solution}
                       onChange={(e) => updateQuestion(index, 'solution', e.target.value)}
                       className="w-full px-3 py-2 border border-gray6 rounded-lg body-small-regular focus:outline-none focus:ring-2 focus:ring-purple resize-none bg-white"
                     />
                   </div>
+
                 </div>
               ))}
             </div>
@@ -364,18 +391,18 @@ export default function CreateMathSimulationPage() {
         <div className="flex justify-end gap-4">
           <button
             type="button"
-            onClick={() => router.push('/admin/math-simulation')}
+            onClick={() => router.push('/admin/math-problems')}
             className="px-6 py-2 border border-gray6 rounded-lg body-medium-medium text-secondary--text hover:bg-white"
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSaving}
             className="flex items-center gap-2 px-6 py-2 bg-purple text-white rounded-lg body-medium-medium hover:bg-purple--dark disabled:opacity-50"
           >
             <Send size={18} />
-            {isSubmitting ? 'กำลังสร้างโจทย์และภาพการ์ตูน AI...' : 'สร้างกิจกรรม'}
+            {isSaving ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
           </button>
         </div>
       </form>

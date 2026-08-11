@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { callOllama } from '@/lib/ai-word-game';
 import {
   fallbackQuestion,
+  buildMathSolution,
   operatorDescription,
   parseEquation,
   questionMatchesEquation,
@@ -19,7 +20,7 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
 }
 
-function extractJson(text: string): { question?: unknown; hint?: unknown; solution?: unknown } | null {
+function extractJson(text: string): { question?: unknown } | null {
   const candidates = [text, text.match(/\{[\s\S]*\}/)?.[0]].filter(Boolean) as string[];
   for (const candidate of candidates) {
     try {
@@ -83,23 +84,17 @@ ${storyItem ? `ชนิดสิ่งของที่ระบบสุ่�
 - **ห้าม** ใช้ลักษณะนามผิด เช่น ห้ามใช้ "ไข่...อัน" (ต้องเป็น "ไข่...ฟอง"), ห้ามใช้ "สัตว์...อัน" (ต้องเป็น "สัตว์...ตัว")
 - ใช้คำกริยาธรรมชาติที่มีกริยาชัดเจน เช่น "แม่ให้อีก", "ซื้อมาเพิ่มอีก", "เดินมาเพิ่มอีก", "กินไป", "ใช้ไป" (ห้ามใช้คำห้วนๆ เช่น "ได้อีก")
 - ต้องใช้ตัวเลข ${equation.left} และ ${equation.right} อย่างละ 1 ครั้ง
-- คำใบ้ต้องสั้นกระชับเข้าใจง่าย
-- ตอบเฉพาะ JSON รูปแบบ {"question":"...","hint":"..."}`;
+- ไม่ต้องสร้างคำใบ้หรือวิธีทำ ระบบจะคำนวณเฉลยจากสมการเอง
+- ตอบเฉพาะ JSON รูปแบบ {"question":"..."}`;
 
     let question = fallback.question;
-    let solution = fallback.hint;
+    const solution = buildMathSolution(equation, storyItem);
     let generationSource: 'ollama' | 'validated-fallback' = 'validated-fallback';
 
     try {
       const aiResponse = await callOllama(prompt, true, 0.2);
       const parsed = extractJson(aiResponse);
       const generatedQuestion = typeof parsed?.question === 'string' ? parsed.question.trim() : '';
-      const generatedHint = typeof parsed?.hint === 'string'
-        ? parsed.hint.trim()
-        : typeof parsed?.solution === 'string'
-          ? parsed.solution.trim()
-          : '';
-
       const usesSelectedItem = !storyItem || generatedQuestion.includes(storyItem.name);
       const classifierCount = storyItem
         ? generatedQuestion.split(storyItem.classifier).length - 1
@@ -107,7 +102,6 @@ ${storyItem ? `ชนิดสิ่งของที่ระบบสุ่�
       const usesCorrectClassifier = !storyItem || classifierCount >= 2;
       if (generatedQuestion && usesSelectedItem && usesCorrectClassifier && questionMatchesEquation(generatedQuestion, equation)) {
         question = generatedQuestion;
-        solution = generatedHint || fallback.hint;
         generationSource = 'ollama';
       } else {
         console.warn('Rejected inconsistent Ollama math story:', generatedQuestion);

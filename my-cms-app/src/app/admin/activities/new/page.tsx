@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, Plus, Trash2 } from 'lucide-react';
+import { Send, Plus, Trash2, Calculator, BookOpen, Brain, RefreshCw } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
 import UserProfile from '@/components/UserProfile';
 
@@ -20,6 +20,8 @@ interface Question {
   question: string;
   answer: string;
   hint: string;
+  solution: string;
+  equation?: string;
   score: number;
 }
 
@@ -35,10 +37,13 @@ interface ActivityFormData {
   parentId: string;
 }
 
+type CalculateMode = 'equation' | 'problems';
+
 export default function NewActivityPage() {
   const router = useRouter();
   
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [calculateMode, setCalculateMode] = useState<CalculateMode | null>(null);
   const [timeLimit, setTimeLimit] = useState<number>(60);
   const [scorePerItem, setScorePerItem] = useState<number>(10);
   const [wordCategory, setWordCategory] = useState<string>('animals');
@@ -58,6 +63,7 @@ export default function NewActivityPage() {
   const [tiktokResolveError, setTiktokResolveError] = useState<string | null>(null);
   const resolveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [generatingQuestionId, setGeneratingQuestionId] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -101,6 +107,7 @@ export default function NewActivityPage() {
   // Handle category selection
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
+    setCalculateMode(null);
     setFormData(prev => ({
       ...prev,
       category: (category === 'voice_quest' || category === 'space_adventure') ? 'ด้านภาษา' : category,
@@ -235,6 +242,7 @@ export default function NewActivityPage() {
       question: '',
       answer: '',
       hint: '',
+      solution: '',
       score: 1  // Default 1 point per question
     };
     setQuestions([...questions, newQuestion]);
@@ -270,6 +278,48 @@ export default function NewActivityPage() {
     if (deletedQuestion) {
       const newMaxScore = Math.max(0, formData.maxScore - deletedQuestion.score);
       setFormData(prev => ({ ...prev, maxScore: newMaxScore }));
+    }
+  };
+
+  const generateProblemQuestion = async (question: Question) => {
+    if (!formData.name.trim() || !formData.description.trim()) {
+      alert('กรุณากรอก Activity Title และ Activities Description ก่อนใช้ AI เจนโจทย์');
+      return;
+    }
+    if (!question.equation?.trim()) {
+      alert('กรุณากรอกสมการสำหรับสร้างโจทย์ เช่น 18+2');
+      return;
+    }
+
+    setGeneratingQuestionId(question.id);
+    try {
+      const response = await fetch('/api/activities/generate-math-question', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          activityTitle: formData.name,
+          activityDescription: formData.description,
+          equation: question.equation,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'ไม่สามารถสร้างโจทย์ได้');
+      }
+      setQuestions((current) => current.map((item) =>
+        item.id === question.id
+          ? {
+              ...item,
+              question: result.question ?? item.question,
+              answer: result.answer ?? item.answer,
+              solution: result.solution ?? item.solution,
+            }
+          : item
+      ));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'เกิดข้อผิดพลาดระหว่างสร้างโจทย์');
+    } finally {
+      setGeneratingQuestionId(null);
     }
   };
 
@@ -311,7 +361,7 @@ export default function NewActivityPage() {
     }
 
     // Content validation for Physical and Analytical
-    if ((selectedCategory === 'ด้านร่างกาย' || selectedCategory === 'ด้านคำนวณ') && !formData.content.trim()) {
+    if ((selectedCategory === 'ด้านร่างกาย' || (selectedCategory === 'ด้านคำนวณ' && calculateMode === 'equation')) && !formData.content.trim()) {
       alert(selectedCategory === 'ด้านร่างกาย' ? 'Please enter how to play instructions' : 'Please enter additional instructions');
       return;
     }
@@ -329,7 +379,16 @@ export default function NewActivityPage() {
       if (selectedCategory === 'ด้านภาษา') {
         segments = formData.segments;
       } else if (selectedCategory === 'ด้านคำนวณ') {
-        segments = questions;
+        segments = calculateMode === 'problems'
+          ? questions.map((question) => ({
+              id: question.id,
+              question: question.question,
+              answer: question.answer,
+              solution: question.solution,
+              equation: question.equation,
+              score: question.score,
+            }))
+          : questions;
       } else if (selectedCategory === 'voice_quest') {
         segments = { timeLimit, wordCategory };
       } else if (selectedCategory === 'space_adventure') {
@@ -338,6 +397,9 @@ export default function NewActivityPage() {
 
       const dataToSubmit = {
         ...formData,
+        content: selectedCategory === 'ด้านคำนวณ' && calculateMode === 'problems'
+          ? 'math_problems'
+          : formData.content,
         segments,
         videoUrl: (selectedCategory === 'ด้านคำนวณ' || selectedCategory === 'voice_quest' || selectedCategory === 'space_adventure') ? '' : formData.videoUrl
       };
@@ -400,6 +462,8 @@ export default function NewActivityPage() {
     );
   }
 
+  const isFormReady = selectedCategory !== 'ด้านคำนวณ' || calculateMode !== null;
+
   return (
     <div className="p-8 max-w-4xl mx-auto">
       {/* Header */}
@@ -412,7 +476,7 @@ export default function NewActivityPage() {
         </div>
         <div className="flex items-center gap-4">
           <UserProfile />
-          {selectedCategory && (
+          {selectedCategory && isFormReady && (
             <div className="flex items-center gap-3">
               {/*
                 TODO: Save Draft
@@ -494,8 +558,58 @@ export default function NewActivityPage() {
         </div>
       </div>
 
+      {selectedCategory === 'ด้านคำนวณ' && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h3 className="body-large-semibold text-dark mb-2">
+            เลือกรูปแบบกิจกรรมคำนวณ <span className="text-red">*</span>
+          </h3>
+          <p className="body-small-regular text-secondary--text mb-4">
+            เลือกประเภทโจทย์ที่ต้องการสร้าง
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setCalculateMode('equation')}
+              className={`p-6 border-2 rounded-lg transition-all text-left ${
+                calculateMode === 'equation'
+                  ? 'border-purple bg-purple--light5'
+                  : 'border-gray6 hover:border-purple--light3'
+              }`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <Calculator size={24} className="text-purple" />
+                <div className="body-large-semibold text-dark">สมการ</div>
+              </div>
+              <div className="body-small-regular text-secondary--text">
+                สร้างแบบฝึกหัดคำนวณและคำตอบแบบเดิม
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCalculateMode('problems');
+              }}
+              className={`p-6 border-2 rounded-lg transition-all text-left ${
+                calculateMode === 'problems'
+                  ? 'border-purple bg-purple--light5'
+                  : 'border-gray6 hover:border-purple--light3'
+              }`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <BookOpen size={24} className="text-purple" />
+                <div className="body-large-semibold text-dark">โจทย์ปัญหา</div>
+              </div>
+              <div className="body-small-regular text-secondary--text">
+                สร้างโจทย์สถานการณ์ คำตอบ และคำอธิบายวิธีคิด
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Form - Only show after category selection */}
-      {selectedCategory && (
+      {selectedCategory && isFormReady && (
         <form onSubmit={handlePublish} className="space-y-6">
           {selectedCategory === 'space_adventure' && (
             <div className="bg-white rounded-lg shadow p-6 space-y-4">
@@ -697,7 +811,7 @@ export default function NewActivityPage() {
           </div>
 
           {/* Content/Instructions - Physical & Analytical */}
-          {(selectedCategory === 'ด้านร่างกาย' || selectedCategory === 'ด้านคำนวณ') && (
+          {(selectedCategory === 'ด้านร่างกาย' || (selectedCategory === 'ด้านคำนวณ' && calculateMode === 'equation')) && (
             <div className="bg-white rounded-lg shadow p-6 space-y-4">
               <label className="body-large-semibold text-dark">
                 {selectedCategory === 'ด้านร่างกาย' ? 'วิธีเล่น / How to Play' : 'คำแนะนำเพิ่มเติม / Additional Instructions'} <span className="text-red">*</span>
@@ -790,10 +904,12 @@ export default function NewActivityPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <label className="body-large-semibold text-dark">
-                    Questions <span className="text-red">*</span>
+                    {calculateMode === 'problems' ? 'โจทย์ปัญหา' : 'Questions'} <span className="text-red">*</span>
                   </label>
                   <p className="body-small-regular text-secondary--text">
-                    Add questions for analytical thinking activity
+                    {calculateMode === 'problems'
+                      ? 'เพิ่มโจทย์สถานการณ์ คำตอบ และคำอธิบายวิธีคิด'
+                      : 'Add questions for analytical thinking activity'}
                   </p>
                   {questions.length > 0 && (
                     <p className="body-small-regular text-purple mt-1">
@@ -807,13 +923,15 @@ export default function NewActivityPage() {
                   className="flex items-center gap-2 px-4 py-2 bg-purple text-white rounded-lg body-medium-medium hover:bg-purple--dark"
                 >
                   <Plus size={20} />
-                  Add Question
+                  {calculateMode === 'problems' ? 'เพิ่มโจทย์ปัญหา' : 'Add Question'}
                 </button>
               </div>
 
               {questions.length === 0 ? (
                 <div className="text-center py-8 text-secondary--text body-medium-regular">
-                  No questions added yet. Click &quot;Add Question&quot; to start.
+                  {calculateMode === 'problems'
+                    ? 'ยังไม่มีโจทย์ปัญหา กด “เพิ่มโจทย์ปัญหา” เพื่อเริ่มต้น'
+                    : 'No questions added yet. Click “Add Question” to start.'}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -842,6 +960,34 @@ export default function NewActivityPage() {
                           <Trash2 size={18} />
                         </button>
                       </div>
+
+                      {calculateMode === 'problems' && (
+                        <div className="flex flex-col md:flex-row md:items-end gap-3 p-3 bg-purple--light5 border border-purple--light4 rounded-lg">
+                          <div className="flex-1">
+                            <label className="body-small-semibold text-purple block mb-1">
+                              สมการสำหรับสร้างโจทย์ด้วย AI
+                            </label>
+                            <input
+                              type="text"
+                              value={q.equation ?? ''}
+                              onChange={(e) => updateQuestion(q.id, 'equation', e.target.value)}
+                              placeholder="เช่น 18+2 หรือ 5*4"
+                              className="w-full px-3 py-2 border border-purple--light3 rounded-lg body-small-regular focus:outline-none focus:ring-2 focus:ring-purple bg-white"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => generateProblemQuestion(q)}
+                            disabled={generatingQuestionId === q.id}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-purple text-white rounded-lg body-small-medium hover:bg-purple--dark disabled:opacity-50 min-w-36"
+                          >
+                            {generatingQuestionId === q.id
+                              ? <RefreshCw size={16} className="animate-spin" />
+                              : <Brain size={16} />}
+                            {generatingQuestionId === q.id ? 'กำลังสร้าง...' : 'เจนโจทย์ด้วย AI'}
+                          </button>
+                        </div>
+                      )}
 
                       <div>
                         <label className="body-small-semibold text-dark block mb-1">
@@ -873,12 +1019,18 @@ export default function NewActivityPage() {
 
                       <div>
                         <label className="body-small-semibold text-dark block mb-1">
-                          คำแนะนำ
+                          {calculateMode === 'problems' ? 'คำอธิบายวิธีคิด' : 'คำแนะนำ'}
                         </label>
                         <textarea
-                          value={q.hint}
-                          onChange={(e) => updateQuestion(q.id, 'hint', e.target.value)}
-                          placeholder="คำแนะนำหรือคำอธิบาย (ถ้ามี)"
+                          value={calculateMode === 'problems' ? q.solution : q.hint}
+                          onChange={(e) => updateQuestion(
+                            q.id,
+                            calculateMode === 'problems' ? 'solution' : 'hint',
+                            e.target.value,
+                          )}
+                          placeholder={calculateMode === 'problems'
+                            ? 'อธิบายขั้นตอนและวิธีหาคำตอบ'
+                            : 'คำแนะนำหรือคำอธิบาย (ถ้ามี)'}
                           rows={2}
                           className="w-full px-3 py-2 border border-gray6 rounded-lg body-small-regular focus:outline-none focus:ring-2 focus:ring-purple resize-none"
                         />
