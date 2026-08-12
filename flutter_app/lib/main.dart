@@ -15,6 +15,7 @@ import 'services/storage_service.dart';
 import 'services/mock_auth_service.dart';
 import 'screens/auth/welcome_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/disclaimer/software_disclaimer_gate.dart';
 import 'package:media_kit/media_kit.dart';
 
 Future<void> main() async {
@@ -142,7 +143,7 @@ class _SWKAppState extends State<SWKApp> {
           child: child!,
         ),
       ),
-      home: const AuthWrapper(),
+      home: const SoftwareDisclaimerGate(child: AuthWrapper()),
       routes: appRoutes,
     );
   }

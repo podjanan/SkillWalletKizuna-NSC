@@ -2,7 +2,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-const CMS_API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+// Server-to-server requests must stay on the Docker network. Using the public
+// HTTPS URL here can loop through the reverse proxy (or send TLS to port 3000).
+const CMS_API_BASE =
+    process.env.INTERNAL_API_URL ||
+    (process.env.BETTER_AUTH_INTERNAL_URL
+        ? `${process.env.BETTER_AUTH_INTERNAL_URL.replace(/\/$/, '')}/api`
+        : undefined);
 const CMS_EVALUATION_PATH = '/ai-evaluation'; 
 
 const corsHeaders = {

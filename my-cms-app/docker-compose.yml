@@ -209,6 +209,7 @@ services:
       - NODE_ENV=production
       - WHISPER_MODE=local
       - WHISPER_LOCAL_URL=http://whisper:8000
+      - INTERNAL_API_URL=http://app:3000/api
       - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
       - OLLAMA_VISION_MODEL=${OLLAMA_VISION_MODEL:-gemma3:4b}
@@ -219,6 +220,7 @@ services:
       - OBJECT_DETECTION_MIN_CONFIDENCE=${OBJECT_DETECTION_MIN_CONFIDENCE:-0.18}
       - OBJECT_DETECTION_MAX_OBJECTS=${OBJECT_DETECTION_MAX_OBJECTS:-20}
       - OBJECT_DETECTION_TIMEOUT_MS=${OBJECT_DETECTION_TIMEOUT_MS:-20000}
+      - MINIO_INTERNAL_URL=http://minio:9000
       - SUNO_API_KEY=${SUNO_API_KEY:-}
       - SUNO_API_URL=${SUNO_API_URL:-https://api.goapi.ai/suno/v1/music}
     extra_hosts:

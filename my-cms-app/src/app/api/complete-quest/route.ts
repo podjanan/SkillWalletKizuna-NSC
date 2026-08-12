@@ -3,11 +3,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedParent } from '@/lib/get-parent';
 import { prisma } from '@/lib/prisma';
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { childId, activityId, totalScoreEarned, segmentResults, evidence, timeSpent } = body;
-    const isSpaceAdventure = activityId === 'space-adventure';
+    // Built-in activities such as `space-adventure` and `bilingual-songs`
+    // use stable slugs rather than rows from the UUID-backed activity table.
+    const activityUuid = typeof activityId === 'string' && UUID_PATTERN.test(activityId)
+      ? activityId
+      : null;
+    const recordEvidence = activityUuid
+      ? (evidence || null)
+      : { ...(evidence && typeof evidence === 'object' ? evidence : {}), activityKey: activityId };
 
     if (!childId || !activityId) {
       return NextResponse.json(
@@ -51,15 +60,13 @@ export async function POST(request: NextRequest) {
         data: {
           parent_id: parent.parent_id,
           child_id: childId,
-          // Space Adventure is a virtual activity and does not have a UUID row
-          // in the activity table. Keep the relation empty and identify it via
-          // the evidence payload instead.
-          activity_id: isSpaceAdventure ? null : activityId,
+          // Virtual activities have a slug, not a UUID relation.
+          activity_id: activityUuid,
           point: scoreToAdd,
           time_spent: timeSpent || null,
           date: new Date(),
           segment_results: segmentResults || null,
-          evidence: evidence || null,
+          evidence: recordEvidence,
         },
       });
 
@@ -72,9 +79,9 @@ export async function POST(request: NextRequest) {
       });
 
       // Increment play count on the activity
-      if (!isSpaceAdventure) {
+      if (activityUuid) {
         await tx.activity.update({
-          where: { activity_id: activityId },
+          where: { activity_id: activityUuid },
           data: { play_count: { increment: 1 } },
         }).catch(() => { /* ignore if activity not found */ });
       }
@@ -89,7 +96,7 @@ export async function POST(request: NextRequest) {
       scoreEarned: scoreToAdd,
       newWallet: currentWallet + scoreToAdd,
       segmentResults,
-      evidence,
+      evidence: recordEvidence,
     });
   } catch (error) {
     console.error('Complete quest error:', error);

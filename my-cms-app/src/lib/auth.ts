@@ -3,6 +3,25 @@ import { prismaAdapter } from 'better-auth/adapters/prisma'
 import { bearer } from 'better-auth/plugins'
 import { prisma } from './prisma'
 
+const configuredTrustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGIN
+  ?.split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean) ?? []
+
+const trustedOrigins = Array.from(new Set([
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:*',
+  'http://127.0.0.1:*',
+  'http://10.0.2.2:*',
+  'https://skillwalletkool.duckdns.org',
+  'https://skillwalletkizuna.duckdns.org',
+  'http://103.216.158.225:3000',
+  process.env.BETTER_AUTH_URL,
+  process.env.NEXT_PUBLIC_APP_URL,
+  ...configuredTrustedOrigins,
+].filter(Boolean) as string[]))
+
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   database: prismaAdapter(prisma, {
@@ -45,15 +64,5 @@ export const auth = betterAuth({
       },
     },
   },
-  trustedOrigins: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:*',
-    'http://127.0.0.1:*',
-    'http://10.0.2.2:*',
-    'https://skillwalletkool.duckdns.org',
-    'https://skillwalletkizuna.duckdns.org',
-    `http://103.216.158.225:3000`,
-    process.env.BETTER_AUTH_TRUSTED_ORIGIN,
-  ].filter(Boolean) as string[],
+  trustedOrigins,
 })

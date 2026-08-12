@@ -1,30 +1,63 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:skill_wallet_kizuna/main.dart';
+import 'package:skill_wallet_kizuna/screens/disclaimer/software_disclaimer_gate.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const SWKApp());
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  testWidgets('requires confirmation before entering the app', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SoftwareDisclaimerGate(
+          preferences: preferences,
+          child: const Text('APP CONTENT'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('ข้อตกลงในการใช้ซอฟต์แวร์'), findsOneWidget);
+    expect(find.text('APP CONTENT'), findsNothing);
+
+    final acceptButton = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, 'ยอมรับและดำเนินการต่อ'),
+    );
+    expect(acceptButton.onPressed, isNull);
+
+    await tester.tap(find.byType(Checkbox));
     await tester.pump();
+    await tester.tap(
+      find.widgetWithText(ElevatedButton, 'ยอมรับและดำเนินการต่อ'),
+    );
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('APP CONTENT'), findsOneWidget);
+  });
+
+  testWidgets('skips the disclaimer after accepting the current version',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'software_disclaimer_accepted_version':
+          SoftwareDisclaimerGate.agreementVersion,
+    });
+    final preferences = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SoftwareDisclaimerGate(
+          preferences: preferences,
+          child: const Text('APP CONTENT'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('APP CONTENT'), findsOneWidget);
+    expect(find.text('ข้อตกลงในการใช้ซอฟต์แวร์'), findsNothing);
   });
 }
