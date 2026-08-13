@@ -70,8 +70,12 @@ export async function generateBilingualLyricsWithQwen(
   lyrics: LyricLine[];
 }> {
   const phrasesStr = targetPhrases.join(', ');
+  const isShort = genre.toLowerCase().includes('30') || genre.toLowerCase().includes('short');
+  const lengthRule = isShort
+    ? ' Keep lyrics extra short and punchy (max 4-6 total sung lines) designed for a 30-second song.'
+    : '';
   const prompt = `You are a creative children's songwriter and language teacher.
-Create a short, catchy bilingual song for kids ages 4-9 based on these target vocabulary words: "${phrasesStr}".
+Create a short, catchy bilingual song for kids ages 4-9 based on these target vocabulary words: "${phrasesStr}".${lengthRule}
 
 CRITICAL LYRICS FORMATTING RULES:
 1. Do NOT generate individual chords per line (leave chord as "").
@@ -231,9 +235,65 @@ Return ONLY valid JSON:
   };
 }
 
+export function resolveMediaUrl(rawUrl: string | null | undefined): string {
+  if (!rawUrl) return '';
+  if (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:')) return rawUrl;
+
+  try {
+    const uri = new URL(rawUrl);
+    if (uri.port === '9000' || uri.pathname.startsWith('/avatars/')) {
+      return `/api/media${uri.pathname}${uri.search}`;
+    }
+  } catch {
+    if (rawUrl.startsWith('/avatars/')) {
+      return `/api/media${rawUrl}`;
+    }
+  }
+  return rawUrl;
+}
+
 export async function resolveAndCacheSunoUrl(rawUrl: string | null | undefined): Promise<string> {
   if (!rawUrl) return '';
   const trimmed = rawUrl.trim();
+  // Check if user passed a Task ID (e.g. efb5a890-e4b7-4d6a-9c28-91e8c280f2cb or UUID format)
+  if (/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(trimmed) || trimmed.length === 36) {
+    try {
+      console.log(`[Suno Link Resolver] 🔍 Fetching APIframe Task ID: ${trimmed}`);
+      const sunoApiKey = (
+        process.env.SUNO_API_KEY ||
+        process.env.APIFRAME_KEY ||
+        process.env.SUNO_KEY ||
+        ''
+      ).trim();
+
+      const pollRes = await fetch('https://api.apiframe.ai/v2/fetch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': sunoApiKey,
+        },
+        body: JSON.stringify({ task_id: trimmed }),
+      });
+
+      if (pollRes.ok) {
+        const pollData = await pollRes.json();
+        const foundUrl = extractAudioUrl(pollData);
+        if (foundUrl) {
+          console.log(`[Suno Link Resolver] 🎉 Extracted audio from Task ID: ${foundUrl}`);
+          const audioFetch = await fetch(foundUrl);
+          if (audioFetch.ok) {
+            const buffer = new Uint8Array(await audioFetch.arrayBuffer());
+            const key = `bilingual-songs/suno-task-${trimmed.substring(0, 8)}-${Date.now()}.mp3`;
+            const minioUrl = await uploadToMinio(key, buffer, 'audio/mpeg');
+            console.log(`[Suno Link Resolver] ✅ Cached Task ID audio to MinIO: ${minioUrl}`);
+            return resolveMediaUrl(minioUrl);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[Suno Link Resolver] Failed to resolve Task ID:', e);
+    }
+  }
 
   // Check if user passed a Suno web page share link (e.g. https://suno.com/s/aZNMfxHpLnypFI06)
   if (trimmed.includes('suno.com/s/') || trimmed.includes('suno.com/song/')) {
@@ -276,21 +336,293 @@ export async function resolveAndCacheSunoUrl(rawUrl: string | null | undefined):
   return resolveMediaUrl(trimmed);
 }
 
-export function resolveMediaUrl(rawUrl: string | null | undefined): string {
-  if (!rawUrl) return '';
-  if (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:')) return rawUrl;
-  
-  try {
-    const uri = new URL(rawUrl);
-    if (uri.port === '9000' || uri.pathname.startsWith('/avatars/')) {
-      return `/api/media${uri.pathname}${uri.search}`;
+function extractAudioUrl(data: any): string | null {
+  if (!data) return null;
+  if (typeof data === 'string' && data.startsWith('http')) return data;
+
+  const findUrlInObject = (obj: any): string | null => {
+    if (!obj || typeof obj !== 'object') return null;
+    if (typeof obj.audioUrl === 'string' && obj.audioUrl.startsWith('http')) return obj.audioUrl;
+    if (typeof obj.audio_url === 'string' && obj.audio_url.startsWith('http')) return obj.audio_url;
+    if (typeof obj.url === 'string' && obj.url.startsWith('http') && (obj.url.includes('.mp3') || obj.url.includes('/audio/'))) return obj.url;
+    if (typeof obj.stream_url === 'string' && obj.stream_url.startsWith('http')) return obj.stream_url;
+
+    if (Array.isArray(obj.tracks) && obj.tracks[0]) {
+      const u = findUrlInObject(obj.tracks[0]);
+      if (u) return u;
     }
-  } catch {
-    if (rawUrl.startsWith('/avatars/')) {
-      return `/api/media${rawUrl}`;
+    if (Array.isArray(obj.output) && obj.output[0]) {
+      const u = findUrlInObject(obj.output[0]);
+      if (u) return u;
+    }
+    if (obj.data) {
+      const u = findUrlInObject(obj.data);
+      if (u) return u;
+    }
+    if (obj.task_result) {
+      const u = findUrlInObject(obj.task_result);
+      if (u) return u;
+    }
+    if (obj.result) {
+      const u = findUrlInObject(obj.result);
+      if (u) return u;
+    }
+
+    return null;
+  };
+
+  return findUrlInObject(data);
+}
+
+function extractTaskId(data: any): string | null {
+  if (!data) return null;
+  if (typeof data === 'string' && data.length >= 20 && !data.startsWith('http')) return data;
+
+  const candidate =
+    data.task_id ||
+    data.taskId ||
+    data.id ||
+    data.job_id ||
+    data.jobId ||
+    data.data?.task_id ||
+    data.data?.taskId ||
+    data.data?.id ||
+    data.data?.job_id ||
+    data.task?.id ||
+    data.result?.task_id;
+
+  return typeof candidate === 'string' ? candidate : null;
+}
+
+export function extractAllAudioUrls(data: any): string[] {
+  if (!data) return [];
+  const urls: string[] = [];
+
+  const addCandidate = (u: any) => {
+    if (typeof u === 'string' && u.startsWith('http') && !urls.includes(u)) {
+      urls.push(u);
+    }
+  };
+
+  const traverse = (obj: any) => {
+    if (!obj || typeof obj !== 'object') return;
+
+    if (Array.isArray(obj.tracks)) {
+      obj.tracks.forEach((t: any) => {
+        addCandidate(t?.audioUrl || t?.audio_url || t?.url);
+      });
+    }
+    if (Array.isArray(obj.output)) {
+      obj.output.forEach((t: any) => {
+        if (typeof t === 'string') addCandidate(t);
+        else addCandidate(t?.audioUrl || t?.audio_url || t?.url);
+      });
+    }
+    if (Array.isArray(obj.data)) {
+      obj.data.forEach((t: any) => {
+        if (typeof t === 'string') addCandidate(t);
+        else addCandidate(t?.audioUrl || t?.audio_url || t?.url);
+      });
+    }
+
+    addCandidate(obj?.audioUrl || obj?.audio_url || obj?.stream_url || obj?.mp3_url);
+    if (obj.data) traverse(obj.data);
+    if (obj.output) traverse(obj.output);
+    if (obj.task_result) traverse(obj.task_result);
+    if (obj.result) traverse(obj.result);
+  };
+
+  traverse(data);
+
+  if (urls.length === 0) {
+    const single = extractAudioUrl(data);
+    if (single) urls.push(single);
+  }
+
+  return urls;
+}
+
+export async function generateSunoSingingAudioResult(
+  title: string,
+  lyrics: LyricLine[],
+  genre = 'Upbeat Nursery Rhyme'
+): Promise<{ audioUrl: string; tracks: string[] }> {
+  const sunoApiKey = (
+    process.env.SUNO_API_KEY ||
+    process.env.APIFRAME_KEY ||
+    process.env.SUNO_KEY ||
+    process.env.GOAPI_SUNO_KEY ||
+    ''
+  ).trim();
+
+  const sunoApiUrl = (
+    process.env.SUNO_API_URL || 'https://api.apiframe.ai/v2/music/generate'
+  ).trim();
+
+  const lyricText = lyrics
+    .map((l) => {
+      const en = l.lineEn.trim();
+      const th = l.lineTh.trim();
+      if (!en && !th) return '';
+      if (en.startsWith('[')) return en;
+
+      const cleanTh = th
+        .replace(/[\(\)]/g, '')
+        .replace(/แปล\s*-\s*ว่า\s*-\s*/gi, '')
+        .replace(/แปลว่า\s*/gi, '')
+        .trim();
+
+      if (en && cleanTh) {
+        return `${en}\n${cleanTh}`;
+      }
+      return en || cleanTh;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+
+  const keyPrefix = sunoApiKey ? `${sunoApiKey.substring(0, 10)}...` : 'None';
+  console.log(`[Suno AI Engine] Initializing API call to: ${sunoApiUrl}`);
+  console.log(`[Suno AI Engine] SUNO_API_KEY in memory: ${keyPrefix}`);
+
+  if (!sunoApiKey) {
+    console.warn('[Suno AI Engine] ⚠️ SUNO_API_KEY is not set in .env!');
+    throw new Error('กรุณาระบุ SUNO_API_KEY ในไฟล์ .env ก่อนสร้างไฟล์เสียงด้วย Suno AI');
+  }
+
+  console.log('[Suno AI Engine] 🚀 Sending single generation request to Suno Provider...');
+
+  const styleHeader = genre ? `[Style: ${genre}]\n` : '';
+  const combinedPrompt = `${styleHeader}${lyricText}`;
+
+  const modelVersion = (process.env.SUNO_MODEL_VERSION || 'V5_5').trim();
+
+  const payload = {
+    model: 'suno',
+    prompt: combinedPrompt.substring(0, 3000),
+    sunoParams: {
+      custom_mode: true,
+      model_version: modelVersion,
+    },
+  };
+
+  const response = await fetch(sunoApiUrl, {
+    method: 'POST',
+    headers: {
+      'X-API-Key': sunoApiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const responseText = await response.text();
+  console.log(`[Suno AI Engine] Initial Response status: ${response.status}. Body: ${responseText}`);
+
+  let data: any = null;
+  try {
+    data = JSON.parse(responseText);
+  } catch (e) {
+    throw new Error(`Suno Provider returned invalid response (Status: ${response.status})`);
+  }
+
+  if (!response.ok) {
+    console.error('[Suno AI Engine Error Response]:', responseText);
+    const fullErrStr = typeof data === 'object' ? JSON.stringify(data) : responseText;
+    throw new Error(`Suno API Error (${response.status}): ${fullErrStr}`);
+  }
+
+  let rawAudioUrls = extractAllAudioUrls(data);
+  const taskId = extractTaskId(data);
+
+  if (rawAudioUrls.length === 0 && taskId) {
+    console.log(`[Suno AI Engine] ⏳ Async Task Created (ID: ${taskId}). Polling status...`);
+    const maxAttempts = 60;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      await new Promise((res) => setTimeout(res, 3000));
+      try {
+        const fetchUrl = sunoApiUrl.includes('apiframe.ai')
+          ? 'https://api.apiframe.ai/v2/fetch'
+          : `https://api.goapi.ai/api/v1/task/${taskId}`;
+
+        const pollRes = await fetch(fetchUrl, {
+          method: fetchUrl.includes('apiframe.ai') ? 'POST' : 'GET',
+          headers: {
+            'X-API-Key': sunoApiKey,
+            'Authorization': sunoApiKey.startsWith('Bearer ') ? sunoApiKey : `Bearer ${sunoApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: fetchUrl.includes('apiframe.ai') ? JSON.stringify({ task_id: taskId }) : undefined,
+        });
+
+        const pollText = await pollRes.text();
+        console.log(`[Suno AI Engine Poll ${attempt}/${maxAttempts}] HTTP ${pollRes.status}: ${pollText.substring(0, 300)}`);
+
+        let foundUrls: string[] = [];
+
+        if (pollRes.ok) {
+          try {
+            const pollData = JSON.parse(pollText);
+            foundUrls = extractAllAudioUrls(pollData);
+          } catch {}
+        }
+
+        // Direct APIframe CDN pattern check fallback during polling (runs unconditionally)
+        if (foundUrls.length === 0 && taskId && (taskId.length === 36 || taskId.includes('-'))) {
+          const candidate0 = `https://cdn2.apiframe.ai/audio/${taskId}-0.mp3`;
+          const candidate1 = `https://cdn2.apiframe.ai/audio/${taskId}-1.mp3`;
+
+          try {
+            const head0 = await fetch(candidate0, { method: 'HEAD' });
+            if (head0.ok) foundUrls.push(candidate0);
+          } catch {}
+
+          try {
+            const head1 = await fetch(candidate1, { method: 'HEAD' });
+            if (head1.ok) foundUrls.push(candidate1);
+          } catch {}
+        }
+
+        if (foundUrls.length > 0) {
+          rawAudioUrls = foundUrls;
+          console.log(`[Suno AI Engine] ✅ Found ${foundUrls.length} audio track(s) on attempt ${attempt}:`, foundUrls);
+          break;
+        }
+      } catch (pollErr) {
+        console.warn(`[Suno AI Engine] Poll attempt ${attempt} warning:`, pollErr);
+      }
     }
   }
-  return rawUrl;
+
+  if (rawAudioUrls.length === 0) {
+    throw new Error(`ไม่ได้รับไฟล์เสียง MP3 จาก Suno API ภายใน 3 นาที (Task ID: ${taskId || 'Unknown'}) โปรดลองกดอีกครั้ง`);
+  }
+
+  // Download and cache all audio tracks into MinIO storage
+  const cachedTracks: string[] = [];
+  const cleanTitle = (title || 'suno-song').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+
+  for (let idx = 0; idx < rawAudioUrls.length; idx++) {
+    const rawUrl = rawAudioUrls[idx];
+    try {
+      console.log(`[Suno AI Engine] 📦 Caching track ${idx + 1}/${rawAudioUrls.length} to local MinIO...`);
+      const audioFetch = await fetch(rawUrl);
+      if (audioFetch.ok) {
+        const buffer = new Uint8Array(await audioFetch.arrayBuffer());
+        const key = `bilingual-songs/suno-${cleanTitle}-track${idx + 1}-${Date.now()}.mp3`;
+        const minioUrl = await uploadToMinio(key, buffer, 'audio/mpeg');
+        cachedTracks.push(resolveMediaUrl(minioUrl));
+      } else {
+        cachedTracks.push(resolveMediaUrl(rawUrl));
+      }
+    } catch (dlErr) {
+      console.warn(`[Suno AI Engine] Track ${idx + 1} MinIO cache warning:`, dlErr);
+      cachedTracks.push(resolveMediaUrl(rawUrl));
+    }
+  }
+
+  return {
+    audioUrl: cachedTracks[0] || '',
+    tracks: cachedTracks,
+  };
 }
 
 export async function generateSunoSingingAudio(
@@ -298,194 +630,8 @@ export async function generateSunoSingingAudio(
   lyrics: LyricLine[],
   genre = 'Upbeat Nursery Rhyme'
 ): Promise<string> {
-  const sunoApiKey = (process.env.SUNO_API_KEY || process.env.GOAPI_SUNO_KEY || '').trim();
-  const useGoApi = process.env.USE_GOAPI === 'true'; // Set USE_GOAPI=true in .env if you top up credits
-
-  // 1. High-Speed Free AI Vocal Synthesis Engine (Default - 0.5 sec speed, 100% Free)
-  if (!useGoApi) {
-    console.log('[AI Music Engine] 🎙️ Generating Free AI Vocal Audio (High Speed)...');
-    try {
-      const fullLyricsText = lyrics.map((l) => l.lineEn).join('. ');
-      const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(fullLyricsText.substring(0, 300))}&tl=en&client=tw-ob`;
-
-      const ttsFetch = await fetch(ttsUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-      });
-
-      if (ttsFetch.ok) {
-        const buffer = new Uint8Array(await ttsFetch.arrayBuffer());
-        const cleanTitle = (title || 'kids-song').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-        const key = `bilingual-songs/vocal-${cleanTitle}-${Date.now()}.mp3`;
-        const minioUrl = await uploadToMinio(key, buffer, 'audio/mpeg');
-        console.log(`[AI Music Engine] ✅ Free AI Vocal Audio generated & stored in MinIO: ${minioUrl}`);
-        return resolveMediaUrl(minioUrl);
-      }
-    } catch (e) {
-      console.error('[AI Music Engine] AI Vocal synthesis failed:', e);
-    }
-  }
-
-  // 2. GoAPI External API fallback (when USE_GOAPI=true)
-  const sunoTaskUrl = 'https://api.goapi.ai/api/v1/task';
-  const lyricText = lyrics.map((l) => l.lineEn).join('\n');
-  const promptStyle = `children nursery rhyme, upbeat acoustic guitar, happy female vocalist, cheerful 100bpm, ${genre}`;
-
-  console.log(`[AI Music Engine] Initializing. SUNO_API_KEY present: ${Boolean(sunoApiKey)}`);
-
-  if (!sunoApiKey) {
-    console.warn('[AI Music Engine] ⚠️ SUNO_API_KEY is not set in .env! Using fallback demo audio.');
-  } else {
-    try {
-      console.log(`[AI Music Engine] 🚀 Submitting Suno music task to GoAPI (${sunoTaskUrl})...`);
-      const response = await fetch(sunoTaskUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': sunoApiKey,
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-        body: JSON.stringify({
-          model: 'suno',
-          task_type: 'music',
-          input: {
-            prompt: lyricText,
-            tags: promptStyle,
-            title: title,
-            make_instrumental: false,
-          },
-        }),
-      });
-
-      const responseText = await response.text();
-      console.log(`[AI Music Engine] GoAPI Task Creation status: ${response.status}. Body: ${responseText.substring(0, 300)}`);
-
-      let data: any = null;
-      try {
-        data = JSON.parse(responseText);
-      } catch {}
-
-      if (response.ok && data?.code === 200) {
-        const taskId = data?.data?.task_id;
-        if (taskId) {
-          console.log(`[AI Music Engine] ⏳ Task created successfully (ID: ${taskId}). Polling GoAPI for music completion...`);
-          const pollUrl = `https://api.goapi.ai/api/v1/task/${taskId}`;
-          let audioUrl = '';
-
-          const maxAttempts = 40;
-          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            await new Promise((res) => setTimeout(res, 3000));
-            try {
-              const pollRes = await fetch(pollUrl, {
-                headers: {
-                  'X-API-Key': sunoApiKey,
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                },
-              });
-              if (pollRes.ok) {
-                const pollData = await pollRes.json();
-                const taskObj = pollData?.data || {};
-                const status = taskObj?.status;
-                const output = taskObj?.output;
-
-                console.log(`[AI Music Engine] Polling attempt ${attempt}/${maxAttempts}: status = ${status}`);
-
-                if (status === 'completed' || status === 'SUCCESS' || output) {
-                  if (Array.isArray(output) && output.length > 0) {
-                    audioUrl = output[0]?.audio_url || output[0]?.stream_url || output[0]?.audio_url_list?.[0] || '';
-                  } else if (typeof output === 'object' && output !== null) {
-                    audioUrl =
-                      output?.audio_url ||
-                      output?.audio_url_list?.[0] ||
-                      output?.songs?.[0]?.audio_url ||
-                      output?.clips?.[0]?.audio_url ||
-                      '';
-                  } else if (typeof output === 'string') {
-                    audioUrl = output;
-                  }
-
-                  if (audioUrl) {
-                    console.log(`[AI Music Engine] 🎉 Audio ready! URL: ${audioUrl}`);
-                    break;
-                  }
-                }
-
-                if (status === 'failed' || status === 'FAILED') {
-                  console.error('[AI Music Engine] ❌ GoAPI task failed:', taskObj?.error);
-                  break;
-                }
-              }
-            } catch (pollErr) {
-              console.warn('[AI Music Engine] Poll attempt error:', pollErr);
-            }
-          }
-
-          if (audioUrl) {
-            // Download audio MP3 and cache to MinIO
-            try {
-              const audioFetch = await fetch(audioUrl);
-              if (audioFetch.ok) {
-                const buffer = new Uint8Array(await audioFetch.arrayBuffer());
-                const cleanTitle = title.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-                const key = `bilingual-songs/${cleanTitle}-${Date.now()}.mp3`;
-                const minioUrl = await uploadToMinio(key, buffer, 'audio/mpeg');
-                return resolveMediaUrl(minioUrl);
-              }
-            } catch (dlErr) {
-              console.warn('[AI Music Engine] Direct audio fetch failed, returning GoAPI audio URL:', dlErr);
-            }
-            return audioUrl;
-          }
-        }
-      } else {
-        console.error(`[AI Music Engine] GoAPI returned error status ${response.status}:`, responseText);
-      }
-    } catch (e) {
-      console.error('[AI Music Engine] Exception during Suno API call:', e);
-    }
-  }
-
-  // High-Quality Free AI Vocal Synthesis Engine (100% Free Forever)
-  console.log('[AI Music Engine] 🎙️ Synthesizing clear English vocal audio for lyrics...');
-  try {
-    const fullLyricsText = lyrics.map((l) => l.lineEn).join('. ');
-    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(fullLyricsText.substring(0, 300))}&tl=en&client=tw-ob`;
-
-    const ttsFetch = await fetch(ttsUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
-    });
-
-    if (ttsFetch.ok) {
-      const buffer = new Uint8Array(await ttsFetch.arrayBuffer());
-      const cleanTitle = (title || 'kids-song').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-      const key = `bilingual-songs/vocal-${cleanTitle}-${Date.now()}.mp3`;
-      const minioUrl = await uploadToMinio(key, buffer, 'audio/mpeg');
-      console.log(`[AI Music Engine] ✅ Free AI Vocal Audio generated & stored in MinIO: ${minioUrl}`);
-      return resolveMediaUrl(minioUrl);
-    }
-  } catch (e) {
-    console.error('[AI Music Engine] AI Vocal synthesis failed:', e);
-  }
-
-  // Fallback demo audio track
-  const demoAudio = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-  try {
-    const audioFetch = await fetch(demoAudio);
-    if (audioFetch.ok) {
-      const buffer = new Uint8Array(await audioFetch.arrayBuffer());
-      const cleanTitle = (title || 'kids-song').toLowerCase().replace(/[^a-z0-9_-]/g, '_');
-      const key = `bilingual-songs/demo-${cleanTitle}-${Date.now()}.mp3`;
-      const minioUrl = await uploadToMinio(key, buffer, 'audio/mpeg');
-      return resolveMediaUrl(minioUrl);
-    }
-  } catch (e) {
-    console.error('Fallback MinIO upload failed:', e);
-  }
-
-  return demoAudio;
+  const result = await generateSunoSingingAudioResult(title, lyrics, genre);
+  return result.audioUrl;
 }
 
 export async function getAllBilingualSongs(publishedOnly = false): Promise<BilingualSong[]> {

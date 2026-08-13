@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   ensureBilingualSongTable,
+  extractAllAudioUrls,
   generateBilingualLyricsWithQwen,
   generateSunoSingingAudio,
+  generateSunoSingingAudioResult,
   getAllBilingualSongs,
   getBilingualSongById,
   resolveAndCacheSunoUrl,
@@ -83,8 +85,96 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Lyrics are required to generate audio' }, { status: 400 });
       }
 
-      const audioUrl = await generateSunoSingingAudio(title, lyrics, genre);
-      return NextResponse.json({ audioUrl });
+      try {
+        const result = await generateSunoSingingAudioResult(title, lyrics, genre);
+        return NextResponse.json({
+          audioUrl: result.audioUrl,
+          tracks: result.tracks,
+        });
+      } catch (err: any) {
+        console.error('[API generateAudio error]:', err);
+        return NextResponse.json(
+          { error: err?.message || 'Failed to generate audio from Suno AI' },
+          { status: 500 }
+        );
+      }
+    }
+
+    if (action === 'fetchTaskTracks') {
+      const taskId = String(body.taskId || '').trim();
+      if (!taskId) {
+        return NextResponse.json({ error: 'TaskId is required' }, { status: 400 });
+      }
+
+      try {
+        const sunoApiKey = (
+          process.env.SUNO_API_KEY ||
+          process.env.APIFRAME_KEY ||
+          process.env.SUNO_KEY ||
+          ''
+        ).trim();
+
+        let rawTracks: string[] = [];
+
+        // 1. Query APIframe fetch API
+        try {
+          const pollRes = await fetch('https://api.apiframe.ai/v2/fetch', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': sunoApiKey,
+              'Authorization': sunoApiKey.startsWith('Bearer ') ? sunoApiKey : `Bearer ${sunoApiKey}`,
+            },
+            body: JSON.stringify({ task_id: taskId }),
+          });
+
+          if (pollRes.ok) {
+            const pollData = await pollRes.json();
+            rawTracks = extractAllAudioUrls(pollData);
+          }
+        } catch (e) {
+          console.warn('[fetchTaskTracks poll error]:', e);
+        }
+
+        // 2. Direct APIframe CDN URL pattern fallback (task_id-0.mp3 and task_id-1.mp3)
+        if (rawTracks.length === 0 && (taskId.length === 36 || taskId.includes('-'))) {
+          const candidate0 = `https://cdn2.apiframe.ai/audio/${taskId}-0.mp3`;
+          const candidate1 = `https://cdn2.apiframe.ai/audio/${taskId}-1.mp3`;
+
+          try {
+            const head0 = await fetch(candidate0, { method: 'HEAD' });
+            if (head0.ok) rawTracks.push(candidate0);
+          } catch {}
+
+          try {
+            const head1 = await fetch(candidate1, { method: 'HEAD' });
+            if (head1.ok) rawTracks.push(candidate1);
+          } catch {}
+        }
+
+        // 3. Cache valid audio tracks to local MinIO
+        const cachedTracks: string[] = [];
+        for (let idx = 0; idx < rawTracks.length; idx++) {
+          const rawUrl = rawTracks[idx];
+          try {
+            const audioFetch = await fetch(rawUrl);
+            if (audioFetch.ok) {
+              const buffer = new Uint8Array(await audioFetch.arrayBuffer());
+              const key = `bilingual-songs/suno-task-${taskId.substring(0, 8)}-tr${idx + 1}-${Date.now()}.mp3`;
+              const minioUrl = await uploadToMinio(key, buffer, 'audio/mpeg');
+              cachedTracks.push(resolveMediaUrl(minioUrl));
+            } else {
+              cachedTracks.push(resolveMediaUrl(rawUrl));
+            }
+          } catch (dlErr) {
+            cachedTracks.push(resolveMediaUrl(rawUrl));
+          }
+        }
+
+        return NextResponse.json({ tracks: cachedTracks });
+      } catch (err: any) {
+        return NextResponse.json({ error: err?.message || 'Failed to fetch Task tracks' }, { status: 500 });
+      }
     }
 
     if (action === 'saveSong') {

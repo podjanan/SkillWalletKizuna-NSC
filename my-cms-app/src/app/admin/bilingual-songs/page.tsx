@@ -16,7 +16,9 @@ import {
   RefreshCw,
   Edit2,
   Save,
+  Search,
   Upload,
+  Download,
 } from 'lucide-react';
 import UserProfile from '@/components/UserProfile';
 
@@ -51,7 +53,9 @@ export default function BilingualSongsAdminPage() {
 
   // Form states
   const [phrasesInput, setPhrasesInput] = useState('We can sing, We can play, Happy friends');
-  const [genre, setGenre] = useState('Upbeat Nursery Rhyme');
+  const [genre, setGenre] = useState(
+    '30s short song, C Major, 125 BPM, aerobic dance pop, clear Thai English vocals, upbeat bouncy beat, synth brass'
+  );
 
   // Generated / Editing results
   const [generatedTitleEn, setGeneratedTitleEn] = useState('');
@@ -59,11 +63,13 @@ export default function BilingualSongsAdminPage() {
   const [generatedWords, setGeneratedWords] = useState<TargetWord[]>([]);
   const [generatedLyrics, setGeneratedLyrics] = useState<LyricLine[]>([]);
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState('');
+  const [sunoTracks, setSunoTracks] = useState<string[]>([]);
 
   // UI state
   const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [isFetchingTaskTracks, setIsFetchingTaskTracks] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
 
@@ -120,7 +126,12 @@ export default function BilingualSongsAdminPage() {
   };
 
   const handleGenerateAudio = async () => {
-    if (generatedLyrics.length === 0) return;
+    if (isGeneratingAudio) return; // Guard against double clicks
+    if (generatedLyrics.length === 0) {
+      alert('กรุณาสร้างหรือใส่เนื้อเพลงก่อนเริ่มสร้างไฟล์เสียงด้วย Suno AI');
+      return;
+    }
+
     setIsGeneratingAudio(true);
     try {
       const res = await fetch('/api/admin/bilingual-songs', {
@@ -136,12 +147,78 @@ export default function BilingualSongsAdminPage() {
 
       if (res.ok) {
         const data = await res.json();
-        setGeneratedAudioUrl(data.audioUrl);
+        if (data.tracks && Array.isArray(data.tracks) && data.tracks.length > 0) {
+          setSunoTracks(data.tracks);
+          setGeneratedAudioUrl(data.tracks[0]);
+          alert(`สร้างเพลงด้วย Suno AI สำเร็จเรียบร้อยแล้ว! (พบเพลงให้เลือก ${data.tracks.length} เวอร์ชัน)`);
+        } else if (data.audioUrl) {
+          setGeneratedAudioUrl(data.audioUrl);
+          setSunoTracks([data.audioUrl]);
+          alert('สร้างเพลงด้วย Suno AI สำเร็จเรียบร้อยแล้ว!');
+        } else {
+          alert('ไม่พบลิงก์เสียงจาก Suno AI โปรดตรวจสอบ Key ใน .env');
+        }
+      } else {
+        const data = await res.json();
+        alert(`เกิดข้อผิดพลาด: ${data.error || 'ไม่สามารถสร้างเพลงได้'}`);
       }
     } catch (e) {
       console.error('Audio generation error:', e);
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
     } finally {
       setIsGeneratingAudio(false);
+    }
+  };
+
+  const handleFetchTaskTracks = async () => {
+    const trimmed = generatedAudioUrl.trim();
+    if (!trimmed) {
+      alert('กรุณากรอก Task ID หรือ Suno URL ก่อนกดดึงเพลง');
+      return;
+    }
+    setIsFetchingTaskTracks(true);
+    try {
+      const res = await fetch('/api/admin/bilingual-songs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'fetchTaskTracks', taskId: trimmed }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.tracks && data.tracks.length > 0) {
+          setSunoTracks(data.tracks);
+          setGeneratedAudioUrl(data.tracks[0]);
+          alert(`ดึงเพลงจาก Task ID สำเร็จ! พบเพลงให้เลือก ${data.tracks.length} เวอร์ชัน`);
+        } else {
+          alert('ไม่พบแทร็กเพลงใน Task ID นี้ หรือ Task ยังสร้างไม่เสร็จสิ้น');
+        }
+      } else {
+        alert('เกิดข้อผิดพลาดในการดึงเพลงจาก Task ID');
+      }
+    } catch (e) {
+      console.error('Fetch Task tracks error:', e);
+      alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+    } finally {
+      setIsFetchingTaskTracks(false);
+    }
+  };
+
+  const handleDownloadAudio = async (url: string, defaultFilename: string) => {
+    if (!url) return;
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      const cleanName = (defaultFilename || 'bilingual-song.mp3').replace(/[^a-zA-Z0-9_.-]/g, '_');
+      a.download = cleanName.endsWith('.mp3') ? cleanName : `${cleanName}.mp3`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      window.open(url, '_blank');
     }
   };
 
@@ -240,6 +317,46 @@ export default function BilingualSongsAdminPage() {
     setGeneratedWords([]);
     setGeneratedLyrics([]);
     setGeneratedAudioUrl('');
+    setSunoTracks([]);
+  };
+
+  const handleCreateManualLyrics = () => {
+    setEditingSongId(null);
+    if (!generatedTitleEn) setGeneratedTitleEn('New Song');
+    if (!generatedTitleTh) setGeneratedTitleTh('เพลงใหม่');
+
+    let initialWords = [...generatedWords];
+    if (initialWords.length === 0 && phrasesInput.trim()) {
+      initialWords = phrasesInput
+        .split(',')
+        .map((w) => w.trim())
+        .filter(Boolean)
+        .map((w) => ({ word: w, thaiMeaning: '' }));
+      setGeneratedWords(initialWords);
+    }
+
+    if (generatedLyrics.length === 0) {
+      setGeneratedLyrics([
+        { lineEn: '[Intro]', lineTh: '', chord: 'C' },
+        { lineEn: 'Sing together and play along', lineTh: '(ร้องเพลงไปด้วยกัน)', chord: 'C' },
+      ]);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAddTargetWord = () => {
+    setGeneratedWords([...generatedWords, { word: '', thaiMeaning: '' }]);
+  };
+
+  const handleTargetWordChange = (index: number, field: keyof TargetWord, value: string) => {
+    const updated = [...generatedWords];
+    updated[index] = { ...updated[index], [field]: value };
+    setGeneratedWords(updated);
+  };
+
+  const handleRemoveTargetWord = (index: number) => {
+    const updated = generatedWords.filter((_, i) => i !== index);
+    setGeneratedWords(updated);
   };
 
   const handleLyricChange = (index: number, field: keyof LyricLine, value: string) => {
@@ -249,10 +366,14 @@ export default function BilingualSongsAdminPage() {
   };
 
   const handleAddLyricLine = () => {
-    setGeneratedLyrics([
-      ...generatedLyrics,
-      { lineEn: '', lineTh: '', chord: '' },
-    ]);
+    if (generatedLyrics.length === 0) {
+      handleCreateManualLyrics();
+    } else {
+      setGeneratedLyrics([
+        ...generatedLyrics,
+        { lineEn: '', lineTh: '', chord: '' },
+      ]);
+    }
   };
 
   const handleInsertSectionTag = (tag: string, atIndex?: number) => {
@@ -335,6 +456,13 @@ export default function BilingualSongsAdminPage() {
       });
   };
 
+  const getShortGenreDisplay = (g: string) => {
+    if (!g) return 'Upbeat Nursery Rhyme';
+    if (g.length <= 25) return g;
+    if (g.toLowerCase().includes('aerobic')) return '30s Aerobic Dance Pop';
+    return g.substring(0, 22) + '...';
+  };
+
   return (
     <div className="min-h-screen bg-gray--light1 p-6 lg:p-8">
       {/* Top Header */}
@@ -354,10 +482,10 @@ export default function BilingualSongsAdminPage() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
             onClick={fetchSongs}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple bg-purple--light5 hover:bg-purple--light6 transition rounded-lg border border-purple--light3"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple bg-purple--light5 hover:bg-purple--light6 transition rounded-xl border border-purple--light3"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh Dashboard
@@ -400,60 +528,133 @@ export default function BilingualSongsAdminPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-primary--text mb-2">
-                  แนวเพลง (Genre & Style)
+                <label className="block text-sm font-semibold text-primary--text mb-1">
+                  แนวเพลง & สไตล์ดนตรี (Genre & Style Prompts for Suno)
                 </label>
-                <select
-                  value={genre}
-                  onChange={(e) => setGenre(e.target.value)}
-                  className="w-full p-3 rounded-xl border border-gray4 bg-white text-dark focus:ring-2 focus:ring-purple focus:outline-none text-sm"
-                >
-                  <option value="Upbeat Nursery Rhyme">Upbeat Nursery Rhyme (เพลงเด็กจังหวะสนุก)</option>
-                  <option value="Acoustic Pop">Acoustic Pop (อะคูสติกสดใส)</option>
-                  <option value="Cheerful Ukulele">Cheerful Ukulele (อูคูเลเล่ฟีลกู๊ด)</option>
-                  <option value="Gentle Lullaby">Gentle Lullaby (เพลงกล่อมนอน)</option>
-                </select>
+                <p className="text-xs text-secondary--text mb-2">
+                  เลือกจากสไตล์สำเร็จรูป หรือพิมพ์กำหนด Prompt สเปคดนตรีเชิงลึกเองได้เลย
+                </p>
+                <div className="space-y-2">
+                  <select
+                    value={
+                      [
+                        'Upbeat Nursery Rhyme',
+                        '30s short song, C Major, 125 BPM, aerobic dance pop, clear Thai English vocals, upbeat bouncy beat, synth brass',
+                        'Acoustic Pop',
+                        'Cheerful Ukulele',
+                        'Gentle Lullaby',
+                      ].includes(genre)
+                        ? genre
+                        : 'custom'
+                    }
+                    onChange={(e) => {
+                      if (e.target.value !== 'custom') {
+                        setGenre(e.target.value);
+                      }
+                    }}
+                    className="w-full p-2.5 rounded-xl border border-gray4 bg-white text-dark focus:ring-2 focus:ring-purple focus:outline-none text-xs font-semibold"
+                  >
+                    <option value="30s short song, C Major, 125 BPM, aerobic dance pop, clear Thai English vocals, upbeat bouncy beat, synth brass">
+                      ⭐ 30s Aerobic Dance Pop (125 BPM, Clear Vocal, Synth Brass) [แนะนำ]
+                    </option>
+                    <option value="Upbeat Nursery Rhyme">Upbeat Nursery Rhyme (เพลงเด็กจังหวะสนุก)</option>
+                    <option value="Acoustic Pop">Acoustic Pop (อะคูสติกสดใส)</option>
+                    <option value="Cheerful Ukulele">Cheerful Ukulele (อูคูเลเล่ฟีลกู๊ด)</option>
+                    <option value="Gentle Lullaby">Gentle Lullaby (เพลงกล่อมนอน)</option>
+                    <option value="custom">✏️ กำหนดสเปค Prompt เอง (Custom Style)</option>
+                  </select>
+
+                  <textarea
+                    rows={3}
+                    value={genre}
+                    onChange={(e) => setGenre(e.target.value)}
+                    placeholder="พิมพ์ Style Prompt เช่น: 30 second short song, 125 BPM, aerobic dance pop..."
+                    className="w-full p-3 rounded-xl border border-gray4 bg-white text-dark focus:ring-2 focus:ring-purple focus:outline-none text-xs font-mono"
+                  />
+                </div>
               </div>
 
-              <button
-                onClick={handleGenerateLyrics}
-                disabled={isGeneratingLyrics || !phrasesInput.trim()}
-                className="w-full flex items-center justify-center gap-2 bg-purple hover:bg-purple--light6 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-xl shadow-sm transition"
-              >
-                {isGeneratingLyrics ? (
-                  <>
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                    Qwen กำลังแต่งเนื้อเพลง & คอร์ด...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5 text-yellow-300" />
-                    สร้างเนื้อเพลง & คอร์ดกีต้าร์ด้วย AI
-                  </>
-                )}
-              </button>
+              <div className="flex flex-col gap-2.5">
+                <button
+                  onClick={handleGenerateLyrics}
+                  disabled={isGeneratingLyrics || !phrasesInput.trim()}
+                  className="w-full flex items-center justify-center gap-2 bg-purple hover:bg-purple--light6 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-xl shadow-sm transition"
+                >
+                  {isGeneratingLyrics ? (
+                    <>
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                      Qwen กำลังแต่งเนื้อเพลง & คอร์ด...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-5 h-5 text-yellow-300" />
+                      สร้างเนื้อเพลง & คอร์ดกีต้าร์ด้วย AI
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleCreateManualLyrics}
+                  className="w-full flex items-center justify-center gap-2 bg-white hover:bg-purple--light5 text-purple border-2 border-purple/30 hover:border-purple font-bold py-2.5 px-4 rounded-xl shadow-sm transition text-sm"
+                >
+                  <Plus className="w-4 h-4 text-purple" />
+                  สร้างเนื้อเพลงด้วยตนเอง (Manual)
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Target Words Summary */}
-          {generatedWords.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray4 p-6 shadow-sm space-y-3">
-              <h3 className="text-md font-bold text-dark flex items-center gap-2">
+          {/* Target Words Section */}
+          <div className="bg-white rounded-2xl border border-gray4 p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-dark flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-purple" /> คำศัพท์เป้าหมาย (Target Vocabulary)
               </h3>
-              <div className="flex flex-wrap gap-2">
+              <button
+                onClick={handleAddTargetWord}
+                className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-purple bg-purple--light5 hover:bg-purple--light4 border border-purple/20 rounded-lg transition"
+              >
+                <Plus className="w-3.5 h-3.5" /> เพิ่มคำศัพท์
+              </button>
+            </div>
+
+            {generatedWords.length === 0 ? (
+              <p className="text-xs text-secondary--text italic">
+                ยังไม่มีคำศัพท์เป้าหมาย กด "+ เพิ่มคำศัพท์" เพื่อกำหนดเอง
+              </p>
+            ) : (
+              <div className="space-y-2">
                 {generatedWords.map((w, idx) => (
                   <div
                     key={idx}
-                    className="bg-purple--light5 border border-purple--light3 text-purple px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5"
+                    className="flex items-center gap-2 bg-purple--light5 border border-purple--light3 p-2 rounded-xl"
                   >
-                    <span>{w.word}</span>
-                    <span className="text-secondary--text">({w.thaiMeaning})</span>
+                    <input
+                      type="text"
+                      value={w.word}
+                      onChange={(e) => handleTargetWordChange(idx, 'word', e.target.value)}
+                      placeholder="คำศัพท์ภาษาอังกฤษ (e.g. Sing)"
+                      className="w-1/2 text-xs font-bold text-purple bg-white border border-purple/20 px-2 py-1 rounded focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={w.thaiMeaning}
+                      onChange={(e) => handleTargetWordChange(idx, 'thaiMeaning', e.target.value)}
+                      placeholder="ความหมายภาษาไทย (e.g. ร้องเพลง)"
+                      className="w-1/2 text-xs text-secondary--text bg-white border border-gray4 px-2 py-1 rounded focus:outline-none"
+                    />
+                    <button
+                      onClick={() => handleRemoveTargetWord(idx)}
+                      className="text-red-400 hover:text-red-600 p-1 transition"
+                      title="ลบคำศัพท์นี้"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Right Column: Generated / Editing Lyrics & Chords Preview */}
@@ -487,8 +688,11 @@ export default function BilingualSongsAdminPage() {
                   </div>
                 </div>
 
-                <span className="bg-purple--light5 text-purple text-xs font-semibold px-3 py-1 rounded-full border border-purple--light3 whitespace-nowrap">
-                  {genre}
+                <span
+                  className="bg-purple--light5 text-purple text-xs font-semibold px-3 py-1 rounded-full border border-purple--light3 shrink-0"
+                  title={genre}
+                >
+                  {getShortGenreDisplay(genre)}
                 </span>
               </div>
 
@@ -623,18 +827,37 @@ export default function BilingualSongsAdminPage() {
                 </div>
               </div>
 
-              {/* Step 2: Audio File Upload */}
+              {/* Step 2: Audio File Generation & Upload */}
               <div className="border-t border-gray4 pt-4 space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <h3 className="text-md font-bold text-dark flex items-center gap-2">
-                    <Volume2 className="w-5 h-5 text-purple" /> 2. อัปโหลดไฟล์เสียงเพลง (MP3)
+                    <Volume2 className="w-5 h-5 text-purple" /> 2. สร้างไฟล์เสียงเพลงด้วย Suno AI หรืออัปโหลด MP3
                   </h3>
 
-                  <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Generate Suno Audio Button (Strict Single Click Guard) */}
+                    <button
+                      onClick={handleGenerateAudio}
+                      disabled={isGeneratingAudio || generatedLyrics.length === 0}
+                      className="flex items-center gap-2 bg-gradient-to-r from-purple to-indigo-600 hover:from-purple--light6 hover:to-indigo-700 disabled:opacity-50 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition"
+                    >
+                      {isGeneratingAudio ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin text-yellow-300" />
+                          <span>กำลังส่งยิง Suno AI (ส่งคำสั่งรอบเดียว รอสักครู่)...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 text-yellow-300" />
+                          <span>สร้างไฟล์เสียงเพลงด้วย Suno AI</span>
+                        </>
+                      )}
+                    </button>
+
                     {/* Upload MP3 File Button */}
-                    <label className="flex items-center gap-2 bg-purple hover:bg-purple--light6 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer shadow-sm transition">
+                    <label className="flex items-center gap-2 bg-gray-700 hover:bg-gray-800 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer shadow-sm transition">
                       <Upload className="w-4 h-4 text-white" />
-                      {isUploadingFile ? 'กำลังอัปโหลด MP3...' : 'เลือกไฟล์ MP3 จากคอมพิวเตอร์'}
+                      {isUploadingFile ? 'กำลังอัปโหลด MP3...' : 'เลือกไฟล์ MP3 เอง'}
                       <input
                         type="file"
                         accept="audio/*"
@@ -649,16 +872,101 @@ export default function BilingualSongsAdminPage() {
                 {/* Direct Audio URL Input */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-secondary--text">
-                    หรือวางลิงก์ MP3 / Suno Audio URL โดยตรง:
+                    หรือวางลิงก์ MP3 / Suno Task ID โดยตรง:
                   </label>
-                  <input
-                    type="text"
-                    value={generatedAudioUrl}
-                    onChange={(e) => setGeneratedAudioUrl(e.target.value)}
-                    placeholder="เช่น: https://suno.com/s/aZNMfxHpLnypFI06 หรือวางลิงก์ไฟล์ MP3"
-                    className="w-full p-2.5 rounded-xl border border-gray4 bg-white text-dark focus:ring-2 focus:ring-purple focus:outline-none text-xs font-mono"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={generatedAudioUrl}
+                      onChange={(e) => setGeneratedAudioUrl(e.target.value)}
+                      placeholder="วาง Task ID (เช่น bf2df74b-0128-...) หรือวางลิงก์ไฟล์ MP3"
+                      className="flex-1 p-2.5 rounded-xl border border-gray4 bg-white text-dark focus:ring-2 focus:ring-purple focus:outline-none text-xs font-mono"
+                    />
+                    {generatedAudioUrl.trim().length >= 30 && !generatedAudioUrl.trim().startsWith('http') && (
+                      <button
+                        type="button"
+                        onClick={handleFetchTaskTracks}
+                        disabled={isFetchingTaskTracks}
+                        className="px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5 whitespace-nowrap"
+                      >
+                        {isFetchingTaskTracks ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>กำลังดึงเพลง...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Search className="w-3.5 h-3.5" />
+                            <span>ดึงทั้ง 2 เพลงจาก Task ID</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {/* Suno Audio Track Variations Selector (Preview both tracks & select 1) */}
+                {sunoTracks.length > 1 && (
+                  <div className="mt-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-purple-600" />
+                        Suno AI ได้สร้างเพลงออกมา 2 เวอร์ชัน (ลองกดฟังและคลิกเลือกเวอร์ชันที่ชอบได้เลย):
+                      </h4>
+                      <span className="text-[10px] bg-purple-200 text-purple-800 font-bold px-2 py-0.5 rounded-full">
+                        2 Variations
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {sunoTracks.map((trackUrl, idx) => {
+                        const isSelected = generatedAudioUrl === trackUrl;
+                        return (
+                          <div
+                            key={idx}
+                            className={`p-3 rounded-xl border transition-all ${
+                              isSelected
+                                ? 'bg-white border-purple-500 shadow-md ring-2 ring-purple-300'
+                                : 'bg-white/80 border-purple-200 hover:border-purple-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-bold text-xs text-purple-900">
+                                🎵 เวอร์ชันที่ {idx + 1}
+                              </span>
+                              {isSelected && (
+                                <span className="text-[10px] bg-purple-600 text-white font-bold px-2 py-0.5 rounded-full">
+                                  กำลังเลือกใช้งาน
+                                </span>
+                              )}
+                            </div>
+                            <audio controls src={trackUrl} className="w-full h-8 mb-2.5" />
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setGeneratedAudioUrl(trackUrl)}
+                                className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${
+                                  isSelected
+                                    ? 'bg-purple-600 text-white shadow-sm'
+                                    : 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+                                }`}
+                              >
+                                {isSelected ? '✓ เลือกเวอร์ชันนี้แล้ว' : `เลือกเวอร์ชันที่ ${idx + 1}`}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDownloadAudio(trackUrl, `${generatedTitleEn || 'song'}_version${idx + 1}.mp3`)}
+                                className="p-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition flex items-center justify-center shrink-0"
+                                title={`ดาวน์โหลด MP3 เวอร์ชันที่ ${idx + 1}`}
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {generatedAudioUrl && (
                   <div className="flex items-center gap-4 bg-purple--light5 p-4 rounded-xl border border-purple--light3">
@@ -676,6 +984,15 @@ export default function BilingualSongsAdminPage() {
                         {generatedAudioUrl}
                       </p>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadAudio(generatedAudioUrl, `${generatedTitleEn || 'bilingual-song'}.mp3`)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-purple-300 hover:bg-purple-50 text-purple-700 font-bold text-xs rounded-xl shadow-sm transition shrink-0"
+                      title="ดาวน์โหลดไฟล์ MP3 ลงเครื่อง"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>โหลด MP3</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -707,8 +1024,8 @@ export default function BilingualSongsAdminPage() {
               <Music className="w-16 h-16 text-purple/40 mb-3 animate-pulse" />
               <p className="font-bold text-lg text-dark">ยังไม่มีเนื้อเพลง</p>
               <p className="text-sm max-w-md mt-1 text-secondary--text">
-                กรอกคำศัพท์เป้าหมายด้านซ้าย แล้วกดปุ่ม <strong>"สร้างเนื้อเพลง & คอร์ดกีต้าร์"</strong>{' '}
-                เพื่อเริ่มสร้างเพลงใหม่ หรือเลือกปุ่ม <strong>แก้ไข</strong> จากรายการเพลงด้านล่าง!
+                กรอกคำศัพท์เป้าหมายด้านซ้าย แล้วกดปุ่ม <strong>"สร้างเนื้อเพลง & คอร์ดกีต้าร์ด้วย AI"</strong>{' '}
+                หรือกดปุ่ม <strong>"สร้างเนื้อเพลงด้วยตนเอง (Manual)"</strong> จากเมนูด้านซ้ายเพื่อเริ่มสร้างเพลงใหม่!
               </p>
             </div>
           )}
@@ -745,8 +1062,11 @@ export default function BilingualSongsAdminPage() {
                     </h3>
                     <p className="text-xs text-secondary--text">{song.titleTh}</p>
                   </div>
-                  <span className="text-[10px] bg-purple--light5 text-purple font-semibold px-2 py-0.5 rounded border border-purple--light3">
-                    {song.genre}
+                  <span
+                    className="text-[10px] bg-purple--light5 text-purple font-semibold px-2 py-0.5 rounded border border-purple--light3 shrink-0"
+                    title={song.genre}
+                  >
+                    {getShortGenreDisplay(song.genre)}
                   </span>
                 </div>
 
@@ -768,6 +1088,16 @@ export default function BilingualSongsAdminPage() {
                   )}
 
                   <div className="flex items-center gap-1">
+                    {song.audioUrl && (
+                      <button
+                        onClick={() => handleDownloadAudio(song.audioUrl!, `${song.titleEn}.mp3`)}
+                        className="p-1.5 text-secondary--text hover:text-purple hover:bg-purple--light5 rounded-lg transition"
+                        title="ดาวน์โหลดไฟล์เสียง MP3"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    )}
+
                     <button
                       onClick={() => handleEditSong(song)}
                       className="p-1.5 text-purple hover:bg-purple--light5 rounded-lg transition"
