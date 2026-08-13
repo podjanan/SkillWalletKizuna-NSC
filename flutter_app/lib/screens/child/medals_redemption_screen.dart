@@ -706,7 +706,8 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['error']?.toString() ?? AppLocalizations.of(context)!.common_error),
+          content: Text(result['error']?.toString() ??
+              AppLocalizations.of(context)!.common_error),
           backgroundColor: Palette.errorStrong,
         ),
       );
@@ -963,17 +964,23 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFFFFCF8),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFFFFFCF8),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black, size: 30),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Palette.terracotta,
+            size: 26,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
-        title:
-            Text(title, style: AppTextStyles.heading(26, color: Palette.sky)),
+        title: Text(
+          title,
+          style: AppTextStyles.heading(22, color: Palette.terracotta),
+        ),
       ),
       body: Column(
         children: [
@@ -1010,12 +1017,17 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
                           widget.childName!.isNotEmpty)
                         Row(
                           children: [
-                            Icon(Icons.child_care,
-                                size: 16, color: Palette.sky),
+                            Icon(
+                              Icons.child_care_rounded,
+                              size: 16,
+                              color: Palette.terracotta,
+                            ),
                             const SizedBox(width: 4),
                             Text(widget.childName!,
-                                style: AppTextStyles.label(14,
-                                    color: Palette.sky)),
+                                style: AppTextStyles.label(
+                                  14,
+                                  color: Palette.terracotta,
+                                )),
                           ],
                         ),
                     ],
@@ -1048,15 +1060,19 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
           ),
 
           // Bottom Nav
-          Container(
-            decoration: BoxDecoration(
-              gradient: Palette.orangeGradient,
-              boxShadow: Palette.orangeButtonShadow,
-            ),
+          ColoredBox(
+            color: const Color(0xFFFFFCF8),
             child: SafeArea(
               top: false,
-              child: SizedBox(
-                height: 64,
+              minimum: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+              child: Container(
+                height: 62,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFF0E3DC)),
+                  boxShadow: Palette.softShadow,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -1076,10 +1092,10 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
   // ─── Session Screen (Flow C) ──────────────────────────
 
   Widget _buildSessionScreen(AppLocalizations loc) {
-    final color = AgreementHelper.colorFor(_sessionType);
+    const color = Palette.terracotta;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFFFFCF8),
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -1087,8 +1103,19 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(AgreementHelper.iconFor(_sessionType),
-                    color: color, size: 64),
+                Container(
+                  width: 78,
+                  height: 78,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: .12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    AgreementHelper.iconFor(_sessionType),
+                    color: color,
+                    size: 42,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Text(loc.agreement_sessionActive,
                     style: AppTextStyles.heading(24, color: color)),
@@ -1104,8 +1131,15 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
                   height: 200,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: color.withValues(alpha: 0.1),
-                    border: Border.all(color: color, width: 4),
+                    color: const Color(0xFFFFF1E8),
+                    border: Border.all(color: color, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: .14),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
                   alignment: Alignment.center,
                   child: Column(
@@ -1143,8 +1177,11 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
                       style: AppTextStyles.heading(20, color: Colors.white),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _sessionPaused ? Palette.successAlt : Palette.warning,
+                      backgroundColor: _sessionPaused
+                          ? Palette.terracotta
+                          : Palette.terracottaDark,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16)),
@@ -1187,7 +1224,9 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
 
   Widget _buildActivitiesPage(AppLocalizations loc) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Palette.sky));
+      return const Center(
+        child: CircularProgressIndicator(color: Palette.terracotta),
+      );
     }
 
     return Column(
@@ -1221,8 +1260,9 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
                   itemCount: _activityHistory.length,
                   itemBuilder: (context, index) {
                     final activity = _activityHistory[index];
-                    final activityName =
-                        activity['activity']?['name_activity'] ?? loc.medalredemption_activity;
+                    final activityName = activity['activity']
+                            ?['name_activity'] ??
+                        loc.medalredemption_activity;
                     final pointValue = activity['point'];
                     int scoreEarned = 0;
                     if (pointValue is int) {
@@ -1261,12 +1301,15 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFD1E9FF),
+                                color:
+                                    Palette.terracotta.withValues(alpha: .12),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(loc.medalredemption_done,
-                                  style: AppTextStyles.heading(14,
-                                      color: Palette.sky)),
+                                  style: AppTextStyles.heading(
+                                    14,
+                                    color: Palette.terracotta,
+                                  )),
                             ),
                           ],
                         ),
@@ -1306,7 +1349,9 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _isEditMode ? Palette.warning : Palette.sky,
+                    color: _isEditMode
+                        ? Palette.terracottaDark
+                        : Palette.terracotta,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -1427,8 +1472,11 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
                           if (_isEditMode) ...[
                             // Edit button
                             IconButton(
-                              icon: const Icon(Icons.edit_rounded,
-                                  color: Palette.sky, size: 22),
+                              icon: const Icon(
+                                Icons.edit_rounded,
+                                color: Palette.terracotta,
+                                size: 22,
+                              ),
                               onPressed: () => _showEditAgreementDialog(item),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
@@ -1546,17 +1594,26 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
     final bool isSelected = _selectedIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _selectedIndex = index),
-      child: AnimatedOpacity(
+      child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        opacity: isSelected ? 1.0 : 0.5,
-        child: Container(
-          padding: const EdgeInsets.all(8),
+        width: 52,
+        height: 46,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Palette.terracotta.withValues(alpha: .12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Opacity(
+          opacity: isSelected ? 1 : .45,
           child: Image.asset(
             assetPath,
-            width: isSelected ? 50 : 40,
-            height: isSelected ? 50 : 40,
             fit: BoxFit.contain,
-            errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 40),
+            errorBuilder: (_, __, ___) => Icon(
+              Icons.circle_outlined,
+              color: isSelected ? Palette.terracotta : Palette.authGrey,
+            ),
           ),
         ),
       ),
@@ -1634,12 +1691,14 @@ class _OutlineCard extends StatelessWidget {
     return Material(
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Colors.black26, width: 1.5),
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: Color(0xFFF0E3DC)),
       ),
+      elevation: 0,
+      shadowColor: const Color(0xFF6B3C26).withValues(alpha: .10),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: child,

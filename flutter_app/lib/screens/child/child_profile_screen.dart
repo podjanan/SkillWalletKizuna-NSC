@@ -6,6 +6,7 @@ import '../../services/child_service.dart';
 import '../../theme/palette.dart';
 import '../../theme/app_text_styles.dart';
 import '../../services/api_config.dart';
+import '../../routes/app_routes.dart';
 import 'activity_history_screen.dart';
 
 class ChildProfileScreen extends StatefulWidget {
@@ -107,8 +108,9 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     // Get real data from Provider
     final userProvider = context.watch<UserProvider>();
     final l10n = AppLocalizations.of(context)!;
-    final childName =
-        widget.name ?? userProvider.currentChildName ?? l10n.childprofile_unknownName;
+    final childName = widget.name ??
+        userProvider.currentChildName ??
+        l10n.childprofile_unknownName;
     final childWallet = widget.points ?? userProvider.currentChildWallet;
 
     // ดึง photo_url ล่าสุดจาก provider (อัปเดตหลัง upload) แทน widget param
@@ -124,42 +126,39 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          gradient: Palette.orangeGradient,
-          boxShadow: Palette.orangeButtonShadow,
-        ),
-        child: SafeArea(
-          top: false,
-          child: Container(
-            height: 64,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Center(
-              child: GestureDetector(
-                onTap: () => Navigator.pushNamedAndRemoveUntil(
-                    context, '/', (_) => false),
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: const BoxDecoration(
-                    color: Palette.yellow,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.home_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
+      backgroundColor: const Color(0xFFFFFCF8),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        child: SizedBox(
+          height: 54,
+          child: ElevatedButton.icon(
+            onPressed: () => Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.authenticatedHome,
+              (_) => false,
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Palette.terracotta,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
               ),
+            ),
+            icon: const Icon(Icons.home_rounded),
+            label: Text(
+              'Home',
+              style: AppTextStyles.heading(16, color: Colors.white),
             ),
           ),
         ),
       ),
       body: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Palette.sky))
+            ? const Center(
+                child: CircularProgressIndicator(color: Palette.terracotta),
+              )
             : RefreshIndicator(
                 onRefresh: _loadActivityData,
                 child: SingleChildScrollView(
@@ -177,9 +176,18 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                             onTap: () => Navigator.pop(context),
                             child: Container(
                               padding: const EdgeInsets.all(8.0),
-                              color: Colors.transparent,
-                              child: const Icon(Icons.arrow_back,
-                                  size: 30, color: Colors.black87),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFFF0E3DC),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.arrow_back_rounded,
+                                size: 24,
+                                color: Palette.terracotta,
+                              ),
                             ),
                           ),
                         ),
@@ -188,11 +196,15 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                       // --- 1. Profile Image ---
                       Center(
                         child: Container(
-                          width: 160,
-                          height: 160,
+                          width: 132,
+                          height: 132,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.grey.shade300,
+                            color: Palette.terracotta.withValues(alpha: .10),
+                            border: Border.all(
+                              color: Palette.terracotta.withValues(alpha: .30),
+                              width: 3,
+                            ),
                           ),
                           child: ClipOval(
                             child: _buildProfileImage(imageUrl),
@@ -205,8 +217,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                       // --- 2. Name ---
                       Text(
                         childName,
-                        style: AppTextStyles.heading(36, color: Palette.text)
-                            .copyWith(letterSpacing: 1.2),
+                        style: AppTextStyles.heading(28, color: Palette.text),
                         textAlign: TextAlign.center,
                       ),
 
@@ -216,16 +227,18 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                         children: [
                           Image.asset(
                             'assets/icons/medal.png',
-                            width: 50,
-                            height: 50,
+                            width: 38,
+                            height: 38,
                             errorBuilder: (_, __, ___) => const Icon(Icons.star,
                                 color: Colors.amber, size: 40),
                           ),
                           const SizedBox(width: 10),
                           Text(
                             '$childWallet',
-                            style: AppTextStyles.heading(40,
-                                color: Palette.yellow),
+                            style: AppTextStyles.heading(
+                              32,
+                              color: Palette.terracotta,
+                            ),
                           ),
                         ],
                       ),
@@ -238,7 +251,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                         children: [
                           _buildTabIcon(
                               index: 0, assetPath: 'assets/icons/gallery.png'),
-                          const SizedBox(width: 60),
+                          const SizedBox(width: 30),
                           _buildTabIcon(
                               index: 1,
                               assetPath: 'assets/icons/finish-line.png'),
@@ -311,20 +324,23 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
         height: 70,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color:
-              isSelected ? Colors.white.withValues(alpha: 0.5) : Colors.transparent,
-          border: isSelected ? Border.all(color: Colors.white, width: 2) : null,
+          color: isSelected
+              ? Palette.terracotta.withValues(alpha: .12)
+              : Colors.white,
+          border: Border.all(
+            color: isSelected ? Palette.terracotta : const Color(0xFFF0E3DC),
+          ),
         ),
         padding: const EdgeInsets.all(10),
         child: Image.asset(
           assetPath,
           fit: BoxFit.contain,
-          color: isSelected ? null : Colors.white.withValues(alpha: 0.6),
+          color: isSelected ? null : Palette.authGrey,
           colorBlendMode: isSelected ? null : BlendMode.modulate,
           errorBuilder: (_, __, ___) => Icon(
             index == 0 ? Icons.bar_chart : Icons.emoji_events,
             size: 40,
-            color: isSelected ? Palette.text : Colors.grey,
+            color: isSelected ? Palette.terracotta : Palette.authGrey,
           ),
         ),
       ),
@@ -383,7 +399,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                 const SizedBox(height: 8),
                 Text(
                   '$totalActivities',
-                  style: AppTextStyles.heading(48, color: Palette.sky),
+                  style: AppTextStyles.heading(48, color: Palette.terracotta),
                 ),
                 Text(
                   AppLocalizations.of(context)!.childprofile_times,
@@ -413,7 +429,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
               _buildStatCard(
                   AppLocalizations.of(context)!.childprofile_calculation,
                   _categoryStats[_categoryCalculate] ?? 0,
-                  Palette.sky,
+                  Palette.terracotta,
                   icon: Icons.calculate_rounded),
             ],
           ),
@@ -487,7 +503,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
           const SizedBox(height: 12),
           _buildCategoryButton(
             AppLocalizations.of(context)!.childprofile_calculation,
-            Palette.sky,
+            Palette.terracotta,
             _categoryStats[_categoryCalculate] ?? 0,
             () => _navigateToHistory(_categoryCalculate),
             icon: Icons.calculate_rounded,
@@ -543,8 +559,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
                 color: accent.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon ?? Icons.star_rounded,
-                  color: accent, size: 22),
+              child: Icon(icon ?? Icons.star_rounded, color: accent, size: 22),
             ),
             const SizedBox(width: 14),
             // Title
@@ -558,8 +573,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
             ),
             // Count badge
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
                 color: accent,
                 borderRadius: BorderRadius.circular(12),

@@ -25,14 +25,23 @@ class SettingScreen extends StatefulWidget {
 
 class _SettingScreenState extends State<SettingScreen> {
   // ตัวแปรเก็บค่าภาษาที่เลือก (Default เป็น 'TH')
-  String _selectedLanguage = 'TH';
+  String _selectedLanguage = 'th';
+  bool _localeInitialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_localeInitialized) return;
+    _selectedLanguage = Localizations.localeOf(context).languageCode;
+    _localeInitialized = true;
+  }
 
   @override
   Widget build(BuildContext context) {
     final photoUrl = context.watch<UserProvider>().parentPhotoUrl;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFFFFCF8),
       body: SafeArea(
         child: Column(
           children: [
@@ -40,7 +49,7 @@ class _SettingScreenState extends State<SettingScreen> {
             Expanded(
               child: SingleChildScrollView(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -48,27 +57,44 @@ class _SettingScreenState extends State<SettingScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          GestureDetector(
+                          InkWell(
                             onTap: () => Navigator.pop(context),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.arrow_back,
-                                    size: 28, color: Colors.black87),
-                                const SizedBox(width: 4),
-                                Text(
-                                  AppLocalizations.of(context)!.setting_backBtn,
-                                  style: AppTextStyles.heading(24, color: Palette.pink),
-                                ),
-                              ],
+                            borderRadius: BorderRadius.circular(12),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 8,
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.arrow_back_rounded,
+                                    size: 24,
+                                    color: Palette.terracotta,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    AppLocalizations.of(context)!
+                                        .setting_backBtn,
+                                    style: AppTextStyles.heading(
+                                      20,
+                                      color: Palette.terracotta,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           Text(
                             AppLocalizations.of(context)!.setting_settingBtn,
-                            style: AppTextStyles.heading(24, color: Palette.sky),
+                            style: AppTextStyles.heading(
+                              22,
+                              color: Palette.terracotta,
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 24),
 
                       // --- 2. Menu: PROFILE ---
                       _buildMenuItem(
@@ -76,7 +102,8 @@ class _SettingScreenState extends State<SettingScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const ProfileSettingScreen(),
+                              builder: (context) =>
+                                  const ProfileSettingScreen(),
                             ),
                           );
                         },
@@ -96,7 +123,8 @@ class _SettingScreenState extends State<SettingScreen> {
                                 : null,
                           ),
                           child: photoUrl == null
-                              ? const Icon(Icons.person, size: 30, color: Colors.black87)
+                              ? const Icon(Icons.person,
+                                  size: 30, color: Colors.black87)
                               : null,
                         ),
                       ),
@@ -106,7 +134,10 @@ class _SettingScreenState extends State<SettingScreen> {
                       // --- Section: Personal Information ---
                       Text(
                         AppLocalizations.of(context)!.setting_personalBtn,
-                        style: AppTextStyles.heading(20, color: Palette.labelGrey),
+                        style: AppTextStyles.label(
+                          13,
+                          color: Palette.authGrey,
+                        ),
                       ),
                       const SizedBox(height: 10),
 
@@ -148,7 +179,8 @@ class _SettingScreenState extends State<SettingScreen> {
 
             // --- Sticky Bottom: Logout + Delete Account ---
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
               child: Column(
                 children: [
                   // Log Out Button
@@ -159,10 +191,17 @@ class _SettingScreenState extends State<SettingScreen> {
                       children: [
                         Text(
                           AppLocalizations.of(context)!.setting_logoutBtn,
-                          style: AppTextStyles.heading(24, color: Palette.pink),
+                          style: AppTextStyles.heading(
+                            20,
+                            color: Palette.terracotta,
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.logout, color: Colors.black87, size: 28),
+                        const Icon(
+                          Icons.logout_rounded,
+                          color: Palette.terracotta,
+                          size: 24,
+                        ),
                       ],
                     ),
                   ),
@@ -173,7 +212,8 @@ class _SettingScreenState extends State<SettingScreen> {
                     onTap: _confirmDeleteAccount,
                     child: Text(
                       AppLocalizations.of(context)!.setting_deleteAccountBtn,
-                      style: AppTextStyles.body(14, color: Colors.grey).copyWith(
+                      style:
+                          AppTextStyles.body(14, color: Colors.grey).copyWith(
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -242,7 +282,8 @@ class _SettingScreenState extends State<SettingScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           l10n.setting_deleteTitle,
-          style: AppTextStyles.body(18, weight: FontWeight.bold, color: Palette.errorStrong),
+          style: AppTextStyles.body(18,
+              weight: FontWeight.bold, color: Palette.errorStrong),
         ),
         content: Text(
           l10n.setting_deleteMsg,
@@ -255,7 +296,8 @@ class _SettingScreenState extends State<SettingScreen> {
                 style: AppTextStyles.body(14, color: Colors.black54)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Palette.errorStrong),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: Palette.errorStrong),
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(l10n.setting_deleteConfirm,
                 style: AppTextStyles.body(14, color: Colors.white)),
@@ -312,8 +354,13 @@ class _SettingScreenState extends State<SettingScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        color: Colors.transparent,
-        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFF0E3DC)),
+          boxShadow: Palette.softShadow,
+        ),
         child: Row(
           children: [
             // จัดให้ leading (icon/image) อยู่ตรงกลางของความกว้าง 50 เพื่อความเป็นระเบียบ
@@ -325,10 +372,14 @@ class _SettingScreenState extends State<SettingScreen> {
             Expanded(
               child: Text(
                 title,
-                style: AppTextStyles.heading(20, color: Colors.black87),
+                style: AppTextStyles.heading(17, color: Palette.text),
               ),
             ),
-            const Icon(Icons.chevron_right, size: 32, color: Colors.black87),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 26,
+              color: Palette.terracotta,
+            ),
           ],
         ),
       ),
@@ -359,13 +410,18 @@ class _SettingScreenState extends State<SettingScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200), // เอฟเฟกต์เปลี่ยนสีนุ่มๆ
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 18),
         decoration: BoxDecoration(
           // Logic ความสว่าง:
           // ถ้าเลือก (Active) -> สีชัด (Opacity 1.0)
           // ถ้าไม่เลือก -> สีจาง (Opacity 0.4)
-          color: isActive ? Palette.yellow : Palette.yellow.withValues(alpha: 0.4),
+          color: isActive
+              ? Palette.terracotta.withValues(alpha: .14)
+              : Colors.white,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isActive ? Palette.terracotta : const Color(0xFFF0E3DC),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -374,9 +430,9 @@ class _SettingScreenState extends State<SettingScreen> {
             const SizedBox(width: 16),
             Text(
               label,
-              style: AppTextStyles.heading(22,
+              style: AppTextStyles.heading(18,
                   // ถ้าไม่ Active ให้ตัวหนังสือจางลงด้วยนิดหน่อย เพื่อความสวยงาม
-                  color: isActive ? Colors.black87 : Colors.black54),
+                  color: isActive ? Palette.terracotta : Palette.authGrey),
             ),
           ],
         ),

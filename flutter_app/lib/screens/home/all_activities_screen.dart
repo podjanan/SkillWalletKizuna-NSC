@@ -27,6 +27,24 @@ class _AllActivitiesScreenState extends State<AllActivitiesScreen> {
   final _activityService = ActivityService();
   List<Activity> _activities = [];
   bool _isLoading = true;
+  String? _selectedCategory;
+
+  List<Activity> get _visibleActivities {
+    final selected = _selectedCategory;
+    if (selected == null) return _activities;
+    return _activities.where((activity) {
+      final category = activity.category.trim().toLowerCase();
+      if (selected == 'language') {
+        return category == 'language' || category == 'ด้านภาษา';
+      }
+      if (selected == 'physical') {
+        return category == 'physical' || category == 'ด้านร่างกาย';
+      }
+      return category == 'calculation' ||
+          category == 'math' ||
+          category == 'ด้านคำนวณ';
+    }).toList();
+  }
 
   @override
   void initState() {
@@ -71,59 +89,130 @@ class _AllActivitiesScreenState extends State<AllActivitiesScreen> {
     final emptyMsg = widget.type == ActivityListType.popular
         ? l10n.home_cannotBtn
         : l10n.home_nonewBtn;
+    final visibleActivities = _visibleActivities;
+    final filters = <({String label, String? value})>[
+      (label: l10n.home_filterAll, value: null),
+      (label: l10n.home_languageBtn, value: 'language'),
+      (label: l10n.home_physicalBtn, value: 'physical'),
+      (label: l10n.home_calculationBtn, value: 'calculation'),
+    ];
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFFFFCF8),
       body: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back,
-                        size: 35, color: Colors.black87),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Palette.terracotta,
+                      side: const BorderSide(color: Color(0xFFF0E3DC)),
+                    ),
+                    icon: const Icon(Icons.arrow_back_rounded),
                   ),
-                  const SizedBox(width: 15),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      title,
-                      style: AppTextStyles.heading(22, color: Palette.sky),
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: AppTextStyles.heading(
+                            22,
+                            color: Palette.terracotta,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          '${visibleActivities.length} activities',
+                          style: AppTextStyles.body(
+                            12,
+                            color: Palette.authGrey,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
 
+            SizedBox(
+              height: 40,
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                scrollDirection: Axis.horizontal,
+                itemCount: filters.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final filter = filters[index];
+                  final selected = _selectedCategory == filter.value;
+                  return ChoiceChip(
+                    selected: selected,
+                    label: Text(filter.label),
+                    onSelected: (_) => setState(
+                      () => _selectedCategory = filter.value,
+                    ),
+                    selectedColor: Palette.terracotta,
+                    backgroundColor: Colors.white,
+                    side: BorderSide(
+                      color: selected
+                          ? Palette.terracotta
+                          : const Color(0xFFE9DED8),
+                    ),
+                    labelStyle: AppTextStyles.body(
+                      12,
+                      color: selected ? Colors.white : Palette.deepGrey,
+                      weight: FontWeight.w600,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+
             // Grid
             Expanded(
               child: _isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(color: Palette.sky))
-                  : _activities.isEmpty
+                      child: CircularProgressIndicator(
+                        color: Palette.terracotta,
+                      ),
+                    )
+                  : visibleActivities.isEmpty
                       ? Center(
                           child: Text(emptyMsg,
                               style: AppTextStyles.body(16,
                                   color: Colors.grey.shade500)))
                       : RefreshIndicator(
                           onRefresh: _loadActivities,
-                          child: GridView.builder(
-                            padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              crossAxisSpacing: 8,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 125 / 148,
-                            ),
-                            itemCount: _activities.length,
-                            itemBuilder: (context, index) {
-                              return _ActivityGridCard(
-                                  activity: _activities[index]);
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final columns = constraints.maxWidth >= 700 ? 3 : 2;
+                              return GridView.builder(
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 4, 16, 28),
+                                gridDelegate:
+                                    SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: columns,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 14,
+                                  childAspectRatio: .78,
+                                ),
+                                itemCount: visibleActivities.length,
+                                itemBuilder: (context, index) =>
+                                    _ActivityGridCard(
+                                  activity: visibleActivities[index],
+                                ),
+                              );
                             },
                           ),
                         ),
@@ -252,12 +341,12 @@ class _ActivityGridCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 5,
-              offset: const Offset(0, 3),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -268,7 +357,7 @@ class _ActivityGridCard extends StatelessWidget {
             Expanded(
               child: ClipRRect(
                 borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(14)),
+                    const BorderRadius.vertical(top: Radius.circular(18)),
                 child: _buildThumbnail(
                     hasTikTok: hasTikTok,
                     youtubeThumbnailUrl: youtubeThumbnailUrl),
@@ -276,20 +365,19 @@ class _ActivityGridCard extends StatelessWidget {
             ),
             // Name + Score
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6.0, vertical: 4.0),
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     activity.name,
-                    style: AppTextStyles.heading(10, color: Colors.black),
-                    maxLines: 1,
+                    style: AppTextStyles.heading(13, color: Palette.text),
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     '${AppLocalizations.of(context)!.common_score}: ${activity.maxScore}',
-                    style: AppTextStyles.body(9, color: Colors.grey.shade600),
+                    style: AppTextStyles.body(11, color: Palette.authGrey),
                   ),
                 ],
               ),

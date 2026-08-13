@@ -109,17 +109,19 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
     return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
-            title: Text(l.common_discardChanges,
-                style: AppTextStyles.heading(18)),
-            content: Text(l.common_discardMsg,
-                style: AppTextStyles.body(15)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title:
+                Text(l.common_discardChanges, style: AppTextStyles.heading(18)),
+            content: Text(l.common_discardMsg, style: AppTextStyles.body(15)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
                 child: Text(l.common_keepEditing,
-                    style: AppTextStyles.label(14, color: Palette.sky)),
+                    style: AppTextStyles.label(
+                      14,
+                      color: Palette.terracotta,
+                    )),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx, true),
@@ -196,7 +198,12 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         contentStr = _contentCtrl.text.trim();
       } else if (_isCalculate) {
         maxScore = _analysisMaxScore;
-        contentStr = _contentCtrl.text.trim();
+        // The API requires a non-empty content key. Calculation activities
+        // primarily store their data in segments, so use a stable fallback
+        // when optional instructions were left blank.
+        contentStr = _contentCtrl.text.trim().isNotEmpty
+            ? _contentCtrl.text.trim()
+            : 'calculation';
         segments = _questions.asMap().entries.map((e) {
           final idx = e.key;
           final q = e.value;
@@ -286,13 +293,15 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         if (await _confirmDiscard() && mounted) nav.pop();
       },
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFFFFFCF8),
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(kToolbarHeight),
           child: Container(
             decoration: BoxDecoration(
-              color: Palette.sky,
-              boxShadow: Palette.buttonShadow,
+              color: const Color(0xFFFFFCF8),
+              border: const Border(
+                bottom: BorderSide(color: Color(0xFFF0E3DC)),
+              ),
             ),
             child: SafeArea(
               bottom: false,
@@ -301,7 +310,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      style: IconButton.styleFrom(
+                        foregroundColor: Palette.terracotta,
+                      ),
+                      icon: const Icon(Icons.close_rounded),
                       onPressed: () async {
                         final nav = Navigator.of(context);
                         if (await _confirmDiscard() && mounted) nav.pop();
@@ -321,7 +333,10 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                                           : (_isVoiceQuest
                                               ? 'สร้างกิจกรรม Voice Quest'
                                               : 'สร้างกิจกรรม Space Adventure')))),
-                          style: AppTextStyles.heading(20, color: Colors.white),
+                          style: AppTextStyles.heading(
+                            19,
+                            color: Palette.terracotta,
+                          ),
                         ),
                       ),
                     ),
@@ -332,7 +347,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             ),
           ),
         ),
-        body: _selectedActivityType == null ? _buildCategoryPicker(l) : _buildForm(l),
+        body: _selectedActivityType == null
+            ? _buildCategoryPicker(l)
+            : _buildForm(l),
       ),
     );
   }
@@ -342,13 +359,35 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
   Widget _buildCategoryPicker(AppLocalizations l) {
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(20, 36, 20, 36),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(l.createActivity_selectCategory,
-                style: AppTextStyles.heading(22)),
-            const SizedBox(height: 24),
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                color: Palette.terracotta.withValues(alpha: .10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Palette.terracotta,
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l.createActivity_selectCategory,
+              style: AppTextStyles.heading(24, color: Palette.text),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Choose the activity you want to create',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body(14, color: Palette.authGrey),
+            ),
+            const SizedBox(height: 28),
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -360,7 +399,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 _categoryCard(
                   icon: Icons.directions_run,
                   label: l.createActivity_physical,
-                  color: Palette.physicalPlaceholder,
+                  color: Palette.terracotta,
                   onTap: () => setState(() {
                     _selectedActivityType = 'physical';
                     _selectedCategory = 'ด้านร่างกาย';
@@ -369,7 +408,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 _categoryCard(
                   icon: Icons.psychology,
                   label: l.createActivity_calculate,
-                  color: Palette.blueChip,
+                  color: const Color(0xFFF2A33B),
                   onTap: () {
                     setState(() {
                       _selectedActivityType = 'calculate';
@@ -378,7 +417,6 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                     if (_questions.isEmpty) _addQuestion();
                   },
                 ),
-
               ],
             ),
           ],
@@ -397,16 +435,31 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color, width: 2),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withValues(alpha: .35)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: .12),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 48, color: color),
+            Container(
+              width: 62,
+              height: 62,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: .12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 32, color: color),
+            ),
             const SizedBox(height: 12),
-            Text(label, style: AppTextStyles.label(16, color: color)),
+            Text(label, style: AppTextStyles.heading(16, color: color)),
           ],
         ),
       ),
@@ -420,7 +473,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       children: [
         Expanded(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -432,10 +485,16 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                   }),
                   child: Row(
                     children: [
-                      const Icon(Icons.arrow_back_ios,
-                          size: 14, color: Palette.sky),
+                      const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 14,
+                        color: Palette.terracotta,
+                      ),
                       Text(l.createActivity_selectCategory,
-                          style: AppTextStyles.label(13, color: Palette.sky)),
+                          style: AppTextStyles.label(
+                            13,
+                            color: Palette.terracotta,
+                          )),
                     ],
                   ),
                 ),
@@ -446,12 +505,14 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: _isPhysical
-                        ? Palette.physicalPlaceholder
+                        ? Palette.terracotta
                         : (_isCalculate
-                            ? Palette.blueChip
+                            ? const Color(0xFFF2A33B)
                             : (_isMathProblems
                                 ? Palette.pink
-                                : (_isVoiceQuest ? Palette.teal : Palette.sky))),
+                                : (_isVoiceQuest
+                                    ? Palette.teal
+                                    : Palette.sky))),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -461,7 +522,9 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                             ? l.createActivity_calculate
                             : (_isMathProblems
                                 ? 'Math Problems'
-                                : (_isVoiceQuest ? 'Voice Quest' : 'Space Adventure'))),
+                                : (_isVoiceQuest
+                                    ? 'Voice Quest'
+                                    : 'Space Adventure'))),
                     style: AppTextStyles.label(13, color: Colors.white),
                   ),
                 ),
@@ -488,12 +551,12 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 if (_isSpaceAdventure) ...[
                   _label('หมวดหมู่กิจกรรม / Category'),
                   DropdownButtonFormField<String>(
-                    value: _selectedCategory,
+                    initialValue: _selectedCategory,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: const BorderSide(color: Palette.divider),
@@ -526,12 +589,12 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 if (_isVoiceQuest) ...[
                   _label('หมวดหมู่คำศัพท์ / Word Category'),
                   DropdownButtonFormField<String>(
-                    value: _selectedWordCategory,
+                    initialValue: _selectedWordCategory,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: Colors.white,
-                      contentPadding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 10),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                         borderSide: const BorderSide(color: Palette.divider),
@@ -567,7 +630,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         child: Text('🎒 โรงเรียน (School)'),
                       ),
                     ],
-                    onChanged: (val) => setState(() => _selectedWordCategory = val ?? 'animals'),
+                    onChanged: (val) => setState(
+                        () => _selectedWordCategory = val ?? 'animals'),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -575,7 +639,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                 // Settings for Voice Quest & Space Adventure
                 if (_isVoiceQuest || _isSpaceAdventure) ...[
                   _label('ระยะเวลาที่กำหนด (วินาที) / Time Limit (Seconds)'),
-                  _textField(_timeLimitCtrl, keyboardType: TextInputType.number),
+                  _textField(_timeLimitCtrl,
+                      keyboardType: TextInputType.number),
                   const SizedBox(height: 12),
                 ],
 
@@ -587,7 +652,8 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
                 if (_isSpaceAdventure) ...[
                   _label('คะแนนต่อวัตถุที่สแกนเจอ / Score Per Item'),
-                  _textField(_scorePerItemCtrl, keyboardType: TextInputType.number),
+                  _textField(_scorePerItemCtrl,
+                      keyboardType: TextInputType.number),
                   const SizedBox(height: 12),
                 ],
 
@@ -640,9 +706,11 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submit,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Palette.success,
+                  backgroundColor: Palette.terracotta,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(16)),
                 ),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
@@ -678,7 +746,17 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
           child: ChoiceChip(
             label: Text(labels[i]),
             selected: selected,
-            selectedColor: Palette.warningLight,
+            selectedColor: Palette.terracotta,
+            backgroundColor: Colors.white,
+            checkmarkColor: Colors.white,
+            side: BorderSide(
+              color: selected ? Palette.terracotta : const Color(0xFFE9DED8),
+            ),
+            labelStyle: AppTextStyles.body(
+              13,
+              color: selected ? Colors.white : Palette.deepGrey,
+              weight: FontWeight.w600,
+            ),
             onSelected: (_) => setState(() => _difficulty = options[i]),
           ),
         );
@@ -694,7 +772,12 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       final q = entry.value;
       return Card(
         margin: const EdgeInsets.only(bottom: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: const Color(0xFFFFF6ED),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: Color(0xFFF0E3DC)),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -759,12 +842,19 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Palette.divider),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFE9DED8)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Palette.divider),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFE9DED8)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(
+            color: Palette.terracotta,
+            width: 1.5,
+          ),
         ),
       ),
       style: AppTextStyles.body(14),

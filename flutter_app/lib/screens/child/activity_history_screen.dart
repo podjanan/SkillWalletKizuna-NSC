@@ -38,7 +38,7 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
       case 'ด้านร่างกาย':
         return Palette.pink;
       case 'ด้านคำนวณ':
-        return Palette.sky;
+        return Palette.terracotta;
       default:
         return Palette.teal;
     }
@@ -63,13 +63,17 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
       // กรองเฉพาะ category ที่ต้องการ
       final filteredHistory = history.where((record) {
         final rawCategory = (record['activity']?['category'] as String?) ??
-            (record['evidence'] is Map ? record['evidence']['category'] as String? : null);
-        final activityKey =
-            record['evidence'] is Map ? record['evidence']['activityKey'] as String? : null;
+            (record['evidence'] is Map
+                ? record['evidence']['category'] as String?
+                : null);
+        final activityKey = record['evidence'] is Map
+            ? record['evidence']['activityKey'] as String?
+            : null;
 
         String? category = _normalizeCategory(rawCategory);
         if (category == null &&
-            (activityKey == 'bilingual-songs' || activityKey == 'space-adventure')) {
+            (activityKey == 'bilingual-songs' ||
+                activityKey == 'space-adventure')) {
           category = 'ด้านภาษา';
         }
         return category == _normalizedGameName;
@@ -139,27 +143,32 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFFFFCF8),
       body: SafeArea(
         child: Column(
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back,
-                        size: 35, color: Colors.black87),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Palette.terracotta,
+                      side: const BorderSide(color: Color(0xFFF0E3DC)),
+                    ),
+                    icon: const Icon(Icons.arrow_back_rounded),
                   ),
-                  const SizedBox(width: 15),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       widget.gameName,
-                      style: AppTextStyles.body(24,
-                          color: Palette.blueChip,
-                          weight: FontWeight.bold),
+                      style: AppTextStyles.heading(
+                        22,
+                        color: Palette.terracotta,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -169,7 +178,7 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
 
             Text(
               AppLocalizations.of(context)!.activityhistory_selectDate,
-              style: AppTextStyles.body(18, color: Colors.grey),
+              style: AppTextStyles.body(15, color: Palette.authGrey),
             ),
             const SizedBox(height: 20),
 
@@ -177,13 +186,16 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
             Expanded(
               child: _isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(color: Palette.blueChip))
+                      child: CircularProgressIndicator(
+                        color: Palette.terracotta,
+                      ),
+                    )
                   : _groupedByDate.isEmpty
                       ? _buildEmptyState()
                       : RefreshIndicator(
                           onRefresh: _loadActivityHistory,
                           child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
                             itemCount: _groupedByDate.length,
                             itemBuilder: (context, index) {
                               final dateKey =
@@ -204,17 +216,16 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
                                 },
                                 child: Container(
                                   margin: const EdgeInsets.only(bottom: 12),
-                                  height: 64,
+                                  height: 68,
                                   decoration: BoxDecoration(
                                     color: Colors.white,
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(18),
                                     boxShadow: Palette.cardShadow,
                                   ),
                                   clipBehavior: Clip.hardEdge,
                                   child: Row(
                                     children: [
-                                      Container(
-                                          width: 4, color: _accent),
+                                      Container(width: 4, color: _accent),
                                       const SizedBox(width: 14),
                                       Icon(Icons.calendar_today_rounded,
                                           color: _accent, size: 20),
@@ -236,7 +247,9 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
                                               BorderRadius.circular(12),
                                         ),
                                         child: Text(
-                                          AppLocalizations.of(context)!.activityhistory_times(records.length),
+                                          AppLocalizations.of(context)!
+                                              .activityhistory_times(
+                                                  records.length),
                                           style: AppTextStyles.label(13,
                                               color: Colors.white),
                                         ),
@@ -269,7 +282,8 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            AppLocalizations.of(context)!.activityhistory_inCategory(widget.gameName),
+            AppLocalizations.of(context)!
+                .activityhistory_inCategory(widget.gameName),
             style: AppTextStyles.body(16, color: Colors.grey),
           ),
         ],

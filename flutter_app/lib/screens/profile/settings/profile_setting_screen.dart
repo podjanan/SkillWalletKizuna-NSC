@@ -174,8 +174,8 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              AppLocalizations.of(context)!.common_errorGeneric('delete failed')),
+          content: Text(AppLocalizations.of(context)!
+              .common_errorGeneric('delete failed')),
         ),
       );
     }
@@ -188,21 +188,22 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     final parentName = userProvider.currentParentName ?? 'SWK';
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFFFFCF8),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // --- Header ---
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const Icon(
-                  Icons.arrow_back,
-                  size: 32,
-                  color: Colors.black87,
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Palette.terracotta,
+                  side: const BorderSide(color: Color(0xFFF0E3DC)),
                 ),
+                icon: const Icon(Icons.arrow_back_rounded),
               ),
 
               const SizedBox(height: 24),
@@ -214,8 +215,8 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                   child: Stack(
                     children: [
                       Container(
-                        width: 140,
-                        height: 140,
+                        width: 124,
+                        height: 124,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.grey.shade300,
@@ -228,7 +229,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                               : null,
                         ),
                         child: _uploading
-                            ? const CircularProgressIndicator()
+                            ? const CircularProgressIndicator(
+                                color: Palette.terracotta,
+                              )
                             : photoUrl == null
                                 ? const Icon(Icons.person,
                                     size: 80, color: Colors.grey)
@@ -240,14 +243,14 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Palette.yellow,
+                            color: Palette.terracotta,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Palette.cream, width: 3),
+                            border: Border.all(color: Colors.white, width: 3),
                           ),
                           child: const Icon(
                             Icons.camera_alt,
                             size: 24,
-                            color: Colors.black87,
+                            color: Colors.white,
                           ),
                         ),
                       ),
@@ -256,12 +259,12 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 32),
 
               // --- Name Label ---
               Text(
                 AppLocalizations.of(context)!.profilesetting_nameBtn,
-                style: AppTextStyles.heading(20, color: Palette.labelGrey),
+                style: AppTextStyles.label(13, color: Palette.authGrey),
               ),
 
               const SizedBox(height: 12),
@@ -277,34 +280,55 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                   );
                 },
                 child: Container(
-                  color: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFF0E3DC)),
+                    boxShadow: Palette.softShadow,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         parentName,
-                        style: AppTextStyles.heading(24, color: Colors.black87),
+                        style: AppTextStyles.heading(18, color: Palette.text),
                       ),
                       const Icon(
-                        Icons.chevron_right,
-                        size: 32,
-                        color: Colors.black87,
+                        Icons.chevron_right_rounded,
+                        size: 26,
+                        color: Palette.terracotta,
                       ),
                     ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 24),
 
               // --- Delete Account Button ---
               GestureDetector(
-                onTap: _uploading
-                    ? null
-                    : () => _showDeleteConfirmation(context),
-                child: Text(
-                  AppLocalizations.of(context)!.profilesetting_deleteaccoutBtn,
-                  style: AppTextStyles.heading(20, color: Palette.pink),
+                onTap:
+                    _uploading ? null : () => _showDeleteConfirmation(context),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  decoration: BoxDecoration(
+                    color: Palette.errorStrong.withValues(alpha: .08),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    AppLocalizations.of(context)!
+                        .profilesetting_deleteaccoutBtn,
+                    style: AppTextStyles.heading(
+                      16,
+                      color: Palette.errorStrong,
+                    ),
+                  ),
                 ),
               ),
             ],

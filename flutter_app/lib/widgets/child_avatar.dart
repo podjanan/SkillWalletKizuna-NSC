@@ -31,7 +31,7 @@ class ChildAvatar extends StatelessWidget {
 
     return CircleAvatar(
       radius: radius,
-      backgroundColor: Palette.sky.withValues(alpha: 0.10),
+      backgroundColor: Palette.terracotta.withValues(alpha: 0.10),
       child: ClipOval(
         child: url.isNotEmpty
             ? Image.network(
@@ -54,7 +54,7 @@ class ChildAvatar extends StatelessWidget {
         child: Center(
           child: Text(
             name.isNotEmpty ? name[0].toUpperCase() : '?',
-            style: AppTextStyles.heading(fontSize, color: Palette.sky),
+            style: AppTextStyles.heading(fontSize, color: Palette.terracotta),
           ),
         ),
       );
@@ -63,7 +63,10 @@ class ChildAvatar extends StatelessWidget {
         width: size,
         height: size,
         child: const Center(
-          child: CircularProgressIndicator(strokeWidth: 2, color: Palette.sky),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Palette.terracotta,
+          ),
         ),
       );
 }

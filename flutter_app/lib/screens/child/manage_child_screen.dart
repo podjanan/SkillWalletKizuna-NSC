@@ -7,6 +7,7 @@ import '../../theme/app_text_styles.dart';
 
 import '../../providers/user_provider.dart';
 import '../../services/api_config.dart';
+import '../../routes/app_routes.dart';
 import 'child_name_setting_screen.dart';
 import 'medals_redemption_screen.dart';
 
@@ -148,35 +149,30 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          gradient: Palette.orangeGradient,
-          boxShadow: Palette.orangeButtonShadow,
-        ),
-        child: SafeArea(
-          top: false,
-          child: Container(
-            height: 64,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Center(
-              child: GestureDetector(
-                onTap: () => Navigator.pushNamedAndRemoveUntil(
-                    context, '/', (_) => false),
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: const BoxDecoration(
-                    color: Palette.yellow,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.home_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
+      backgroundColor: const Color(0xFFFFFCF8),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+        child: SizedBox(
+          height: 52,
+          child: ElevatedButton.icon(
+            onPressed: () => Navigator.pushNamedAndRemoveUntil(
+              context,
+              AppRoutes.authenticatedHome,
+              (_) => false,
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Palette.terracotta,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
               ),
+            ),
+            icon: const Icon(Icons.home_rounded),
+            label: Text(
+              'Home',
+              style: AppTextStyles.heading(16, color: Colors.white),
             ),
           ),
         ),
@@ -187,8 +183,8 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
             children: [
               // --- Header ---
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 16.0),
                 child: Row(
                   children: [
                     GestureDetector(
@@ -197,15 +193,26 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
                       },
                       child: Container(
                         padding: const EdgeInsets.all(8.0),
-                        color: Colors.transparent,
-                        child: const Icon(Icons.arrow_back,
-                            size: 30, color: Colors.black87),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFF0E3DC)),
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_rounded,
+                          size: 24,
+                          color: Palette.terracotta,
+                        ),
                       ),
                     ),
                     const Spacer(),
                     Text(
-                      AppLocalizations.of(context)!.managechild_manageprofileBtn,
-                      style: AppTextStyles.heading(24, color: Palette.sky),
+                      AppLocalizations.of(context)!
+                          .managechild_manageprofileBtn,
+                      style: AppTextStyles.heading(
+                        21,
+                        color: Palette.terracotta,
+                      ),
                     ),
                     const Spacer(),
                     const SizedBox(width: 46),
@@ -221,8 +228,8 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
                   child: Stack(
                     children: [
                       Container(
-                        width: 140,
-                        height: 140,
+                        width: 124,
+                        height: 124,
                         decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: Colors.grey.shade300),
@@ -234,11 +241,15 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                              color: Palette.yellow,
+                              color: Palette.terracotta,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Palette.cream, width: 3)),
-                          child: const Icon(Icons.camera_alt,
-                              color: Colors.black87, size: 24),
+                              border:
+                                  Border.all(color: Colors.white, width: 3)),
+                          child: const Icon(
+                            Icons.camera_alt_rounded,
+                            color: Colors.white,
+                            size: 21,
+                          ),
                         ),
                       ),
                     ],
@@ -250,18 +261,22 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
 
               // --- Menu Items ---
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // 1. NAME
                     Material(
-                      color: Colors.transparent,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: const BorderSide(color: Color(0xFFF0E3DC)),
+                      ),
                       child: InkWell(
                         onTap: _navigateToEditName,
                         borderRadius: BorderRadius.circular(12),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 12.0),
+                          padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -290,11 +305,15 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
                         ),
                       ),
                     ),
-                    const Divider(color: Colors.black12),
+                    const SizedBox(height: 12),
 
                     // 2. MEDALS & REDEMPTION
                     Material(
-                      color: Colors.transparent,
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: const BorderSide(color: Color(0xFFF0E3DC)),
+                      ),
                       child: InkWell(
                         onTap: () {
                           Navigator.push(
@@ -310,11 +329,14 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
                         },
                         borderRadius: BorderRadius.circular(12),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              const Icon(Icons.emoji_events,
-                                  color: Palette.yellow, size: 30),
+                              const Icon(
+                                Icons.emoji_events_rounded,
+                                color: Palette.terracotta,
+                                size: 28,
+                              ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Text(

@@ -21,6 +21,7 @@ import '../../widgets/game_activity_cover.dart';
 import '../profile/profile_screen.dart';
 import '../activities/create_activity_screen.dart';
 import '../child/add_child_screen.dart';
+import '../child/medals_redemption_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -264,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showModalBottomSheet(
       context: context,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFFFFCF8),
       builder: (ctx) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -277,7 +278,8 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Center(
               child: Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: Colors.black12,
                   borderRadius: BorderRadius.circular(2),
@@ -308,7 +310,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   title: Text(name, style: AppTextStyles.body(16)),
                   trailing: isSelected
-                      ? const Icon(Icons.check_circle, color: Palette.sky)
+                      ? const Icon(
+                          Icons.check_circle,
+                          color: Palette.terracotta,
+                        )
                       : null,
                   onTap: () {
                     if (id != null && !isSelected) {
@@ -331,16 +336,40 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Category options: label / value / accent color / icon
     final categories = [
-      {'label': l.home_filterAll, 'value': null, 'color': Palette.sky, 'icon': Icons.grid_view_rounded},
-      {'label': l.home_languageBtn, 'value': 'ด้านภาษา', 'color': const Color(0xFFFFB300), 'icon': Icons.menu_book_rounded},
-      {'label': l.home_physicalBtn, 'value': 'ด้านร่างกาย', 'color': Palette.pink, 'icon': Icons.directions_run_rounded},
-      {'label': l.home_calculationBtn, 'value': 'ด้านคำนวณ', 'color': Palette.sky, 'icon': Icons.calculate_rounded},
+      {
+        'label': l.home_filterAll,
+        'value': null,
+        'color': Palette.terracotta,
+        'icon': Icons.grid_view_rounded
+      },
+      {
+        'label': l.home_languageBtn,
+        'value': 'ด้านภาษา',
+        'color': const Color(0xFFFFB300),
+        'icon': Icons.menu_book_rounded
+      },
+      {
+        'label': l.home_physicalBtn,
+        'value': 'ด้านร่างกาย',
+        'color': Palette.pink,
+        'icon': Icons.directions_run_rounded
+      },
+      {
+        'label': l.home_calculationBtn,
+        'value': 'ด้านคำนวณ',
+        'color': Palette.terracottaDark,
+        'icon': Icons.calculate_rounded
+      },
     ];
 
     // Level options: label / value / accent color
     final levels = [
-      {'label': l.home_filterAll, 'value': null, 'color': Palette.sky},
-      {'label': l.home_filterEasy, 'value': 'ง่าย', 'color': Palette.successAlt},
+      {'label': l.home_filterAll, 'value': null, 'color': Palette.terracotta},
+      {
+        'label': l.home_filterEasy,
+        'value': 'ง่าย',
+        'color': Palette.successAlt
+      },
       {'label': l.home_filterMedium, 'value': 'กลาง', 'color': Palette.warning},
       {'label': l.home_filterHard, 'value': 'ยาก', 'color': Palette.pink},
     ];
@@ -352,8 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isScrollControlled: true,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
-          final hasActive =
-              _selectedCategory != null || _selectedLevel != null;
+          final hasActive = _selectedCategory != null || _selectedLevel != null;
 
           Widget filterChip({
             required String label,
@@ -366,7 +394,8 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: onTap,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
                   color: isSelected ? accent : Colors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -375,14 +404,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 1.5,
                   ),
                   boxShadow: isSelected
-                      ? [BoxShadow(color: accent.withValues(alpha: 0.25), blurRadius: 6, offset: const Offset(0, 2))]
+                      ? [
+                          BoxShadow(
+                              color: accent.withValues(alpha: 0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2))
+                        ]
                       : Palette.softShadow,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (icon != null) ...[
-                      Icon(icon, size: 14, color: isSelected ? Colors.white : accent),
+                      Icon(icon,
+                          size: 14, color: isSelected ? Colors.white : accent),
                       const SizedBox(width: 5),
                     ],
                     Text(
@@ -428,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     Row(
                       children: [
                         const Icon(Icons.tune_rounded,
-                            color: Palette.sky, size: 20),
+                            color: Palette.terracotta, size: 20),
                         const SizedBox(width: 8),
                         Text(l.home_filterTitle,
                             style:
@@ -443,7 +478,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             },
                             child: Text(
                               l.home_filterAll,
-                              style: AppTextStyles.body(13, color: Palette.sky),
+                              style: AppTextStyles.body(
+                                13,
+                                color: Palette.terracotta,
+                              ),
                             ),
                           ),
                       ],
@@ -453,8 +491,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // ── Category ──────────────────────────────
                     Text(l.home_filterCategory,
-                        style: AppTextStyles.label(12,
-                            color: Palette.labelGrey)),
+                        style:
+                            AppTextStyles.label(12, color: Palette.labelGrey)),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
@@ -467,8 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           accent: cat['color'] as Color,
                           icon: cat['icon'] as IconData,
                           onTap: () {
-                            _onCategoryFilterChanged(
-                                cat['value'] as String?);
+                            _onCategoryFilterChanged(cat['value'] as String?);
                             setModalState(() {});
                           },
                         );
@@ -479,8 +516,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // ── Level ─────────────────────────────────
                     Text(l.home_filterLevel,
-                        style: AppTextStyles.label(12,
-                            color: Palette.labelGrey)),
+                        style:
+                            AppTextStyles.label(12, color: Palette.labelGrey)),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,
@@ -577,7 +614,8 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         if (activity.isAiWordGame) {
-          Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame, arguments: activity);
+          Navigator.pushNamed(context, AppRoutes.dynamicVocabularyGame,
+              arguments: activity);
           return;
         }
 
@@ -585,7 +623,8 @@ class _HomeScreenState extends State<HomeScreen> {
             activity.content == 'Space Adventure' ||
             activity.content == 'space_adventure' ||
             activity.content == 'space-adventure') {
-          Navigator.pushNamed(context, AppRoutes.spaceAdventure, arguments: activity);
+          Navigator.pushNamed(context, AppRoutes.spaceAdventure,
+              arguments: activity);
           return;
         }
 
@@ -609,7 +648,8 @@ class _HomeScreenState extends State<HomeScreen> {
           routeName = AppRoutes.languageDetail;
         } else if (category == 'ด้านร่างกาย' && activity.videoUrl != null) {
           routeName = AppRoutes.videoDetail;
-        } else if (activity.content == 'math_problems' || activity.content == 'math_simulation') {
+        } else if (activity.content == 'math_problems' ||
+            activity.content == 'math_simulation') {
           routeName = AppRoutes.mathProblemsActivity;
         } else if (category == 'ด้านคำนวณ') {
           routeName = AppRoutes.calculateActivity;
@@ -836,7 +876,8 @@ class _HomeScreenState extends State<HomeScreen> {
       alignment: Alignment.center,
       child: Text(
         category.isNotEmpty ? category.substring(0, 1) : '?',
-        style: AppTextStyles.body(48, color: Colors.white, weight: FontWeight.bold),
+        style: AppTextStyles.body(48,
+            color: Colors.white, weight: FontWeight.bold),
       ),
     );
   }
@@ -871,8 +912,19 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.child_care_rounded,
-                size: 80, color: Colors.black26),
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: Palette.terracotta.withValues(alpha: .10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.child_care_rounded,
+                size: 54,
+                color: Palette.terracotta,
+              ),
+            ),
             const SizedBox(height: 24),
             Text(
               l10n.home_noChildrenMsg,
@@ -883,11 +935,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ElevatedButton.icon(
               onPressed: () async {
                 final userProvider = context.read<UserProvider>();
-                final newChildData =
-                    await Navigator.push<Map<String, dynamic>>(
+                final newChildData = await Navigator.push<Map<String, dynamic>>(
                   context,
-                  MaterialPageRoute(
-                      builder: (_) => const AddChildScreen()),
+                  MaterialPageRoute(builder: (_) => const AddChildScreen()),
                 );
                 if (!mounted || newChildData == null) return;
                 final birthday =
@@ -904,12 +954,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: AppTextStyles.label(16, color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Palette.sky,
+                backgroundColor: Palette.terracotta,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
               ),
             ),
           ],
@@ -918,6 +968,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Kept temporarily as a fallback while the redesigned dashboard is rolled out.
+  // ignore: unused_element
   Widget _buildHomeBody(BuildContext context) {
     final userProvider = context.watch<UserProvider>();
 
@@ -940,431 +992,837 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-        // Header row: names (left) + filter button (right)
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Names column — takes remaining space, clips if too long
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (parentName != null && parentName.isNotEmpty)
-                    Text(
-                      parentName,
-                      style: AppTextStyles.heading(26, color: Palette.deepGrey),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+          // Header row: names (left) + filter button (right)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Names column — takes remaining space, clips if too long
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (parentName != null && parentName.isNotEmpty)
+                      Text(
+                        parentName,
+                        style:
+                            AppTextStyles.heading(26, color: Palette.deepGrey),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    if (childName != null && childName.isNotEmpty)
+                      GestureDetector(
+                        onTap: userProvider.children.length > 1
+                            ? _showChildSwitcher
+                            : null,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.child_care,
+                                size: 18, color: Palette.sky),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                childName,
+                                style:
+                                    AppTextStyles.label(19, color: Palette.sky),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (userProvider.children.length > 1) ...[
+                              const SizedBox(width: 2),
+                              Icon(Icons.arrow_drop_down,
+                                  size: 20, color: Palette.sky),
+                            ],
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Filter button — compact
+              GestureDetector(
+                onTap: _showFilterBottomSheet,
+                child: () {
+                  final active =
+                      _selectedCategory != null || _selectedLevel != null;
+                  final count = (_selectedCategory != null ? 1 : 0) +
+                      (_selectedLevel != null ? 1 : 0);
+                  return Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: active ? Palette.sky : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: active ? Palette.sky : Colors.grey.shade300,
+                        width: 1.5,
+                      ),
+                      boxShadow:
+                          active ? Palette.buttonShadow : Palette.softShadow,
                     ),
-                  if (childName != null && childName.isNotEmpty)
-                    GestureDetector(
-                      onTap: userProvider.children.length > 1
-                          ? _showChildSwitcher
-                          : null,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.child_care, size: 18, color: Palette.sky),
-                          const SizedBox(width: 5),
-                          Flexible(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.tune_rounded,
+                            size: 16,
+                            color: active ? Colors.white : Palette.sky),
+                        const SizedBox(width: 6),
+                        Text(
+                          AppLocalizations.of(context)!.home_filterTitle,
+                          style: AppTextStyles.label(13,
+                              color: active ? Colors.white : Palette.sky),
+                        ),
+                        if (active) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            width: 18,
+                            height: 18,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            alignment: Alignment.center,
                             child: Text(
-                              childName,
-                              style: AppTextStyles.label(19, color: Palette.sky),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              '$count',
+                              style:
+                                  AppTextStyles.label(11, color: Palette.sky),
                             ),
                           ),
-                          if (userProvider.children.length > 1) ...[
-                            const SizedBox(width: 2),
-                            Icon(Icons.arrow_drop_down,
-                                size: 20, color: Palette.sky),
-                          ],
                         ],
-                      ),
-                    ),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            // Filter button — compact
-            GestureDetector(
-              onTap: _showFilterBottomSheet,
-              child: () {
-                final active =
-                    _selectedCategory != null || _selectedLevel != null;
-                final count = (_selectedCategory != null ? 1 : 0) +
-                    (_selectedLevel != null ? 1 : 0);
-                return Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: active ? Palette.sky : Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: active ? Palette.sky : Colors.grey.shade300,
-                      width: 1.5,
-                    ),
-                    boxShadow:
-                        active ? Palette.buttonShadow : Palette.softShadow,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.tune_rounded,
-                          size: 16,
-                          color: active ? Colors.white : Palette.sky),
-                      const SizedBox(width: 6),
-                      Text(
-                        AppLocalizations.of(context)!.home_filterTitle,
-                        style: AppTextStyles.label(13,
-                            color: active ? Colors.white : Palette.sky),
-                      ),
-                      if (active) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          width: 18,
-                          height: 18,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '$count',
-                            style: AppTextStyles.label(11, color: Palette.sky),
-                          ),
-                        ),
                       ],
-                    ],
-                  ),
-                );
-              }(),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // Draft banner — shows if there's an in-progress activity
-        const DraftBanner(),
-
-        // Top Carousel - แสดงกิจกรรมแนะนำตามหมวดที่เคยเล่น
-        Container(
-          height: 320,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(24),
+                    ),
+                  );
+                }(),
+              ),
+            ],
           ),
-          child: FutureBuilder<List<Activity>>(
-            future: _recommendedActivitiesFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(color: Palette.sky),
-                );
-              }
-              if (snapshot.hasError ||
-                  !snapshot.hasData ||
-                  snapshot.data!.isEmpty) {
-                return Center(
-                  child: Text(
-                    AppLocalizations.of(context)!.home_cannotBtn,
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.heading(16, color: Colors.black),
-                  ),
-                );
-              }
+          const SizedBox(height: 16),
 
-              // แสดง 5 กิจกรรมแนะนำ
-              final topActivities = snapshot.data!.take(5).toList();
+          // Draft banner — shows if there's an in-progress activity
+          const DraftBanner(),
 
-              return Stack(
-                children: [
-                  PageView.builder(
-                    controller: _carouselController,
-                    itemCount: topActivities.length,
-                    onPageChanged: (i) => setState(() {
-                      _currentCarouselPage = i;
-                    }),
-                    itemBuilder: (_, i) => _buildCarouselItem(
-                      activity: topActivities[i],
-                      totalItems: topActivities.length,
+          // Top Carousel - แสดงกิจกรรมแนะนำตามหมวดที่เคยเล่น
+          Container(
+            height: 320,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: FutureBuilder<List<Activity>>(
+              future: _recommendedActivitiesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: Palette.sky),
+                  );
+                }
+                if (snapshot.hasError ||
+                    !snapshot.hasData ||
+                    snapshot.data!.isEmpty) {
+                  return Center(
+                    child: Text(
+                      AppLocalizations.of(context)!.home_cannotBtn,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.heading(16, color: Colors.black),
                     ),
-                  ),
-                  Positioned(
-                    bottom: 10,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        topActivities.length,
-                        (i) => AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                          width: _currentCarouselPage == i ? 14 : 5,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: _currentCarouselPage == i
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.4),
-                            borderRadius: BorderRadius.circular(3),
+                  );
+                }
+
+                // แสดง 5 กิจกรรมแนะนำ
+                final topActivities = snapshot.data!.take(5).toList();
+
+                return Stack(
+                  children: [
+                    PageView.builder(
+                      controller: _carouselController,
+                      itemCount: topActivities.length,
+                      onPageChanged: (i) => setState(() {
+                        _currentCarouselPage = i;
+                      }),
+                      itemBuilder: (_, i) => _buildCarouselItem(
+                        activity: topActivities[i],
+                        totalItems: topActivities.length,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 10,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          topActivities.length,
+                          (i) => AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                            width: _currentCarouselPage == i ? 14 : 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: _currentCarouselPage == i
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  if (topActivities.length > 1) ...[
-                    Positioned(
-                      left: 8,
-                      top: 0,
-                      bottom: 0,
-                      child: Center(
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.chevron_left,
-                            color: Colors.white,
-                            size: 32,
+                    if (topActivities.length > 1) ...[
+                      Positioned(
+                        left: 8,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.chevron_left,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                            onPressed: () {
+                              if (_currentCarouselPage == 0) {
+                                _carouselController.animateToPage(
+                                  topActivities.length - 1,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              } else {
+                                _carouselController.previousPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            },
                           ),
-                          onPressed: () {
-                            if (_currentCarouselPage == 0) {
-                              _carouselController.animateToPage(
-                                topActivities.length - 1,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            } else {
-                              _carouselController.previousPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            }
-                          },
+                        ),
+                      ),
+                      Positioned(
+                        right: 8,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.chevron_right,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                            onPressed: () {
+                              if (_currentCarouselPage ==
+                                  topActivities.length - 1) {
+                                _carouselController.animateToPage(
+                                  0,
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              } else {
+                                _carouselController.nextPage(
+                                  duration: const Duration(milliseconds: 300),
+                                  curve: Curves.easeInOut,
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 30),
+
+          // Space Adventure — featured card matching app activity style
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, AppRoutes.spaceAdventure),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: Palette.cardShadow,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: 110,
+                      child: GameActivityCover(
+                        type: GameCoverType.spaceAdventure,
+                        compact: true,
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Palette.teal,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'NEW',
+                                style: AppTextStyles.label(10,
+                                    color: Colors.white),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Space Adventure',
+                              style: AppTextStyles.heading(16,
+                                  color: Palette.text),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Scan your room and find hidden items!',
+                              style: AppTextStyles.body(12,
+                                  color: Palette.deepGrey),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.star_rounded,
+                                  size: 14,
+                                  color: Palette.pink,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '100',
+                                  style: AppTextStyles.label(12,
+                                      color: Palette.pink),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    Positioned(
-                      right: 8,
-                      top: 0,
-                      bottom: 0,
-                      child: Center(
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.chevron_right,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                          onPressed: () {
-                            if (_currentCarouselPage ==
-                                topActivities.length - 1) {
-                              _carouselController.animateToPage(
-                                0,
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            } else {
-                              _carouselController.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                              );
-                            }
-                          },
-                        ),
+                    const Padding(
+                      padding: EdgeInsets.only(right: 14),
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        color: Palette.sky,
                       ),
                     ),
                   ],
-                ],
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 30),
-
-        // Space Adventure — featured card matching app activity style
-        GestureDetector(
-          onTap: () => Navigator.pushNamed(context, AppRoutes.spaceAdventure),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: Palette.cardShadow,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(
-                    width: 110,
-                    child: GameActivityCover(
-                      type: GameCoverType.spaceAdventure,
-                      compact: true,
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Palette.teal,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              'NEW',
-                              style: AppTextStyles.label(10, color: Colors.white),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Space Adventure',
-                            style: AppTextStyles.heading(16, color: Palette.text),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Scan your room and find hidden items!',
-                            style: AppTextStyles.body(12, color: Palette.deepGrey),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.star_rounded,
-                                size: 14,
-                                color: Palette.pink,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                '100',
-                                style: AppTextStyles.label(12, color: Palette.pink),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.only(right: 14),
-                    child: Icon(
-                      Icons.chevron_right_rounded,
-                      color: Palette.sky,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 30),
+          const SizedBox(height: 30),
 
-        // Popular list
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.home_popularactivityBtn,
-              style: AppTextStyles.heading(20, color: Colors.black),
-            ),
-            GestureDetector(
-              onTap: () => Navigator.pushNamed(
+          // Popular list
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.home_popularactivityBtn,
+                style: AppTextStyles.heading(20, color: Colors.black),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  AppRoutes.allActivities,
+                  arguments: ActivityListType.popular,
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.home_viewallBtn,
+                  style: AppTextStyles.heading(16, color: Palette.sky),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ScrollableActivityList(
+            future: _popularActivitiesFuture,
+            controller: _popularScrollController,
+            emptyMessage: AppLocalizations.of(context)!.home_cannotBtn,
+            onDragStart: (dx) => _popularDragStart = dx,
+            onDragUpdate: (dx) {
+              final delta = _popularDragStart - dx;
+              _popularDragStart = dx;
+              _popularScrollController.jumpTo(
+                _popularScrollController.offset + delta,
+              );
+            },
+            itemBuilder: (a) => ActivityCard(activity: a),
+            emptyAction: TextButton(
+              onPressed: () => Navigator.pushNamed(
                 context,
                 AppRoutes.allActivities,
                 arguments: ActivityListType.popular,
               ),
               child: Text(
                 AppLocalizations.of(context)!.home_viewallBtn,
-                style: AppTextStyles.heading(16, color: Palette.sky),
+                style: AppTextStyles.label(13, color: Palette.sky),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        ScrollableActivityList(
-          future: _popularActivitiesFuture,
-          controller: _popularScrollController,
-          emptyMessage: AppLocalizations.of(context)!.home_cannotBtn,
-          onDragStart: (dx) => _popularDragStart = dx,
-          onDragUpdate: (dx) {
-            final delta = _popularDragStart - dx;
-            _popularDragStart = dx;
-            _popularScrollController.jumpTo(
-              _popularScrollController.offset + delta,
-            );
-          },
-          itemBuilder: (a) => ActivityCard(activity: a),
-          emptyAction: TextButton(
-            onPressed: () => Navigator.pushNamed(
-              context, AppRoutes.allActivities,
-              arguments: ActivityListType.popular,
-            ),
-            child: Text(
-              AppLocalizations.of(context)!.home_viewallBtn,
-              style: AppTextStyles.label(13, color: Palette.sky),
-            ),
           ),
-        ),
 
-        const SizedBox(height: 30),
+          const SizedBox(height: 30),
 
-        // New list
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              AppLocalizations.of(context)!.home_newactivityBtn,
-              style: AppTextStyles.heading(20, color: Colors.black),
-            ),
-            GestureDetector(
-              onTap: () => Navigator.pushNamed(
+          // New list
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                AppLocalizations.of(context)!.home_newactivityBtn,
+                style: AppTextStyles.heading(20, color: Colors.black),
+              ),
+              GestureDetector(
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  AppRoutes.allActivities,
+                  arguments: ActivityListType.newActivity,
+                ),
+                child: Text(
+                  AppLocalizations.of(context)!.home_viewallBtn,
+                  style: AppTextStyles.heading(16, color: Palette.sky),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ScrollableActivityList(
+            future: _newActivitiesFuture,
+            controller: _newScrollController,
+            emptyMessage: AppLocalizations.of(context)!.home_nonewBtn,
+            onDragStart: (dx) => _newDragStart = dx,
+            onDragUpdate: (dx) {
+              final delta = _newDragStart - dx;
+              _newDragStart = dx;
+              _newScrollController.jumpTo(
+                _newScrollController.offset + delta,
+              );
+            },
+            itemBuilder: (a) => ActivityCard(activity: a),
+            emptyAction: TextButton(
+              onPressed: () => Navigator.pushNamed(
                 context,
                 AppRoutes.allActivities,
                 arguments: ActivityListType.newActivity,
               ),
               child: Text(
                 AppLocalizations.of(context)!.home_viewallBtn,
-                style: AppTextStyles.heading(16, color: Palette.sky),
+                style: AppTextStyles.label(13, color: Palette.sky),
               ),
+            ),
+          ),
+
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addChildFromDashboard() async {
+    final userProvider = context.read<UserProvider>();
+    final newChildData = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (_) => const AddChildScreen()),
+    );
+    if (!mounted || newChildData == null) return;
+    await userProvider.addChild(
+      name: newChildData['name'] as String,
+      birthday: newChildData['birthday'] as DateTime? ?? DateTime.now(),
+      relationship: newChildData['relation'] as String?,
+    );
+  }
+
+  void _openRewards(UserProvider userProvider) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MedalsRedemptionScreen(
+          childId: userProvider.currentChildId,
+          childName: userProvider.currentChildName,
+          score: userProvider.currentChildWallet,
+        ),
+      ),
+    ).then((_) => userProvider.fetchChildrenData());
+  }
+
+  Widget _buildDashboardBody(BuildContext context) {
+    final userProvider = context.watch<UserProvider>();
+    if (userProvider.children.isEmpty) {
+      return ColoredBox(
+        color: const Color(0xFFFFFCF8),
+        child: _buildNoChildrenPlaceholder(),
+      );
+    }
+    if (_currentChildId == null) {
+      return const Center(
+        child: CircularProgressIndicator(color: Palette.terracotta),
+      );
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    final parentName = (userProvider.currentParentName ?? '').trim();
+    final parentPhotoUrl = (userProvider.parentPhotoUrl ?? '').trim();
+    final filters = <({String label, String? value})>[
+      (label: l10n.home_filterAll, value: null),
+      (label: l10n.home_languageBtn, value: 'ด้านภาษา'),
+      (label: l10n.home_physicalBtn, value: 'ด้านร่างกาย'),
+      (label: l10n.home_calculationBtn, value: 'ด้านคำนวณ'),
+    ];
+
+    return ColoredBox(
+      color: const Color(0xFFFFFCF8),
+      child: RefreshIndicator(
+        color: Palette.terracotta,
+        onRefresh: () async => _loadData(),
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            18,
+            16,
+            110 + MediaQuery.paddingOf(context).bottom,
+          ),
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: Palette.terracotta.withValues(alpha: .10),
+                    shape: BoxShape.circle,
+                  ),
+                  child: ClipOval(
+                    child: parentPhotoUrl.isEmpty
+                        ? const Icon(
+                            Icons.family_restroom_rounded,
+                            color: Palette.terracotta,
+                          )
+                        : Image.network(
+                            ApiConfig.resolveAssetUrl(parentPhotoUrl),
+                            width: 46,
+                            height: 46,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.family_restroom_rounded,
+                              color: Palette.terracotta,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Welcome back',
+                        style: AppTextStyles.body(13, color: Palette.authGrey),
+                      ),
+                      Text(
+                        parentName.isEmpty ? 'Parent' : parentName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.heading(20, color: Palette.text),
+                      ),
+                    ],
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _showFilterBottomSheet,
+                  icon: const Icon(Icons.tune_rounded, size: 17),
+                  label: const Text('Filter'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Palette.terracotta,
+                    side: const BorderSide(color: Palette.terracotta),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Text("Who's here?", style: AppTextStyles.heading(17)),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 82,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: userProvider.children.length + 1,
+                separatorBuilder: (_, __) => const SizedBox(width: 14),
+                itemBuilder: (context, index) {
+                  if (index == userProvider.children.length) {
+                    return GestureDetector(
+                      onTap: _addChildFromDashboard,
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: Palette.terracotta.withValues(alpha: .10),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.add_rounded,
+                              color: Palette.terracotta,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text('Add', style: AppTextStyles.body(11)),
+                        ],
+                      ),
+                    );
+                  }
+                  final entry = userProvider.children[index];
+                  final child = entry['child'] as Map<String, dynamic>? ?? {};
+                  final id = child['child_id']?.toString();
+                  final name = child['name_surname']?.toString() ?? 'Child';
+                  final selected = id == userProvider.currentChildId;
+                  return GestureDetector(
+                    onTap:
+                        id == null ? null : () => userProvider.selectChild(id),
+                    child: SizedBox(
+                      width: 58,
+                      child: Column(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: selected
+                                    ? Palette.terracotta
+                                    : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                            child: ChildAvatar(
+                              photoUrl: child['photo_url']?.toString(),
+                              name: name,
+                              radius: 22,
+                              fontSize: 15,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.body(
+                              11,
+                              color: selected
+                                  ? Palette.terracotta
+                                  : Palette.deepGrey,
+                              weight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 18, 16, 18),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFE8D8), Color(0xFFFFF3D2)],
+                ),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Reward points',
+                          style: AppTextStyles.body(
+                            13,
+                            color: Palette.deepGrey,
+                            weight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '${userProvider.currentChildWallet}',
+                                style: AppTextStyles.heading(
+                                  28,
+                                  color: Palette.terracotta,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '  points',
+                                style: AppTextStyles.body(13),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => _openRewards(userProvider),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Palette.terracotta,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 12,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Redeem',
+                      style: AppTextStyles.heading(15, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            const DraftBanner(),
+            Row(
+              children: [
+                Expanded(
+                  child: Text('Activities', style: AppTextStyles.heading(20)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.allActivities,
+                    arguments: ActivityListType.popular,
+                  ),
+                  child: Text(
+                    l10n.home_viewallBtn,
+                    style: AppTextStyles.body(
+                      14,
+                      color: Palette.terracotta,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(
+              height: 38,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: filters.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, index) {
+                  final filter = filters[index];
+                  final selected = _selectedCategory == filter.value;
+                  return ChoiceChip(
+                    label: Text(filter.label),
+                    selected: selected,
+                    onSelected: (_) => _onCategoryFilterChanged(filter.value),
+                    selectedColor: Palette.terracotta,
+                    backgroundColor: Colors.white,
+                    side: BorderSide(
+                      color: selected
+                          ? Palette.terracotta
+                          : const Color(0xFFE9DED8),
+                    ),
+                    labelStyle: AppTextStyles.body(
+                      12,
+                      color: selected ? Colors.white : Palette.deepGrey,
+                      weight: FontWeight.w600,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 14),
+            ScrollableActivityList(
+              future: _popularActivitiesFuture,
+              controller: _popularScrollController,
+              emptyMessage: l10n.home_cannotBtn,
+              onDragStart: (dx) => _popularDragStart = dx,
+              onDragUpdate: (dx) {
+                final delta = _popularDragStart - dx;
+                _popularDragStart = dx;
+                _popularScrollController.jumpTo(
+                  _popularScrollController.offset + delta,
+                );
+              },
+              itemBuilder: (activity) => ActivityCard(activity: activity),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.home_newactivityBtn,
+                    style: AppTextStyles.heading(18),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.allActivities,
+                    arguments: ActivityListType.newActivity,
+                  ),
+                  child: Text(
+                    l10n.home_viewallBtn,
+                    style: AppTextStyles.body(
+                      13,
+                      color: Palette.terracotta,
+                      weight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            ScrollableActivityList(
+              future: _newActivitiesFuture,
+              controller: _newScrollController,
+              emptyMessage: l10n.home_nonewBtn,
+              onDragStart: (dx) => _newDragStart = dx,
+              onDragUpdate: (dx) {
+                final delta = _newDragStart - dx;
+                _newDragStart = dx;
+                _newScrollController.jumpTo(
+                  _newScrollController.offset + delta,
+                );
+              },
+              itemBuilder: (activity) => ActivityCard(activity: activity),
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        ScrollableActivityList(
-          future: _newActivitiesFuture,
-          controller: _newScrollController,
-          emptyMessage: AppLocalizations.of(context)!.home_nonewBtn,
-          onDragStart: (dx) => _newDragStart = dx,
-          onDragUpdate: (dx) {
-            final delta = _newDragStart - dx;
-            _newDragStart = dx;
-            _newScrollController.jumpTo(
-              _newScrollController.offset + delta,
-            );
-          },
-          itemBuilder: (a) => ActivityCard(activity: a),
-          emptyAction: TextButton(
-            onPressed: () => Navigator.pushNamed(
-              context, AppRoutes.allActivities,
-              arguments: ActivityListType.newActivity,
-            ),
-            child: Text(
-              AppLocalizations.of(context)!.home_viewallBtn,
-              style: AppTextStyles.label(13, color: Palette.sky),
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 30),
-      ],
       ),
     );
   }
@@ -1373,7 +1831,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     // 0 = Home, 2 = Profile  (1 = + ใช้เปิดหน้าใหม่ด้วย Navigator)
     final pages = <Widget>[
-      _buildHomeBody(context),
+      _buildDashboardBody(context),
       ProfileScreen(
           key: _profileKey, onActivityChanged: () => _homeNeedsRefresh = true),
     ];
@@ -1382,9 +1840,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final int visibleIndex = _selectedTab == 2 ? 1 : 0;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFFFFCF8),
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFFFFFCF8),
         elevation: 0,
         toolbarHeight: 0,
       ),
@@ -1393,34 +1851,34 @@ class _HomeScreenState extends State<HomeScreen> {
         children: pages,
       ),
       bottomNavigationBar: MainBottomNav(
-          selectedIndex: _selectedTab,
-          onTabSelected: (i) {
-            if (i == 1) {
-              Navigator.of(context)
-                  .push<bool>(
-                MaterialPageRoute(
-                  builder: (context) => const CreateActivityScreen(),
-                  fullscreenDialog: true,
-                ),
-              )
-                  .then((created) {
-                if (created == true) {
-                  _loadData();
-                  _profileKey.currentState?.reloadActivities();
-                }
-              });
-              return;
-            }
-            // กลับมา home tab → โหลดใหม่เฉพาะเมื่อมีการเปลี่ยนแปลง
-            if (i == 0 && _selectedTab != 0 && _homeNeedsRefresh) {
-              _homeNeedsRefresh = false;
-              _loadData();
-            }
-            // ออกจาก home tab → แอบโหลด suggest ใหม่
-            if (_selectedTab == 0 && i != 0) _refreshSuggestedOnly();
-            setState(() => _selectedTab = i);
-          },
-        ),
+        selectedIndex: _selectedTab,
+        onTabSelected: (i) {
+          if (i == 1) {
+            Navigator.of(context)
+                .push<bool>(
+              MaterialPageRoute(
+                builder: (context) => const CreateActivityScreen(),
+                fullscreenDialog: true,
+              ),
+            )
+                .then((created) {
+              if (created == true) {
+                _loadData();
+                _profileKey.currentState?.reloadActivities();
+              }
+            });
+            return;
+          }
+          // กลับมา home tab → โหลดใหม่เฉพาะเมื่อมีการเปลี่ยนแปลง
+          if (i == 0 && _selectedTab != 0 && _homeNeedsRefresh) {
+            _homeNeedsRefresh = false;
+            _loadData();
+          }
+          // ออกจาก home tab → แอบโหลด suggest ใหม่
+          if (_selectedTab == 0 && i != 0) _refreshSuggestedOnly();
+          setState(() => _selectedTab = i);
+        },
+      ),
     );
   }
 }

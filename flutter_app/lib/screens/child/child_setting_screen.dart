@@ -131,36 +131,38 @@ class _ChildSettingScreenState extends State<ChildSettingScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFFFFFCF8),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87, size: 26),
+          icon: const Icon(
+            Icons.arrow_back_rounded,
+            color: Palette.terracotta,
+            size: 26,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
         title: Text(
           l.childsetting_childsettingBtn,
-          style: AppTextStyles.heading(22, color: Palette.sky),
+          style: AppTextStyles.heading(21, color: Palette.terracotta),
         ),
         actions: [
           GestureDetector(
             onTap: _addNewChild,
             child: Container(
               margin: const EdgeInsets.only(right: 16),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
-                gradient: Palette.skyGradient,
+                color: Palette.terracotta,
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: Palette.buttonShadow,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.add_rounded,
-                      color: Colors.white, size: 16),
+                  const Icon(Icons.add_rounded, color: Colors.white, size: 16),
                   const SizedBox(width: 4),
                   Text(
                     Localizations.localeOf(context).languageCode == 'th'
@@ -181,7 +183,7 @@ class _ChildSettingScreenState extends State<ChildSettingScreen> {
 
           if (_isLoading) {
             return const Center(
-              child: CircularProgressIndicator(color: Palette.sky),
+              child: CircularProgressIndicator(color: Palette.terracotta),
             );
           }
 
@@ -196,11 +198,11 @@ class _ChildSettingScreenState extends State<ChildSettingScreen> {
                       width: 100,
                       height: 100,
                       decoration: BoxDecoration(
-                        color: Palette.sky.withValues(alpha: 0.08),
+                        color: Palette.terracotta.withValues(alpha: 0.10),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.child_care_rounded,
-                          size: 56, color: Palette.sky),
+                          size: 56, color: Palette.terracotta),
                     ),
                     const SizedBox(height: 24),
                     Text(
@@ -215,7 +217,7 @@ class _ChildSettingScreenState extends State<ChildSettingScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 28, vertical: 14),
                         decoration: BoxDecoration(
-                          gradient: Palette.skyGradient,
+                          color: Palette.terracotta,
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: Palette.buttonShadow,
                         ),
@@ -239,7 +241,7 @@ class _ChildSettingScreenState extends State<ChildSettingScreen> {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 32),
             itemCount: children.length,
             itemBuilder: (context, index) {
               final childData = children[index];
@@ -255,12 +257,11 @@ class _ChildSettingScreenState extends State<ChildSettingScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  boxShadow: isSelected
-                      ? Palette.buttonShadow
-                      : Palette.cardShadow,
+                  boxShadow:
+                      isSelected ? Palette.buttonShadow : Palette.cardShadow,
                   border: isSelected
                       ? Border.all(
-                          color: Palette.sky.withValues(alpha: 0.35),
+                          color: Palette.terracotta.withValues(alpha: 0.45),
                           width: 1.5)
                       : null,
                 ),
@@ -281,7 +282,7 @@ class _ChildSettingScreenState extends State<ChildSettingScreen> {
                                   height: 72,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    gradient: Palette.skyGradient,
+                                    color: Palette.terracotta,
                                   ),
                                 ),
                               ChildAvatar(
@@ -351,9 +352,7 @@ class _ChildSettingScreenState extends State<ChildSettingScreen> {
 
                     // ── Divider ───────────────────────────────
                     Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: Colors.grey.shade100),
+                        height: 1, thickness: 1, color: Colors.grey.shade100),
 
                     // ── Action Buttons ────────────────────────
                     Padding(
@@ -377,7 +376,7 @@ class _ChildSettingScreenState extends State<ChildSettingScreen> {
                               child: Container(
                                 height: 42,
                                 decoration: BoxDecoration(
-                                  gradient: Palette.skyGradient,
+                                  color: Palette.terracotta,
                                   borderRadius: BorderRadius.circular(12),
                                   boxShadow: Palette.buttonShadow,
                                 ),
@@ -410,19 +409,19 @@ class _ChildSettingScreenState extends State<ChildSettingScreen> {
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                      color: Palette.sky, width: 1.5),
+                                      color: Palette.terracotta, width: 1.5),
                                 ),
                                 alignment: Alignment.center,
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     const Icon(Icons.settings_rounded,
-                                        color: Palette.sky, size: 16),
+                                        color: Palette.terracotta, size: 16),
                                     const SizedBox(width: 6),
                                     Text(
                                       l.childsetting_manageBtn,
                                       style: AppTextStyles.label(13,
-                                          color: Palette.sky),
+                                          color: Palette.terracotta),
                                     ),
                                   ],
                                 ),

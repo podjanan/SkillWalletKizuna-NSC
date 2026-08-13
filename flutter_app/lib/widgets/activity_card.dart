@@ -185,13 +185,19 @@ class ActivityCard extends StatelessWidget {
     return GestureDetector(
       onTap: navigate,
       child: Container(
-        width: 125,
-        height: 145,
+        width: 152,
+        height: 184,
         margin: const EdgeInsets.only(right: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: Palette.cardShadow,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF6B3C26).withValues(alpha: .10),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,7 +205,7 @@ class ActivityCard extends StatelessWidget {
             Expanded(
               child: ClipRRect(
                 borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(14)),
+                    const BorderRadius.vertical(top: Radius.circular(18)),
                 child: _buildThumbnail(
                   hasTikTokOEmbedData: hasTikTokOEmbedData,
                   hasYouTubeVideo: hasYouTubeVideo,
@@ -210,25 +216,25 @@ class ActivityCard extends StatelessWidget {
             // Thin category color accent line
             Container(height: 2.5, color: accentColor),
             Padding(
-              padding: const EdgeInsets.fromLTRB(6, 3, 6, 4),
+              padding: const EdgeInsets.fromLTRB(10, 7, 10, 9),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     activity.name,
-                    style: AppTextStyles.heading(11, color: Colors.black87),
-                    maxLines: 1,
+                    style: AppTextStyles.heading(12, color: Colors.black87),
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Icon(Icons.star_rounded, size: 10, color: accentColor),
+                      Icon(Icons.star_rounded, size: 12, color: accentColor),
                       const SizedBox(width: 2),
                       Text(
                         '${activity.maxScore}',
                         style: TextStyle(
-                          fontSize: 9,
+                          fontSize: 10,
                           fontWeight: FontWeight.w600,
                           color: accentColor,
                         ),

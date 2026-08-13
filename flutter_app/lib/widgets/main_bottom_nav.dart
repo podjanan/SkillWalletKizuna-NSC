@@ -20,16 +20,26 @@ class _MainBottomNavState extends State<MainBottomNav> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: Palette.skyGradient,
-        boxShadow: Palette.buttonShadow,
-      ),
+    return ColoredBox(
+      color: const Color(0xFFFFFCF8),
       child: SafeArea(
         top: false,
+        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 10),
         child: Container(
-          height: 64,
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+          height: 62,
+          padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFF0E3DC)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF6B3C26).withValues(alpha: .10),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -48,16 +58,18 @@ class _MainBottomNavState extends State<MainBottomNav> {
     return GestureDetector(
       onTap: () => widget.onTabSelected(index),
       child: Container(
-        width: 52,
-        height: 52,
+        width: 46,
+        height: 46,
         decoration: BoxDecoration(
-          color: isSelected ? Palette.yellow : Colors.transparent,
-          shape: BoxShape.circle,
+          color: isSelected
+              ? Palette.terracotta.withValues(alpha: .12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Icon(
           icon,
-          color: Colors.white,
-          size: 28,
+          color: isSelected ? Palette.terracotta : Palette.labelGrey,
+          size: 25,
         ),
       ),
     );
@@ -77,8 +89,14 @@ class _MainBottomNavState extends State<MainBottomNav> {
         height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: _centerPressed ? Palette.skyDark : Colors.transparent,
-          boxShadow: _centerPressed ? Palette.buttonShadow : null,
+          color: _centerPressed ? Palette.terracottaDark : Palette.terracotta,
+          boxShadow: [
+            BoxShadow(
+              color: Palette.terracotta.withValues(alpha: .30),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: const Center(
           child: Icon(

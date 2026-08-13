@@ -24,8 +24,8 @@ class ScrollableActivityList extends StatelessWidget {
   /// Optional CTA widget shown below the empty message (e.g. a "View All" button).
   final Widget? emptyAction;
 
-  static const sky = Color(0xFF0D92F4);
-  static const deepSky = Color(0xFF7DBEF1);
+  static const accent = Color(0xFFE97850);
+  static const softBorder = Color(0xFFF0DED5);
 
   @override
   Widget build(BuildContext context) {
@@ -34,19 +34,19 @@ class ScrollableActivityList extends StatelessWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox(
-            height: 155,
+            height: 194,
             child: Center(
-              child: CircularProgressIndicator(color: sky),
+              child: CircularProgressIndicator(color: accent),
             ),
           );
         }
         if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
           return Container(
-            height: 155,
+            height: 194,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: deepSky, width: 2),
+              border: Border.all(color: softBorder),
             ),
             alignment: Alignment.center,
             child: Column(
@@ -70,7 +70,7 @@ class ScrollableActivityList extends StatelessWidget {
           onHorizontalDragStart: (d) => onDragStart(d.globalPosition.dx),
           onHorizontalDragUpdate: (d) => onDragUpdate(d.globalPosition.dx),
           child: SizedBox(
-            height: 155,
+            height: 194,
             child: SingleChildScrollView(
               controller: controller,
               scrollDirection: Axis.horizontal,

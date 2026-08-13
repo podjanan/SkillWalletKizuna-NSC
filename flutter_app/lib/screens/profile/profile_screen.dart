@@ -94,7 +94,8 @@ class ProfileScreenState extends State<ProfileScreen> {
           children: [
             const SizedBox(height: 8),
             Container(
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(2),
@@ -104,13 +105,19 @@ class ProfileScreenState extends State<ProfileScreen> {
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
               title: Text(l.common_pickFromGallery),
-              onTap: () { Navigator.pop(ctx); _pickFromGallery(); },
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickFromGallery();
+              },
             ),
             if (oauthPhotoUrl != null)
               ListTile(
                 leading: const Icon(Icons.account_circle_outlined, size: 28),
                 title: Text(l.common_useOriginalPhoto),
-                onTap: () { Navigator.pop(ctx); _useOAuthPhoto('oauth'); },
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _useOAuthPhoto('oauth');
+                },
               ),
             const SizedBox(height: 8),
           ],
@@ -144,8 +151,8 @@ class ProfileScreenState extends State<ProfileScreen> {
     if (mounted) setState(() => _uploading = false);
     if (mounted && !ok) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-            AppLocalizations.of(context)!.common_photoNotFound(provider)),
+        content:
+            Text(AppLocalizations.of(context)!.common_photoNotFound(provider)),
       ));
     }
   }
@@ -200,7 +207,8 @@ class ProfileScreenState extends State<ProfileScreen> {
       routeName = AppRoutes.languageDetail;
     } else if (category == 'ด้านร่างกาย' && activity.videoUrl != null) {
       routeName = AppRoutes.videoDetail;
-    } else if (activity.content == 'math_problems' || activity.content == 'math_simulation') {
+    } else if (activity.content == 'math_problems' ||
+        activity.content == 'math_simulation') {
       routeName = AppRoutes.mathProblemsActivity;
     } else if (category == 'ด้านคำนวณ') {
       routeName = AppRoutes.calculateActivity;
@@ -277,13 +285,15 @@ class ProfileScreenState extends State<ProfileScreen> {
     final photoUrl = userProvider.parentPhotoUrl;
     final l = AppLocalizations.of(context)!;
 
-    return SafeArea(
-      top: true,
-      bottom: false,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-            const SizedBox(height: 16),
+    return ColoredBox(
+      color: const Color(0xFFFFFCF8),
+      child: SafeArea(
+        top: true,
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 22),
             // ── Header ───────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -298,8 +308,8 @@ class ProfileScreenState extends State<ProfileScreen> {
                           child: Stack(
                             children: [
                               Container(
-                                width: 160,
-                                height: 160,
+                                width: 118,
+                                height: 118,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: Colors.grey.shade300,
@@ -314,32 +324,39 @@ class ProfileScreenState extends State<ProfileScreen> {
                                 ),
                                 child: _uploading
                                     ? const CircularProgressIndicator(
-                                        color: Palette.sky)
+                                        color: Palette.terracotta)
                                     : photoUrl == null
                                         ? const Icon(Icons.person,
-                                            size: 80, color: Colors.grey)
+                                            size: 58, color: Palette.authGrey)
                                         : null,
                               ),
                               Positioned(
                                 bottom: 0,
                                 right: 0,
                                 child: Container(
-                                  padding: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(7),
                                   decoration: BoxDecoration(
-                                    color: Palette.yellow,
+                                    color: Palette.terracotta,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: Palette.cream, width: 3),
+                                        color: Colors.white, width: 3),
                                   ),
-                                  child: const Icon(Icons.camera_alt,
-                                      size: 24, color: Colors.black87),
+                                  child: const Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 19,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
                         const SizedBox(height: 16),
-                        Text(parentName, style: AppTextStyles.heading(24)),
+                        Text(
+                          parentName,
+                          style: AppTextStyles.heading(22),
+                          textAlign: TextAlign.center,
+                        ),
                       ],
                     ),
                   ),
@@ -347,7 +364,12 @@ class ProfileScreenState extends State<ProfileScreen> {
                     right: 0,
                     top: 0,
                     child: IconButton(
-                      icon: const Icon(Icons.settings, size: 28),
+                      style: IconButton.styleFrom(
+                        backgroundColor:
+                            Palette.terracotta.withValues(alpha: .10),
+                        foregroundColor: Palette.terracotta,
+                      ),
+                      icon: const Icon(Icons.settings_rounded, size: 24),
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -362,7 +384,7 @@ class ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
             // ── Section header ───────────────────────
             Padding(
@@ -383,7 +405,9 @@ class ProfileScreenState extends State<ProfileScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: _isEditMode ? Palette.warning : Palette.sky,
+                            color: _isEditMode
+                                ? Palette.terracottaDark
+                                : Palette.terracotta,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Text(
@@ -409,8 +433,20 @@ class ProfileScreenState extends State<ProfileScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.sports_esports_outlined,
-                                  size: 48, color: Palette.labelGrey),
+                              Container(
+                                width: 82,
+                                height: 82,
+                                decoration: BoxDecoration(
+                                  color:
+                                      Palette.terracotta.withValues(alpha: .10),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.sports_esports_rounded,
+                                  size: 42,
+                                  color: Palette.terracotta,
+                                ),
+                              ),
                               const SizedBox(height: 8),
                               Text(l.profile_noActivities,
                                   style: AppTextStyles.body(16,
@@ -421,8 +457,12 @@ class ProfileScreenState extends State<ProfileScreen> {
                       : RefreshIndicator(
                           onRefresh: _loadActivities,
                           child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.fromLTRB(
+                              16,
+                              8,
+                              16,
+                              110,
+                            ),
                             itemCount: _myActivities.length,
                             itemBuilder: (context, index) =>
                                 _buildActivityCard(_myActivities[index], l),
@@ -431,7 +471,8 @@ class ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-      );
+      ),
+    );
   }
 
   // ── Category helpers ───────────────────────────────────
@@ -443,7 +484,7 @@ class ProfileScreenState extends State<ProfileScreen> {
       case 'ด้านร่างกาย':
         return Palette.pink;
       case 'ด้านคำนวณ':
-        return Palette.sky;
+        return Palette.terracotta;
       default:
         return Palette.teal;
     }
@@ -485,6 +526,7 @@ class ProfileScreenState extends State<ProfileScreen> {
     final maxScore = minMax['max'];
 
     return Container(
+      constraints: const BoxConstraints(minHeight: 94),
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -525,6 +567,7 @@ class ProfileScreenState extends State<ProfileScreen> {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(activity.name,
@@ -534,17 +577,15 @@ class ProfileScreenState extends State<ProfileScreen> {
                             const SizedBox(height: 5),
                             Wrap(
                               spacing: 5,
-                              runSpacing: 4,
+                              runSpacing: 3,
                               children: [
-                                _chipLabel(
-                                    _categoryLabel(activity.category, l),
+                                _chipLabel(_categoryLabel(activity.category, l),
                                     accent),
                                 _chipLabel(
                                     _translateDifficulty(
                                         activity.difficulty, l),
                                     Palette.warning),
-                                _chipLabel(
-                                    '★ ${activity.maxScore}',
+                                _chipLabel('★ ${activity.maxScore}',
                                     Palette.successAlt),
                                 _chipLabel(
                                     'Min-Max: ${minScore != null ? '$minScore - $maxScore' : '-'}',
@@ -558,20 +599,23 @@ class ProfileScreenState extends State<ProfileScreen> {
                       // Edit/delete
                       if (_isEditMode) ...[
                         IconButton(
-                          icon: const Icon(Icons.edit_rounded,
-                              size: 20, color: Palette.sky),
+                          icon: const Icon(
+                            Icons.edit_rounded,
+                            size: 20,
+                            color: Palette.terracotta,
+                          ),
                           onPressed: () => _openEdit(activity),
                           padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                              minWidth: 36, minHeight: 36),
+                          constraints:
+                              const BoxConstraints(minWidth: 36, minHeight: 36),
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete_outline_rounded,
                               size: 20, color: Palette.deleteRed),
                           onPressed: () => _showDeleteDialog(activity),
                           padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                              minWidth: 36, minHeight: 36),
+                          constraints:
+                              const BoxConstraints(minWidth: 36, minHeight: 36),
                         ),
                       ],
                     ],
@@ -588,9 +632,8 @@ class ProfileScreenState extends State<ProfileScreen> {
   Map<String, int?> _getMinMaxScores(Activity activity) {
     final records = _activityHistory.where((record) {
       final act = record['activity'];
-      final actId = act is Map
-          ? (act['activity_id'] ?? act['id'])?.toString()
-          : null;
+      final actId =
+          act is Map ? (act['activity_id'] ?? act['id'])?.toString() : null;
       if (actId == activity.id) return true;
 
       if (activity.isAiWordGame) {
@@ -604,9 +647,11 @@ class ProfileScreenState extends State<ProfileScreen> {
         if (activityName == 'VOICE QUEST') return true;
       }
 
-      if (activity.id == 'space-adventure' || activity.name.toUpperCase() == 'SPACE ADVENTURE') {
+      if (activity.id == 'space-adventure' ||
+          activity.name.toUpperCase() == 'SPACE ADVENTURE') {
         final evidence = record['evidence'];
-        if (evidence is Map && evidence['type']?.toString() == 'space_adventure') {
+        if (evidence is Map &&
+            evidence['type']?.toString() == 'space_adventure') {
           return true;
         }
         final activityName = act is Map
@@ -637,13 +682,12 @@ class ProfileScreenState extends State<ProfileScreen> {
 
   Widget _chipLabel(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(text,
-          style: AppTextStyles.label(10, color: color)),
+      child: Text(text, style: AppTextStyles.label(10, color: color)),
     );
   }
 }

@@ -38,7 +38,13 @@ class _EditActivityScreenState extends State<EditActivityScreen> {
     _maxScoreCtrl = TextEditingController(text: a.maxScore.toString());
     _videoUrlCtrl = TextEditingController(text: a.videoUrl ?? '');
     _difficulty = a.difficulty;
-    for (final c in [_nameCtrl, _descCtrl, _contentCtrl, _maxScoreCtrl, _videoUrlCtrl]) {
+    for (final c in [
+      _nameCtrl,
+      _descCtrl,
+      _contentCtrl,
+      _maxScoreCtrl,
+      _videoUrlCtrl,
+    ]) {
       c.addListener(_markDirty);
     }
   }
@@ -61,6 +67,10 @@ class _EditActivityScreenState extends State<EditActivityScreen> {
     final l = AppLocalizations.of(context)!;
     if (_nameCtrl.text.trim().isEmpty) {
       _showSnack(l.createActivity_nameRequired);
+      return;
+    }
+    if (_contentCtrl.text.trim().isEmpty) {
+      _showSnack(l.createActivity_contentRequired);
       return;
     }
 
@@ -95,17 +105,19 @@ class _EditActivityScreenState extends State<EditActivityScreen> {
     return await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20)),
-            title: Text(l.common_discardChanges,
-                style: AppTextStyles.heading(18)),
-            content: Text(l.common_discardMsg,
-                style: AppTextStyles.body(15)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title:
+                Text(l.common_discardChanges, style: AppTextStyles.heading(18)),
+            content: Text(l.common_discardMsg, style: AppTextStyles.body(15)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx, false),
                 child: Text(l.common_keepEditing,
-                    style: AppTextStyles.label(14, color: Palette.sky)),
+                    style: AppTextStyles.label(
+                      14,
+                      color: Palette.terracotta,
+                    )),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx, true),
@@ -132,108 +144,129 @@ class _EditActivityScreenState extends State<EditActivityScreen> {
         if (await _confirmDiscard() && mounted) nav.pop();
       },
       child: Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Palette.sky,
-        title: Text(l.profile_editActivity,
-            style: AppTextStyles.heading(20, color: Colors.white)),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () async {
-            final nav = Navigator.of(context);
-            if (await _confirmDiscard() && mounted) nav.pop();
-          },
+        backgroundColor: const Color(0xFFFFFCF8),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFFFFCF8),
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          shape: const Border(
+            bottom: BorderSide(color: Color(0xFFF0E3DC)),
+          ),
+          title: Text(
+            l.profile_editActivity,
+            style: AppTextStyles.heading(20, color: Palette.terracotta),
+          ),
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: Palette.terracotta,
+            ),
+            onPressed: () async {
+              final nav = Navigator.of(context);
+              if (await _confirmDiscard() && mounted) nav.pop();
+            },
+          ),
         ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Category badge
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _isPhysical
-                          ? Palette.physicalPlaceholder
-                          : Palette.blueChip,
-                      borderRadius: BorderRadius.circular(20),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Category badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _isPhysical
+                            ? Palette.terracotta
+                            : const Color(0xFFF2A33B),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        _isPhysical
+                            ? l.createActivity_physical
+                            : l.createActivity_calculate,
+                        style: AppTextStyles.label(13, color: Colors.white),
+                      ),
                     ),
-                    child: Text(
-                      _isPhysical
-                          ? l.createActivity_physical
-                          : l.createActivity_calculate,
-                      style: AppTextStyles.label(13, color: Colors.white),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                  // Name
-                  _label(l.createActivity_name),
-                  _textField(_nameCtrl),
-                  const SizedBox(height: 12),
-
-                  // Description
-                  _label(l.createActivity_description),
-                  _textField(_descCtrl, maxLines: 3),
-                  const SizedBox(height: 12),
-
-                  // Difficulty
-                  _label(l.createActivity_difficulty),
-                  _buildDifficultyChips(),
-                  const SizedBox(height: 12),
-
-                  if (_isPhysical) ...[
-                    // Max Score
-                    _label(l.createActivity_maxScore),
-                    _textField(_maxScoreCtrl,
-                        keyboardType: TextInputType.number),
+                    // Name
+                    _label(l.createActivity_name),
+                    _textField(_nameCtrl),
                     const SizedBox(height: 12),
 
-                    // Video URL
-                    _label(l.createActivity_videoUrl),
-                    _textField(_videoUrlCtrl),
+                    // Description
+                    _label(l.createActivity_description),
+                    _textField(_descCtrl, maxLines: 3),
                     const SizedBox(height: 12),
+
+                    // Difficulty
+                    _label(l.createActivity_difficulty),
+                    _buildDifficultyChips(),
+                    const SizedBox(height: 12),
+
+                    if (_isPhysical) ...[
+                      // Max Score
+                      _label(l.createActivity_maxScore),
+                      _textField(_maxScoreCtrl,
+                          keyboardType: TextInputType.number),
+                      const SizedBox(height: 12),
+
+                      // Video URL
+                      _label(l.createActivity_videoUrl),
+                      _textField(_videoUrlCtrl),
+                      const SizedBox(height: 12),
+                    ],
+
+                    // Content / Instructions
+                    _label(l.createActivity_content),
+                    _textField(_contentCtrl, maxLines: 5),
+                    const SizedBox(height: 24),
                   ],
-
-                  // Content / Instructions
-                  _label(l.createActivity_content),
-                  _textField(_contentCtrl, maxLines: 5),
-                  const SizedBox(height: 80),
-                ],
+                ),
               ),
             ),
-          ),
 
-          // Save button
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Palette.success,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(
-                    _isSubmitting ? l.createActivity_creating : l.profile_save,
-                    style: AppTextStyles.heading(18, color: Colors.white),
+            // Save button
+            ColoredBox(
+              color: const Color(0xFFFFFCF8),
+              child: SafeArea(
+                top: false,
+                minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _isSubmitting ? null : _save,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Palette.terracotta,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor:
+                          Palette.terracotta.withValues(alpha: .45),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Text(
+                      _isSubmitting
+                          ? l.createActivity_creating
+                          : l.profile_save,
+                      style: AppTextStyles.heading(18, color: Colors.white),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ), // PopScope
     );
   }
@@ -254,7 +287,17 @@ class _EditActivityScreenState extends State<EditActivityScreen> {
           child: ChoiceChip(
             label: Text(labels[i]),
             selected: selected,
-            selectedColor: Palette.warningLight,
+            selectedColor: Palette.terracotta,
+            backgroundColor: Colors.white,
+            checkmarkColor: Colors.white,
+            side: BorderSide(
+              color: selected ? Palette.terracotta : const Color(0xFFE9DED8),
+            ),
+            labelStyle: AppTextStyles.body(
+              13,
+              color: selected ? Colors.white : Palette.deepGrey,
+              weight: FontWeight.w600,
+            ),
             onSelected: (_) => setState(() => _difficulty = options[i]),
           ),
         );
@@ -284,12 +327,19 @@ class _EditActivityScreenState extends State<EditActivityScreen> {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Palette.divider),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFE9DED8)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Palette.divider),
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: Color(0xFFE9DED8)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(
+            color: Palette.terracotta,
+            width: 1.5,
+          ),
         ),
       ),
       style: AppTextStyles.body(14),
