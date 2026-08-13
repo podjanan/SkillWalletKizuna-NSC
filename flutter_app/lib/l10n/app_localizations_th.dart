@@ -1491,7 +1491,7 @@ class AppLocalizationsTh extends AppLocalizations {
       'ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว กรุณาตรวจสอบกล่องจดหมาย';
 
   @override
-  String get email_passwordTooShort => 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+  String get email_passwordTooShort => 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร';
 
   @override
   String get email_enterEmail => 'กรุณากรอกอีเมล';

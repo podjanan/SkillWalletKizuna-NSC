@@ -657,7 +657,7 @@
   "email_noAccount": "Don't have an account? Register",
   "email_hasAccount": "Already have an account? Login",
   "email_resetSent": "Password reset email sent. Please check your inbox.",
-  "email_passwordTooShort": "Password must be at least 6 characters",
+  "email_passwordTooShort": "Password must be at least 8 characters",
   "email_enterEmail": "Please enter your email",
   "email_enterPassword": "Please enter your password",
   "email_enterName": "Please enter your name",

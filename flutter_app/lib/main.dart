@@ -185,10 +185,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
       }
     }
 
-    // Check Better Auth session with 2s timeout guard to prevent network hang on physical devices
+    // Allow enough time for the session cookie to be verified after sign-in.
     bool authenticated = false;
     final session = await AuthService().getSession().timeout(
-      const Duration(seconds: 2),
+      const Duration(seconds: 8),
       onTimeout: () => null,
     );
     if (session != null) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../theme/palette.dart';
+import '../../theme/app_text_styles.dart';
 
 /// Blocks access to the app until the current disclaimer has been accepted.
 class SoftwareDisclaimerGate extends StatefulWidget {
@@ -103,31 +104,36 @@ class _SoftwareDisclaimerGateState extends State<SoftwareDisclaimerGate> {
                           horizontal: 20,
                           vertical: 18,
                         ),
-                        decoration: BoxDecoration(gradient: Palette.skyGradient),
-                        child: const Column(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Palette.terracotta,
+                              Palette.terracottaDark,
+                            ],
+                          ),
+                        ),
+                        child: Column(
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.verified_user_outlined,
                               color: Colors.white,
                               size: 34,
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             Text(
                               'ข้อตกลงในการใช้ซอฟต์แวร์',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                              ),
+                              style: AppTextStyles.heading(20, color: Colors.white),
                             ),
                             Text(
                               'Software Disclaimer & License Agreement',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: AppTextStyles.body(
+                                12,
                                 color: Colors.white70,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
+                                weight: FontWeight.w600,
                               ),
                             ),
                           ],
@@ -159,11 +165,12 @@ class _SoftwareDisclaimerGateState extends State<SoftwareDisclaimerGate> {
                               controlAffinity: ListTileControlAffinity.leading,
                               contentPadding: EdgeInsets.zero,
                               visualDensity: VisualDensity.compact,
-                              title: const Text(
+                              activeColor: Palette.terracotta,
+                              title: Text(
                                 'ฉันได้อ่าน เข้าใจ และยอมรับข้อตกลงข้างต้น',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
+                                style: AppTextStyles.body(
+                                  14,
+                                  weight: FontWeight.w700,
                                 ),
                               ),
                             ),
@@ -173,6 +180,10 @@ class _SoftwareDisclaimerGateState extends State<SoftwareDisclaimerGate> {
                                 onPressed: _confirmedReading && !_isSaving
                                     ? _accept
                                     : null,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Palette.terracotta,
+                                  foregroundColor: Colors.white,
+                                ),
                                 icon: _isSaving
                                     ? const SizedBox.square(
                                         dimension: 18,
@@ -270,7 +281,7 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-        color: Palette.skyDark,
+        color: Palette.terracottaDark,
         fontSize: 15,
         fontWeight: FontWeight.w800,
       ),
@@ -293,7 +304,7 @@ class _PersonRow extends StatelessWidget {
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 3),
-            child: Icon(Icons.person_outline, size: 18, color: Palette.sky),
+            child: Icon(Icons.person_outline, size: 18, color: Palette.terracotta),
           ),
           const SizedBox(width: 8),
           Expanded(

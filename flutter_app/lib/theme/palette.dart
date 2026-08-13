@@ -12,6 +12,9 @@ class Palette {
   static const deepGrey = Color(0xFF5D5D5D);
 
   // ── Brand / Primary ──────────────────────────────────
+  static const terracotta = Color(0xFFE47751);
+  static const terracottaDark = Color(0xFFD06542);
+  static const authGrey = Color(0xFF747080);
   static const sky = Color(0xFF0D92F4); // primary blue
   static const skyDark = Color(0xFF0A6FC2); // deep blue (gradient end)
   static const skyLight = Color(0xFF42B4FF); // bright blue (gradient start)

@@ -370,7 +370,7 @@ class _ChildrenInfoScreenState extends State<ChildrenInfoScreen> {
         if (mounted) {
           Navigator.pushNamedAndRemoveUntil(
             context,
-            AppRoutes.home,
+            AppRoutes.authenticatedHome,
             (route) => false,
           );
         }

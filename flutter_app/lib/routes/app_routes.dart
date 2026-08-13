@@ -32,6 +32,7 @@ import '../screens/bilingual_songs_screen.dart';
 class AppRoutes {
   // --- Core Routes ---
   static const String home = '/';
+  static const String authenticatedHome = '/app-home';
   static const String welcome = '/welcome';
 
   // --- Auth Routes ---
@@ -65,6 +66,7 @@ class AppRoutes {
         // Core
         welcome: (_) => const WelcomeScreen(),
         home: (_) => const HomeScreen(),
+        authenticatedHome: (_) => const HomeScreen(),
 
         // Auth
         childrenInfo: (_) => const ChildrenInfoScreen(),

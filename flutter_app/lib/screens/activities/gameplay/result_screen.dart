@@ -77,7 +77,7 @@ class _ResultScreenState extends State<ResultScreen>
           icon: const Icon(Icons.close, color: Colors.black87),
           onPressed: () => Navigator.pushNamedAndRemoveUntil(
             context,
-            AppRoutes.home,
+            AppRoutes.authenticatedHome,
             (route) => false,
           ),
         ),
@@ -241,7 +241,7 @@ class _ResultScreenState extends State<ResultScreen>
                   child: OutlinedButton.icon(
                     onPressed: () => Navigator.pushNamedAndRemoveUntil(
                       context,
-                      AppRoutes.home,
+                      AppRoutes.authenticatedHome,
                       (route) => false,
                     ),
                     icon: Icon(Icons.home_outlined, color: Palette.sky, size: 22),

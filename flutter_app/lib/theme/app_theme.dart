@@ -13,8 +13,8 @@ class AppTheme {
     final String thaiFallback = GoogleFonts.itim().fontFamily!;
 
     // OLD base TextTheme: GoogleFonts.luckiestGuyTextTheme
-    // NEW: Open Sans for all text — matches AppTextStyles.heading/body/label
-    TextTheme tt = GoogleFonts.openSansTextTheme(base.textTheme).apply(
+    // NEW: Nunito for all text — matches AppTextStyles.heading/body/label
+    TextTheme tt = GoogleFonts.nunitoTextTheme(base.textTheme).apply(
       bodyColor: Colors.black87,
       displayColor: Colors.black87,
     );
@@ -92,9 +92,9 @@ class AppTheme {
         centerTitle: true,
         // OLD appBar title: GoogleFonts.luckiestGuy(fontSize: 22, fontWeight: FontWeight.w900)
         titleTextStyle: withThaiFallback(
-          GoogleFonts.openSans(
+          GoogleFonts.nunito(
             fontSize: 22,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             color: Colors.black87,
           ),
         ),

@@ -638,7 +638,7 @@ class _SpaceAdventureResultScreenState
               child: OutlinedButton.icon(
                 onPressed: () => Navigator.pushNamedAndRemoveUntil(
                   context,
-                  AppRoutes.home,
+                  AppRoutes.authenticatedHome,
                   (route) => false,
                 ),
                 icon: const Icon(Icons.home_outlined,

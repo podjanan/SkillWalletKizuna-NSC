@@ -2897,7 +2897,7 @@ abstract class AppLocalizations {
   /// No description provided for @email_passwordTooShort.
   ///
   /// In en, this message translates to:
-  /// **'Password must be at least 6 characters'**
+  /// **'Password must be at least 8 characters'**
   String get email_passwordTooShort;
 
   /// No description provided for @email_enterEmail.

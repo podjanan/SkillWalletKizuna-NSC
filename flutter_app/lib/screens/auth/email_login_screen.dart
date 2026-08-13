@@ -8,16 +8,60 @@ import 'package:skill_wallet_kizuna/services/api_service.dart';
 import 'package:skill_wallet_kizuna/services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../routes/app_routes.dart';
+import 'welcome_screen.dart';
 import '../../../theme/palette.dart';
 import '../../../theme/app_text_styles.dart';
 
 enum _AuthMode { login, register }
+
+const _pillShape = RoundedRectangleBorder(
+  borderRadius: BorderRadius.all(Radius.circular(12)),
+);
+const _socialBorderColor = Color(0xFF4A4A4A);
 
 class EmailLoginScreen extends StatefulWidget {
   const EmailLoginScreen({super.key});
 
   @override
   State<EmailLoginScreen> createState() => _EmailLoginScreenState();
+}
+
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size.square(20),
+      painter: _GoogleMarkPainter(),
+    );
+  }
+}
+
+class _GoogleMarkPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(2, 2, size.width - 4, size.height - 4);
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.butt;
+    const sweep = 1.35;
+    canvas.drawArc(rect, -0.25, sweep, false, paint..color = const Color(0xFF4285F4));
+    canvas.drawArc(rect, 1.10, sweep, false, paint..color = const Color(0xFF34A853));
+    canvas.drawArc(rect, 2.45, sweep, false, paint..color = const Color(0xFFFBBC05));
+    canvas.drawArc(rect, 3.80, sweep, false, paint..color = const Color(0xFFEA4335));
+    canvas.drawLine(
+      Offset(size.width * .53, size.height * .52),
+      Offset(size.width - 1.5, size.height * .52),
+      Paint()
+        ..color = const Color(0xFF4285F4)
+        ..strokeWidth = 4,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _EmailLoginScreenState extends State<EmailLoginScreen> {
@@ -53,176 +97,203 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     final isRegister = _mode == _AuthMode.register;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: const BackButton(color: Colors.black87),
-        title: Text(
-          isRegister ? l10n.email_registerTitle : l10n.email_loginTitle,
-          style: AppTextStyles.heading(20, color: Colors.black87),
-        ),
-      ),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Center(
             child: ConstrainedBox(
-              constraints:
-                  BoxConstraints(minHeight: constraints.maxHeight - 32),
-              child: IntrinsicHeight(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Name field (register only)
-                      if (isRegister) ...[
-                        _buildTextField(
-                          controller: _nameController,
-                          hint: l10n.email_nameHint,
-                          icon: Icons.person_outline,
-                          validator: (v) => (v == null || v.trim().isEmpty)
-                              ? l10n.email_enterName
-                              : null,
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-
-                      // Email field
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(height: isRegister ? 44 : 50),
+                    Text(
+                      isRegister ? 'New to the family?' : 'Welcome Back',
+                      textAlign: TextAlign.left,
+                      style: AppTextStyles.heading(
+                        28,
+                        color: Palette.terracotta,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isRegister
+                          ? 'Create your account and start earning\nrewards!'
+                          : 'Sign in and keep the fun going!',
+                      textAlign: TextAlign.left,
+                      style: AppTextStyles.body(
+                        14,
+                        color: Palette.authGrey,
+                      ),
+                    ),
+                    SizedBox(height: isRegister ? 28 : 30),
+                    _fieldLabel('Email'),
+                    _buildTextField(
+                      controller: _emailController,
+                      hint: 'Ex: abc@example.com',
+                      icon: Icons.alternate_email,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? l10n.email_enterEmail
+                          : null,
+                    ),
+                    SizedBox(height: isRegister ? 24 : 22),
+                    if (isRegister) ...[
+                      _fieldLabel('Your Name'),
                       _buildTextField(
-                        controller: _emailController,
-                        hint: l10n.email_emailHint,
-                        icon: Icons.email_outlined,
-                        keyboardType: TextInputType.emailAddress,
+                        controller: _nameController,
+                        hint: 'Ex. Saul Ramirez',
+                        icon: Icons.person_outline,
                         validator: (v) => (v == null || v.trim().isEmpty)
-                            ? l10n.email_enterEmail
+                            ? l10n.email_enterName
                             : null,
                       ),
-                      const SizedBox(height: 12),
-
-                      // Password field
+                      const SizedBox(height: 24),
+                    ],
+                    _fieldLabel('Your Password'),
+                    _buildTextField(
+                      controller: _passwordController,
+                      hint: '•••••••••',
+                      icon: Icons.lock_outline,
+                      obscure: _obscurePassword,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) {
+                          return l10n.email_enterPassword;
+                        }
+                        if (v.length < 8) {
+                          return l10n.email_passwordTooShort;
+                        }
+                        return null;
+                      },
+                    ),
+                    if (isRegister) ...[
+                      const SizedBox(height: 20),
+                      _fieldLabel('Confirm Password'),
                       _buildTextField(
-                        controller: _passwordController,
-                        hint: l10n.email_passwordHint,
+                        controller: _confirmPasswordController,
+                        hint: '•••••••••',
                         icon: Icons.lock_outline,
-                        obscure: _obscurePassword,
+                        obscure: _obscureConfirmPassword,
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword
+                            _obscureConfirmPassword
                                 ? Icons.visibility_off
                                 : Icons.visibility,
-                            color: Colors.black54,
+                            color: Palette.authGrey,
+                            size: 20,
                           ),
-                          onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword),
+                          onPressed: () => setState(() {
+                            _obscureConfirmPassword =
+                                !_obscureConfirmPassword;
+                          }),
                         ),
-                        validator: (v) {
-                          if (v == null || v.isEmpty) {
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
                             return l10n.email_enterPassword;
                           }
-                          if (v.length < 6) {
-                            return l10n.email_passwordTooShort;
+                          if (value != _passwordController.text) {
+                            return l10n.email_passwordsDoNotMatch;
                           }
                           return null;
                         },
                       ),
-
-                      // Confirm password field (register only)
-                      if (isRegister) ...[
-                        const SizedBox(height: 12),
-                        _buildTextField(
-                          controller: _confirmPasswordController,
-                          hint: l10n.email_confirmPasswordHint,
-                          icon: Icons.lock_outline,
-                          obscure: _obscureConfirmPassword,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscureConfirmPassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: Colors.black54,
-                            ),
-                            onPressed: () => setState(() =>
-                                _obscureConfirmPassword =
-                                    !_obscureConfirmPassword),
-                          ),
-                          validator: (v) {
-                            if (v == null || v.isEmpty) {
-                              return l10n.email_enterPassword;
-                            }
-                            if (v != _passwordController.text) {
-                              return l10n.email_passwordsDoNotMatch;
-                            }
-                            return null;
-                          },
+                    ],
+                    const SizedBox(height: 20),
+                    _buildTermsCheckbox(l10n),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      height: 46,
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed:
+                            _isLoading || !_agreedToTerms ? null : _submit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Palette.terracotta,
+                          elevation: 0,
+                          shape: _pillShape,
                         ),
-                      ],
-
-                      const SizedBox(height: 20),
-
-                      // Terms checkbox
-                      _buildTermsCheckbox(l10n),
-                      const SizedBox(height: 20),
-
-                      // Submit button
-                      _isLoading
-                          ? const Center(child: CircularProgressIndicator())
-                          : ElevatedButton(
-                              onPressed: _submit,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Palette.sky,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : Text(
+                                isRegister ? 'Join Us!!' : 'Log In',
+                                style: AppTextStyles.heading(
+                                  17,
+                                  color: Colors.white,
                                 ),
                               ),
-                              child: Text(
-                                isRegister
-                                    ? l10n.email_registerBtn
-                                    : l10n.email_loginBtn,
-                                style: AppTextStyles.heading(16, color: Colors.white),
-                              ),
-                            ),
-
+                      ),
+                    ),
+                    if (!isRegister) ...[
+                      const SizedBox(height: 24),
+                      const Divider(height: 1, color: Color(0xFF817D89)),
+                      const SizedBox(height: 24),
+                      _socialButton(
+                        icon: const _GoogleMark(),
+                        label: 'Continue with Google',
+                        provider: 'google',
+                      ),
                       const SizedBox(height: 12),
-
-                      // TODO: Forgot password — not yet implemented (requires email provider setup)
-                      // if (!isRegister)
-                      //   Center(
-                      //     child: TextButton(
-                      //       onPressed: _showForgotPasswordDialog,
-                      //       child: Text(
-                      //         l10n.email_forgotPassword,
-                      //         style: AppTextStyles.body(14, color: Palette.sky),
-                      //       ),
-                      //     ),
-                      //   ),
-
-                      const SizedBox(height: 8),
-
-                      // Switch mode
-                      Center(
-                        child: TextButton(
-                          onPressed: () => setState(() {
-                            _mode = isRegister
-                                ? _AuthMode.login
-                                : _AuthMode.register;
-                            _formKey.currentState?.reset();
-                            _confirmPasswordController.clear();
-                          }),
-                          child: Text(
-                            isRegister
-                                ? l10n.email_hasAccount
-                                : l10n.email_noAccount,
-                            style: AppTextStyles.body(14, color: Colors.black54),
+                      _socialButton(
+                        icon: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: const BoxDecoration(
+                            color: Palette.facebook,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.facebook,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                        label: 'Continue with Facebook',
+                        provider: 'facebook',
+                      ),
+                    ],
+                    SizedBox(height: isRegister ? 48 : 32),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => setState(() {
+                          _mode = isRegister
+                              ? _AuthMode.login
+                              : _AuthMode.register;
+                          _formKey.currentState?.reset();
+                        }),
+                        child: Text.rich(
+                          TextSpan(
+                            style: AppTextStyles.body(
+                              14,
+                              color: Palette.authGrey,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: isRegister
+                                    ? 'Already part of the family?  '
+                                    : 'New to the family?  ',
+                              ),
+                              TextSpan(
+                                text: isRegister ? 'Login' : 'Join Us',
+                                style: AppTextStyles.body(
+                                  14,
+                                  color: Palette.terracotta,
+                                  weight: FontWeight.w800,
+                                ).copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               ),
             ),
@@ -231,6 +302,14 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
       ),
     );
   }
+
+  Widget _fieldLabel(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(
+          text,
+          style: AppTextStyles.body(14, color: Palette.authGrey),
+        ),
+      );
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -241,26 +320,86 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     Widget? suffixIcon,
     String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      obscureText: obscure,
-      validator: validator,
-      style: AppTextStyles.body(16, color: Colors.black87),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: AppTextStyles.body(16, color: Colors.black38),
-        prefixIcon: Icon(icon, color: Colors.black54),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+    const radius = 14.0;
+    return ColoredBox(
+      color: Colors.white,
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        obscureText: obscure,
+        autocorrect: !obscure,
+        enableSuggestions: !obscure,
+        autofillHints: const <String>[],
+        validator: validator,
+        style: AppTextStyles.body(16, color: Colors.black87),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: AppTextStyles.body(16, color: Colors.black38),
+          prefixIcon: Icon(icon, color: Palette.terracotta, size: 22),
+          suffixIcon: suffixIcon,
+          filled: true,
+          fillColor: const Color(0xFFFFFFFF),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radius),
+            borderSide: const BorderSide(color: Palette.terracotta),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radius),
+            borderSide: const BorderSide(color: Palette.terracotta),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(radius),
+            borderSide: const BorderSide(color: Palette.terracotta, width: 2),
+          ),
+          errorStyle: AppTextStyles.body(12),
         ),
-        errorStyle: AppTextStyles.body(12),
+      ),
+    );
+  }
+
+  Widget _socialButton({
+    required Widget icon,
+    required String label,
+    required String provider,
+  }) {
+    return Opacity(
+      opacity: _agreedToTerms ? 1 : .45,
+      child: SizedBox(
+        height: 49,
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: _agreedToTerms
+              ? () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => WelcomeScreen(
+                        autoProvider: provider,
+                        initiallyAgreedToTerms: true,
+                      ),
+                    ),
+                  )
+              : null,
+          style: OutlinedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black87,
+            elevation: 0,
+            side: const BorderSide(color: _socialBorderColor, width: 1),
+            shape: _pillShape,
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Align(alignment: Alignment.centerLeft, child: icon),
+              Text(
+                label,
+                style: AppTextStyles.heading(14, color: Colors.black87),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -275,7 +414,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
           child: Checkbox(
             value: _agreedToTerms,
             onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-            activeColor: Palette.sky,
+            activeColor: Palette.terracotta,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ),
@@ -289,7 +428,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 const TextSpan(text: ' '),
                 TextSpan(
                   text: l10n.auth_termsOfService,
-                  style: AppTextStyles.body(14, color: Palette.sky).copyWith(
+                  style:
+                      AppTextStyles.body(14, color: Palette.terracotta).copyWith(
                     decoration: TextDecoration.underline,
                   ),
                   recognizer: TapGestureRecognizer()
@@ -298,7 +438,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 TextSpan(text: ' ${l10n.auth_and} '),
                 TextSpan(
                   text: l10n.auth_privacyPolicy,
-                  style: AppTextStyles.body(14, color: Palette.sky).copyWith(
+                  style:
+                      AppTextStyles.body(14, color: Palette.terracotta).copyWith(
                     decoration: TextDecoration.underline,
                   ),
                   recognizer: TapGestureRecognizer()
@@ -374,7 +515,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
         setState(() => _isLoading = false);
         Navigator.pushNamedAndRemoveUntil(
           context,
-          AppRoutes.home,
+          AppRoutes.authenticatedHome,
           (route) => false,
         );
       }
@@ -388,7 +529,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
         setState(() => _isLoading = false);
         Navigator.pushNamedAndRemoveUntil(
           context,
-          AppRoutes.home,
+          AppRoutes.authenticatedHome,
           (route) => false,
         );
       }

@@ -2216,7 +2216,7 @@ class _DynamicVocabularyGameScreenState
               child: OutlinedButton.icon(
                 onPressed: () => Navigator.pushNamedAndRemoveUntil(
                   context,
-                  AppRoutes.home,
+                  AppRoutes.authenticatedHome,
                   (route) => false,
                 ),
                 icon: Icon(Icons.home_outlined, color: Palette.sky, size: 22),

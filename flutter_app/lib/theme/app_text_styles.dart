@@ -7,31 +7,32 @@ import 'palette.dart';
 class AppTextStyles {
   AppTextStyles._();
 
-  // OLD FONTS (kept for reference):
-  //   heading → GoogleFonts.luckiestGuy  (blocky display font)
-  //   body    → GoogleFonts.openSans     (no Thai fallback)
-  //   label   → GoogleFonts.openSans     (no Thai fallback)
-  //   Thai fallback for heading only: GoogleFonts.itim
-
-  // NEW FONTS: all styles use Open Sans (clean, readable) with Itim Thai fallback
   static final String _thaiFallback = GoogleFonts.itim().fontFamily!;
 
-  /// Heading font (Open Sans Bold + Itim fallback for Thai)
-  // OLD: GoogleFonts.luckiestGuy
-  static TextStyle heading(double size, {Color? color}) {
-    return GoogleFonts.openSans(
+  /// Blocky display font for the KIZUNA brand mark.
+  static TextStyle brand(double size, {Color? color}) {
+    return GoogleFonts.luckiestGuy(
       fontSize: size,
-      fontWeight: FontWeight.w700,
+      color: color ?? Palette.terracotta,
+    ).copyWith(
+      fontFamilyFallback: [_thaiFallback],
+    );
+  }
+
+  /// Section headings (Welcome Back, New to the family?, etc.)
+  static TextStyle heading(double size, {Color? color}) {
+    return GoogleFonts.nunito(
+      fontSize: size,
+      fontWeight: FontWeight.w800,
       color: color ?? Palette.text,
     ).copyWith(
       fontFamilyFallback: [_thaiFallback],
     );
   }
 
-  /// Body font (Open Sans + Itim fallback for Thai)
-  // OLD: GoogleFonts.openSans (no Thai fallback)
+  /// Body font (Nunito + Itim fallback for Thai)
   static TextStyle body(double size, {Color? color, FontWeight? weight}) {
-    return GoogleFonts.openSans(
+    return GoogleFonts.nunito(
       fontSize: size,
       color: color ?? Colors.black,
       fontWeight: weight,
@@ -40,10 +41,9 @@ class AppTextStyles {
     );
   }
 
-  /// Label font (Open Sans SemiBold + Itim fallback for Thai)
-  // OLD: GoogleFonts.openSans (no Thai fallback)
+  /// Label font (Nunito SemiBold + Itim fallback for Thai)
   static TextStyle label(double size, {Color? color}) {
-    return GoogleFonts.openSans(
+    return GoogleFonts.nunito(
       fontSize: size,
       color: color ?? Palette.deepGrey,
       fontWeight: FontWeight.w600,

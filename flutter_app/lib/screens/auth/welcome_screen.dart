@@ -13,12 +13,20 @@ import 'package:skill_wallet_kizuna/services/auth_service.dart';
 import 'package:skill_wallet_kizuna/services/storage_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:skill_wallet_kizuna/widgets/google_sign_in_button.dart';
+import 'package:skill_wallet_kizuna/widgets/kizuna_terms_dialog.dart';
 import '../../routes/app_routes.dart';
 import '../../../theme/palette.dart';
 import '../../../theme/app_text_styles.dart';
 
 class WelcomeScreen extends StatefulWidget {
-  const WelcomeScreen({super.key});
+  const WelcomeScreen({
+    super.key,
+    this.autoProvider,
+    this.initiallyAgreedToTerms = false,
+  });
+
+  final String? autoProvider;
+  final bool initiallyAgreedToTerms;
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
@@ -45,9 +53,15 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   @override
   void initState() {
     super.initState();
+    _agreedToTerms = widget.initiallyAgreedToTerms;
     WidgetsBinding.instance.addObserver(this);
     if (kIsWeb) {
       unawaited(_initializeWebSocialSignIn());
+    }
+    if (widget.autoProvider != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _handleOAuth(widget.autoProvider!);
+      });
     }
   }
 
@@ -98,89 +112,125 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
-            // ── Main layout (ปุ่มอยู่เดิมเสมอ) ──
-            LayoutBuilder(builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight,
-                  ),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      children: [
-                        // Logo
-                        Expanded(
-                          flex: 2,
-                          child: Center(
-                            child: Image.asset('assets/images/SWK_home.png',
-                                height: 260),
-                          ),
-                        ),
-
-                        // OAuth buttons
-                        Expanded(
-                          flex: 1,
-                          child: Center(
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 24),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _oauthButton(
-                                    icon: Icons.email_outlined,
-                                    text: l10n.email_loginWithEmail,
-                                    color: Colors.grey.shade700,
-                                    onTap: isLoading
-                                        ? () {}
-                                        : () => Navigator.pushNamed(
-                                            context, AppRoutes.emailLogin),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  _oauthButton(
-                                    icon: Icons.facebook,
-                                    text: l10n.login_facebookBtn,
-                                    color: Palette.facebook,
-                                    onTap: isLoading
-                                        ? () {}
-                                        : () => _handleOAuth('facebook'),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  if (kIsWeb && _agreedToTerms)
-                                    IgnorePointer(
-                                      ignoring: isLoading,
-                                      child: _googleWebButton(
-                                        text: l10n.login_googleBtn,
-                                      ),
-                                    )
-                                  else
-                                    _googleButton(
-                                      text: l10n.login_googleBtn,
-                                      onTap: isLoading
-                                          ? () {}
-                                          : () => _handleOAuth('google'),
-                                    ),
-                                ],
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.white,
+                child: LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(5, 4, 5, 0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: math.max(
+                              240,
+                              math.min(
+                                (constraints.maxWidth - 10) * 470 / 366,
+                                constraints.maxHeight - 250,
                               ),
+                            ),
+                            child: Image.asset(
+                              'assets/images/kizuna_welcome_children.png',
+                              fit: BoxFit.cover,
                             ),
                           ),
                         ),
-
-                        // Terms
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
-                          child: _buildTermsCheckbox(l10n),
+                      ),
+                      const SizedBox(height: 2),
+                      Text('KIZUNA', style: AppTextStyles.brand(44)),
+                      const SizedBox(height: 7),
+                      Text(
+                        "Let's get started!\nAlready part of our community? Welcome back.\nNew here? Join us to learn and grow together.",
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.body(
+                          13,
+                          color: Palette.authGrey,
+                        ).copyWith(height: 1.25),
+                      ),
+                      SizedBox(
+                        height: math.min(64, constraints.maxHeight * .07),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(27, 0, 25, 28),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 31,
+                                child: OutlinedButton(
+                                  onPressed:
+                                      isLoading ? null : _showDisclaimerDialog,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Palette.terracotta,
+                                    backgroundColor: Colors.white,
+                                    padding: EdgeInsets.zero,
+                                    side: const BorderSide(
+                                      color: Palette.terracotta,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(9),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Disclaimer',
+                                    style: AppTextStyles.heading(
+                                      15,
+                                      color: Palette.terracotta,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: SizedBox(
+                                height: 31,
+                                child: ElevatedButton(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => Navigator.pushNamed(
+                                            context,
+                                            AppRoutes.emailLogin,
+                                          ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Palette.terracotta,
+                                    padding: EdgeInsets.zero,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(9),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Log In',
+                                    style: AppTextStyles.heading(
+                                      15,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              );
-            }),
+              ),
+            ),
 
             // ── Loading overlay (ลอยอยู่บนทุกอย่าง) ──
             if (isLoading)
@@ -266,6 +316,24 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     }
   }
 
+  Future<void> _showDisclaimerDialog() async {
+    final agreed = await showKizunaTermsDialog(context);
+    if (agreed && mounted) {
+      setState(() => _agreedToTerms = true);
+    }
+  }
+
+  Future<void> _showTermsDialog(String provider) async {
+    final agreed = await showKizunaTermsDialog(context);
+    if (!agreed || !mounted) return;
+    setState(() => _agreedToTerms = true);
+    if (provider == 'facebook') {
+      _handleFacebookSignIn();
+    } else {
+      _handleGoogleSignIn();
+    }
+  }
+
   // ========== OAuth Entry Point ==========
   void _handleOAuth(String provider) {
     if (!_agreedToTerms) {
@@ -277,48 +345,6 @@ class _WelcomeScreenState extends State<WelcomeScreen>
     } else {
       _handleGoogleSignIn();
     }
-  }
-
-  Future<void> _showTermsDialog(String provider) async {
-    final l10n = AppLocalizations.of(context)!;
-    await showDialog<void>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Text(
-          l10n.auth_tosDialogMsg,
-          style: AppTextStyles.body(15),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _openUrl(_termsOfServiceUrl);
-            },
-            child: Text(
-              l10n.auth_readTos,
-              style: AppTextStyles.body(14, color: Palette.sky),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              setState(() => _agreedToTerms = true);
-              if (provider == 'facebook') {
-                _handleFacebookSignIn();
-              } else {
-                _handleGoogleSignIn();
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Palette.sky),
-            child: Text(
-              l10n.auth_enter,
-              style: AppTextStyles.body(14, color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   // ========== Facebook Sign-In ==========
@@ -543,7 +569,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         setState(() => _isLoading = false);
         Navigator.pushNamedAndRemoveUntil(
           context,
-          AppRoutes.home,
+          AppRoutes.authenticatedHome,
           (route) => false,
         );
       }
@@ -563,7 +589,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
         setState(() => _isLoading = false);
         Navigator.pushNamedAndRemoveUntil(
           context,
-          AppRoutes.home,
+          AppRoutes.authenticatedHome,
           (route) => false,
         );
       }

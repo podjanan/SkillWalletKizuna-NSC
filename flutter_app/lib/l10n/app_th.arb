@@ -655,7 +655,7 @@
   "email_noAccount": "ยังไม่มีบัญชี? สมัครสมาชิก",
   "email_hasAccount": "มีบัญชีอยู่แล้ว? เข้าสู่ระบบ",
   "email_resetSent": "ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว กรุณาตรวจสอบกล่องจดหมาย",
-  "email_passwordTooShort": "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
+  "email_passwordTooShort": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
   "email_enterEmail": "กรุณากรอกอีเมล",
   "email_enterPassword": "กรุณากรอกรหัสผ่าน",
   "email_enterName": "กรุณากรอกชื่อ",

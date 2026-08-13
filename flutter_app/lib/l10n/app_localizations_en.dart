@@ -1493,7 +1493,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Password reset email sent. Please check your inbox.';
 
   @override
-  String get email_passwordTooShort => 'Password must be at least 6 characters';
+  String get email_passwordTooShort => 'Password must be at least 8 characters';
 
   @override
   String get email_enterEmail => 'Please enter your email';

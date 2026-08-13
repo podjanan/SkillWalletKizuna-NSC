@@ -47,7 +47,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Palette.blueChip,
+              primary: Palette.terracotta,
               onPrimary: Colors.white,
               onSurface: Colors.black,
             ),
@@ -97,7 +97,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 child: Text(
                   l10n.relation_label,
-                  style: AppTextStyles.heading(18, color: Palette.error),
+                  style: AppTextStyles.heading(18, color: Palette.terracotta),
                 ),
               ),
               ...options.map((option) => ListTile(
@@ -108,7 +108,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                       style: AppTextStyles.body(16, color: Colors.black87),
                     ),
                     trailing: _selectedRelation == option
-                        ? const Icon(Icons.check, color: Palette.blueChip)
+                        ? const Icon(Icons.check, color: Palette.terracotta)
                         : null,
                     onTap: () {
                       setState(() {
@@ -197,7 +197,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
       if (child != null && mounted) {
         Navigator.pushNamedAndRemoveUntil(
           context,
-          AppRoutes.home,
+          AppRoutes.authenticatedHome,
           (route) => false,
         );
       } else if (mounted) {
@@ -237,174 +237,178 @@ class _AddChildScreenState extends State<AddChildScreen> {
         if (!didPop && widget.isRequired) _showLogoutDialog();
       },
       child: Scaffold(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: Colors.white,
           elevation: 0,
+          scrolledUnderElevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black, size: 30),
+            icon: const Icon(Icons.arrow_back, color: Colors.black, size: 28),
             onPressed: widget.isRequired
                 ? _showLogoutDialog
                 : () => Navigator.pop(context),
           ),
-          centerTitle: true,
-          title: Text(
-            l10n.register_registerBtn,
-            style: AppTextStyles.heading(28, color: Palette.blueChip)
-                .copyWith(letterSpacing: 1.5),
-          ),
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Text(
-                  l10n.register_additionalBtn,
-                  style: AppTextStyles.heading(20, color: Palette.blueChip),
-                ),
-              ),
-              const SizedBox(height: 30),
-
-              // ── Name ─────────────────────────────────────────────────────
-              Text(
-                l10n.addchild_namesurnameBtn,
-                style: AppTextStyles.heading(16, color: Palette.error),
-              ),
-              const SizedBox(height: 5),
-              _inputContainer(
-                child: TextField(
-                  controller: _nameController,
-                  style: AppTextStyles.body(15, color: Colors.black87),
-                  textAlignVertical: TextAlignVertical.center,
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.fromLTRB(28, 8, 28, 32),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Add Your Little Adventurer!',
+                    style: AppTextStyles.heading(
+                      27,
+                      color: Palette.terracotta,
+                    ),
                   ),
-                ),
-              ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Add your child and start building healthy habits together.',
+                    style: AppTextStyles.body(14, color: Palette.authGrey),
+                  ),
+                  const SizedBox(height: 28),
 
-              const SizedBox(height: 20),
-
-              // ── Birthday ──────────────────────────────────────────────────
-              Text(
-                l10n.addchild_birthdayBtn,
-                style: AppTextStyles.heading(16, color: Palette.error),
-              ),
-              const SizedBox(height: 5),
-              GestureDetector(
-                onTap: _selectBirthday,
-                child: _inputContainer(
-                  child: AbsorbPointer(
+                  // ── Name ─────────────────────────────────────────────────────
+                  Text(
+                    'Your Child Name',
+                    style: AppTextStyles.body(14, color: Palette.authGrey),
+                  ),
+                  const SizedBox(height: 8),
+                  _inputContainer(
                     child: TextField(
-                      controller: _birthDayController,
+                      controller: _nameController,
                       style: AppTextStyles.body(15, color: Colors.black87),
                       textAlignVertical: TextAlignVertical.center,
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 20),
-                        hintText: l10n.register_pickbirthday,
-                        hintStyle:
-                            AppTextStyles.body(15, color: Colors.grey),
-                        suffixIcon: const Icon(Icons.calendar_today,
-                            color: Colors.grey),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ── Relationship ──────────────────────────────────────────────
-              Text(
-                l10n.relation_label,
-                style: AppTextStyles.heading(16, color: Palette.error),
-              ),
-              const SizedBox(height: 5),
-              GestureDetector(
-                onTap: () => _pickRelation(l10n),
-                child: _inputContainer(
-                  child: AbsorbPointer(
-                    child: TextField(
-                      controller: _relationController,
-                      style: AppTextStyles.body(15, color: Colors.black87),
-                      textAlignVertical: TextAlignVertical.center,
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 20),
-                        hintText: l10n.relation_hint,
-                        hintStyle: AppTextStyles.body(15, color: Colors.grey),
-                        suffixIcon: const Icon(Icons.arrow_drop_down,
-                            color: Colors.black54),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 50),
-
-              // ── OK Button ─────────────────────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () {
-                          if (widget.isRequired) {
-                            _submitRequired(l10n);
-                          } else {
-                            // Normal mode: validate name and pop with data
-                            final name = _nameController.text.trim();
-                            if (name.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    l10n.addchild_errorName,
-                                    style: AppTextStyles.heading(14),
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                            Navigator.pop(context, {
-                              'name': name,
-                              'birthday':
-                                  _selectedBirthday ?? DateTime.now(),
-                              'relation': _selectedRelation,
-                            });
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        _isLoading ? Colors.grey : Palette.success,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          l10n.addchild_okBtn,
-                          style: AppTextStyles.heading(24, color: Colors.white),
+                      decoration: _childInputDecoration(
+                        hintText: 'Ex. Pokpong',
+                        prefixIcon: const Icon(
+                          Icons.person_outline,
+                          color: Palette.terracotta,
                         ),
-                ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // ── Birthday ──────────────────────────────────────────────────
+                  Text(
+                    'Date of Birth',
+                    style: AppTextStyles.body(14, color: Palette.authGrey),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: _selectBirthday,
+                    child: _inputContainer(
+                      child: AbsorbPointer(
+                        child: TextField(
+                          controller: _birthDayController,
+                          style: AppTextStyles.body(15, color: Colors.black87),
+                          textAlignVertical: TextAlignVertical.center,
+                          decoration: _childInputDecoration(
+                            hintText: '05/11/2019',
+                            suffixIcon: const Icon(
+                              Icons.calendar_today_outlined,
+                              color: Palette.terracotta,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // ── Relationship ──────────────────────────────────────────────
+                  Text(
+                    'Relationship',
+                    style: AppTextStyles.body(14, color: Palette.authGrey),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => _pickRelation(l10n),
+                    child: _inputContainer(
+                      child: AbsorbPointer(
+                        child: TextField(
+                          controller: _relationController,
+                          style: AppTextStyles.body(15, color: Colors.black87),
+                          textAlignVertical: TextAlignVertical.center,
+                          decoration: _childInputDecoration(
+                            hintText: 'Mother',
+                            suffixIcon: const Icon(
+                              Icons.keyboard_arrow_down,
+                              color: Palette.terracotta,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // ── Add Child Button ──────────────────────────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              if (widget.isRequired) {
+                                _submitRequired(l10n);
+                              } else {
+                                final name = _nameController.text.trim();
+                                if (name.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        l10n.addchild_errorName,
+                                        style: AppTextStyles.heading(14),
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                Navigator.pop(context, {
+                                  'name': name,
+                                  'birthday':
+                                      _selectedBirthday ?? DateTime.now(),
+                                  'relation': _selectedRelation,
+                                });
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            _isLoading ? Colors.grey : Palette.terracotta,
+                        shape: const StadiumBorder(),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : Text(
+                              'Add Child',
+                              style: AppTextStyles.heading(
+                                18,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -412,13 +416,35 @@ class _AddChildScreenState extends State<AddChildScreen> {
   }
 
   Widget _inputContainer({required Widget child}) {
-    return Container(
+    return SizedBox(
       height: 50,
-      decoration: BoxDecoration(
-        color: Palette.lightBlue,
-        borderRadius: BorderRadius.circular(25),
-      ),
       child: child,
+    );
+  }
+
+  InputDecoration _childInputDecoration({
+    required String hintText,
+    Widget? prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: const BorderSide(color: Palette.terracotta),
+    );
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: AppTextStyles.body(15, color: Colors.black38),
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      border: border,
+      enabledBorder: border,
+      focusedBorder: border.copyWith(
+        borderSide: const BorderSide(color: Palette.terracotta, width: 2),
+      ),
+      disabledBorder: border,
     );
   }
 }
