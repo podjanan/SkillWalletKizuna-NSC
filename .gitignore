@@ -64,3 +64,4 @@ tmpclaude-*/
 
 # Local documentation (not published from this repository)
 /docs/
+.codex-audio-tools/
