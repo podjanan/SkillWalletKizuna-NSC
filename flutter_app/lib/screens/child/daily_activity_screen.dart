@@ -103,16 +103,17 @@ class DailyActivityScreen extends StatelessWidget {
                           score =
                               int.tryParse(pointRaw.toString()) ?? 0;
                         }
-                        final createdAt =
-                            record['created_at'] as String?;
-                        final activityName =
-                            record['activity']?['name_activity']
-                                    as String? ??
-                                AppLocalizations.of(context)!
-                                    .dailyactivity_activity;
+                        final createdAt = record['created_at'] as String?;
+                        final evidence = record['evidence'] is Map ? record['evidence'] as Map<String, dynamic> : null;
+                        final activityName = record['activity']?['name_activity'] as String? ??
+                            (evidence?['songTitle'] != null
+                                ? 'Sing Together: ${evidence!['songTitle']}'
+                                : (evidence?['activityKey'] == 'bilingual-songs'
+                                    ? 'Sing Together (เพลงสองภาษา)'
+                                    : AppLocalizations.of(context)!.dailyactivity_activity));
 
-                        final category = record['activity']?['category']
-                            as String?;
+                        final category = (record['activity']?['category'] as String?) ??
+                            (evidence?['activityKey'] == 'bilingual-songs' ? 'ด้านภาษา' : null);
                         final accent = _categoryAccent(category);
 
                         return GestureDetector(

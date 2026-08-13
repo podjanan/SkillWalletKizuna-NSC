@@ -40,6 +40,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
 
   // Toggle for Parent Guitar Chords View
   bool _showGuitarChords = true;
+  bool _showMediaSection = false;
+  bool _showVocabularyBar = true;
   DateTime? _startTime;
 
   @override
@@ -87,7 +89,6 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
         if (videoPath != null && videoPath.isNotEmpty && mounted) {
           setState(() {
             _videoPath = videoPath;
-            _imagePath = null;
           });
         }
       } else {
@@ -98,7 +99,6 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
         if (pickedFile != null && mounted) {
           setState(() {
             _imagePath = pickedFile.path;
-            _videoPath = null;
           });
         }
       }
@@ -330,118 +330,214 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Media Capture Buttons Row (Record Video & Take Photo)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _handleMediaSelection(isVideo: true),
-                          icon: const Icon(Icons.videocam_rounded, size: 18, color: Palette.sky),
-                          label: const Text('อัดคลิปวิดีโอ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Palette.sky)),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Palette.sky.withValues(alpha: 0.5)),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _handleMediaSelection(isVideo: false),
-                          icon: const Icon(Icons.camera_alt_rounded, size: 18, color: Colors.amber),
-                          label: const Text('ถ่ายรูปภาพ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber)),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.amber.withValues(alpha: 0.8)),
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Attached Media Evidence Preview Card
-                  if (_videoPath != null || _imagePath != null) ...[
-                    Container(
-                      margin: const EdgeInsets.only(top: 10),
-                      height: 125,
-                      width: double.infinity,
+                  // Toggle Bar for Media Options (Collapsible to maximize Lyrics View)
+                  GestureDetector(
+                    onTap: () => setState(() => _showMediaSection = !_showMediaSection),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: const Color(0xDD000000),
+                        color: _showMediaSection
+                            ? Palette.sky.withValues(alpha: 0.12)
+                            : Colors.purple.shade50,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                            color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
-                        boxShadow: Palette.cardShadow,
+                          color: _showMediaSection
+                              ? Palette.sky.withValues(alpha: 0.4)
+                              : Colors.purple.shade200,
+                        ),
                       ),
-                      child: Stack(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          if (_imagePath != null)
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: SizedBox.expand(
-                                child: kIsWeb
-                                    ? Image.network(_imagePath!, fit: BoxFit.cover)
-                                    : Image.file(File(_imagePath!), fit: BoxFit.cover),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.photo_camera_rounded,
+                                size: 18,
+                                color: _showMediaSection ? Palette.sky : Colors.purple,
                               ),
-                            )
-                          else if (_videoPath != null)
-                            GestureDetector(
-                              onTap: () async {
-                                await _audioPlayer.pause();
-                                if (mounted) setState(() => _isPlaying = false);
-                                if (mounted) {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) => BilingualVideoPlayerDialog(videoPath: _videoPath!),
-                                  );
-                                }
-                              },
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(15),
-                                child: Container(
-                                  color: const Color(0xDD000000),
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(Icons.play_circle_fill_rounded,
-                                            size: 52, color: Palette.sky),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          'คลิกเพื่อเปิดดูคลิปวิดีโอ 🎥',
-                                          style: AppTextStyles.label(13, color: Colors.white),
-                                        ),
-                                      ],
-                                    ),
+                              const SizedBox(width: 8),
+                              Text(
+                                (_imagePath != null || _videoPath != null)
+                                    ? 'แนบไฟล์หลักฐานแล้ว'
+                                    : 'ถ่ายรูป / อัดคลิปวิดีโอหลักฐาน',
+                                style: AppTextStyles.label(13,
+                                    color: _showMediaSection ? Palette.sky : Colors.purple.shade800),
+                              ),
+                              if (_imagePath != null || _videoPath != null) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Palette.success,
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
+                                  child: const Text('✓ แนบแล้ว',
+                                      style: TextStyle(
+                                          fontSize: 10,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold)),
                                 ),
-                              ),
-                            ),
-
-                          // Top Right Clear/Delete Button
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: () => setState(() {
-                                _videoPath = null;
-                                _imagePath = null;
-                              }),
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xB3000000),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.close_rounded,
-                                    size: 18, color: Colors.white),
-                              ),
-                            ),
+                              ],
+                            ],
+                          ),
+                          Icon(
+                            _showMediaSection
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            size: 22,
+                            color: _showMediaSection ? Palette.sky : Colors.purple,
                           ),
                         ],
                       ),
                     ),
+                  ),
+
+                  // Collapsible Media Capture Buttons & Preview Row
+                  if (_showMediaSection) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _handleMediaSelection(isVideo: true),
+                            icon: const Icon(Icons.videocam_rounded, size: 18, color: Palette.sky),
+                            label: const Text('อัดคลิปวิดีโอ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Palette.sky)),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Palette.sky.withValues(alpha: 0.5)),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _handleMediaSelection(isVideo: false),
+                            icon: const Icon(Icons.camera_alt_rounded, size: 18, color: Colors.amber),
+                            label: const Text('ถ่ายรูปภาพ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber)),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.amber.withValues(alpha: 0.8)),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_imagePath != null || _videoPath != null)
+                      Row(
+                        children: [
+                          if (_imagePath != null)
+                            Expanded(
+                              child: Container(
+                                height: 130,
+                                margin: EdgeInsets.only(top: 10, right: (_videoPath != null) ? 6 : 0),
+                                decoration: BoxDecoration(
+                                  color: Colors.black,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
+                                  boxShadow: Palette.cardShadow,
+                                ),
+                                child: Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(15),
+                                      child: SizedBox.expand(
+                                        child: kIsWeb
+                                            ? Image.network(_imagePath!, fit: BoxFit.cover)
+                                            : Image.file(File(_imagePath!), fit: BoxFit.cover),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 6,
+                                      right: 6,
+                                      child: GestureDetector(
+                                        onTap: () => setState(() => _imagePath = null),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xB3000000),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.close_rounded,
+                                              size: 16, color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          if (_videoPath != null)
+                            Expanded(
+                              child: Container(
+                                height: 130,
+                                margin: EdgeInsets.only(top: 10, left: (_imagePath != null) ? 6 : 0),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xDD000000),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                      color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
+                                  boxShadow: Palette.cardShadow,
+                                ),
+                                child: Stack(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () async {
+                                        await _audioPlayer.pause();
+                                        if (mounted) setState(() => _isPlaying = false);
+                                        if (mounted) {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) => BilingualVideoPlayerDialog(videoPath: _videoPath!),
+                                          );
+                                        }
+                                      },
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(15),
+                                        child: Container(
+                                          color: const Color(0xDD000000),
+                                          child: Center(
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(Icons.play_circle_fill_rounded,
+                                                    size: 40, color: Palette.sky),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'คลิกเปิดคลิป 🎥',
+                                                  style: AppTextStyles.label(12, color: Colors.white),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 6,
+                                      right: 6,
+                                      child: GestureDetector(
+                                        onTap: () => setState(() => _videoPath = null),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xB3000000),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.close_rounded,
+                                              size: 16, color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                   ],
                 ],
               ),
@@ -588,55 +684,79 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(Icons.lightbulb_rounded,
-                            size: 18, color: Colors.amber),
-                        const SizedBox(width: 6),
-                        Text(
-                          'คำศัพท์น่ารู้ประจำเพลง (Tap to view meaning):',
-                          style: AppTextStyles.label(13, color: Colors.black87),
+                        Row(
+                          children: [
+                            const Icon(Icons.lightbulb_rounded,
+                                size: 18, color: Colors.amber),
+                            const SizedBox(width: 6),
+                            Text(
+                              'คำศัพท์น่ารู้ประจำเพลง:',
+                              style: AppTextStyles.label(13, color: Colors.black87),
+                            ),
+                          ],
+                        ),
+                        GestureDetector(
+                          onTap: () => setState(() => _showVocabularyBar = !_showVocabularyBar),
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _showVocabularyBar
+                                  ? Icons.keyboard_arrow_down_rounded
+                                  : Icons.keyboard_arrow_up_rounded,
+                              size: 18,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      height: 40,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: widget.song.targetWords.length,
-                        itemBuilder: (context, index) {
-                          final word = widget.song.targetWords[index];
-                          return GestureDetector(
-                            onTap: () {
-                              _showWordDialog(context, word);
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(right: 10),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Palette.sky.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                    color: Palette.sky.withValues(alpha: 0.3)),
+                    if (_showVocabularyBar) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 40,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: widget.song.targetWords.length,
+                          itemBuilder: (context, index) {
+                            final word = widget.song.targetWords[index];
+                            return GestureDetector(
+                              onTap: () {
+                                _showWordDialog(context, word);
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Palette.sky.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                      color: Palette.sky.withValues(alpha: 0.3)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.star_rounded,
+                                        size: 16, color: Palette.sky),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      word.word,
+                                      style: AppTextStyles.label(13,
+                                          color: Palette.sky),
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.star_rounded,
-                                      size: 16, color: Palette.sky),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    word.word,
-                                    style: AppTextStyles.label(13,
-                                        color: Palette.sky),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

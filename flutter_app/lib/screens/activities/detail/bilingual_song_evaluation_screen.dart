@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:image_picker/image_picker.dart';
+
 import '../../../models/bilingual_song_model.dart';
 import '../../../providers/user_provider.dart';
 import '../../../routes/app_routes.dart';
@@ -41,6 +43,15 @@ class _BilingualSongEvaluationScreenState
   final TextEditingController _notesController = TextEditingController();
   bool _isSubmitting = false;
   bool _initialized = false;
+  String? _videoPath;
+  String? _imagePath;
+
+  @override
+  void initState() {
+    super.initState();
+    _videoPath = widget.videoPath;
+    _imagePath = widget.imagePath;
+  }
 
   @override
   void didChangeDependencies() {
@@ -59,6 +70,49 @@ class _BilingualSongEvaluationScreenState
   void dispose() {
     _notesController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickMedia({required bool isVideo}) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final source = await showDialog<ImageSource>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text('เลือกแหล่งที่มา${isVideo ? "วิดีโอ" : "รูปภาพ"}',
+              style: AppTextStyles.heading(16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt_rounded, color: Palette.sky),
+                title: const Text('ถ่ายด้วยกล้อง'),
+                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_rounded, color: Colors.purple),
+                title: const Text('เลือกจากคลังภาพ'),
+                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ) ?? ImageSource.gallery;
+
+      if (isVideo) {
+        final XFile? file = await picker.pickVideo(source: source);
+        if (file != null && mounted) {
+          setState(() => _videoPath = file.path);
+        }
+      } else {
+        final XFile? file = await picker.pickImage(source: source);
+        if (file != null && mounted) {
+          setState(() => _imagePath = file.path);
+        }
+      }
+    } catch (e) {
+      debugPrint('Evaluation screen media pick error: $e');
+    }
   }
 
   String _getChildName(List<Map<String, dynamic>> children, String childId) {
@@ -107,8 +161,8 @@ class _BilingualSongEvaluationScreenState
       'status': 'Completed',
       'description': notes.isNotEmpty ? notes : 'Sing Together Completed',
       'songTitle': widget.song.titleEn,
-      'videoPathLocal': widget.videoPath,
-      'imagePathLocal': widget.imagePath,
+      'videoPathLocal': _videoPath,
+      'imagePathLocal': _imagePath,
     };
 
     try {
@@ -383,58 +437,169 @@ class _BilingualSongEvaluationScreenState
                       ),
                     ),
 
-                    // Attached Media Evidence Card (If photo or video was captured)
-                    if (widget.videoPath != null || widget.imagePath != null) ...[
-                      const SizedBox(height: 14),
-                      Container(
-                        height: 160,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: const Color(0xDD000000),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
-                          boxShadow: Palette.cardShadow,
+                    // Attached Media Evidence Section (Supports BOTH photo & video simultaneously)
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'หลักฐานรูปภาพ / วิดีโอ',
+                            style: AppTextStyles.label(14, color: Colors.black87),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(15),
-                          child: widget.imagePath != null
-                              ? SizedBox.expand(
-                                  child: kIsWeb
-                                      ? Image.network(widget.imagePath!,
-                                          fit: BoxFit.cover)
-                                      : Image.file(File(widget.imagePath!),
-                                          fit: BoxFit.cover),
-                                )
-                              : GestureDetector(
-                                  onTap: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => BilingualVideoPlayerDialog(
-                                          videoPath: widget.videoPath!),
-                                    );
-                                  },
-                                  child: Container(
-                                    color: const Color(0xDD000000),
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          const Icon(Icons.play_circle_fill_rounded,
-                                              size: 56, color: Palette.sky),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'คลิกเพื่อเปิดดูคลิปวิดีโอ 🎥',
-                                            style: AppTextStyles.label(13, color: Colors.white),
-                                          ),
-                                        ],
+                        const SizedBox(width: 6),
+                        GestureDetector(
+                          onTap: () => _pickMedia(isVideo: false),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Palette.sky.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Palette.sky.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.add_a_photo_rounded, size: 14, color: Palette.sky),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _imagePath == null ? '+ รูป' : 'เปลี่ยน',
+                                  style: AppTextStyles.label(12, color: Palette.sky),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        GestureDetector(
+                          onTap: () => _pickMedia(isVideo: true),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.videocam_rounded, size: 14, color: Colors.purple),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _videoPath == null ? '+ วิดีโอ' : 'เปลี่ยน',
+                                  style: AppTextStyles.label(12, color: Colors.purple),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    if (_imagePath != null || _videoPath != null)
+                      Row(
+                        children: [
+                          if (_imagePath != null)
+                            Expanded(
+                              child: Container(
+                                height: 145,
+                                margin: EdgeInsets.only(right: (_videoPath != null) ? 6 : 0),
+                                decoration: BoxDecoration(
+                                  color: Colors.black,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
+                                  boxShadow: Palette.cardShadow,
+                                ),
+                                child: Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(15),
+                                      child: SizedBox.expand(
+                                        child: kIsWeb
+                                            ? Image.network(_imagePath!, fit: BoxFit.cover)
+                                            : Image.file(File(_imagePath!), fit: BoxFit.cover),
                                       ),
                                     ),
-                                  ),
+                                    Positioned(
+                                      top: 6,
+                                      right: 6,
+                                      child: GestureDetector(
+                                        onTap: () => setState(() => _imagePath = null),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xB3000000),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                        ),
+                              ),
+                            ),
+                          if (_videoPath != null)
+                            Expanded(
+                              child: Container(
+                                height: 145,
+                                margin: EdgeInsets.only(left: (_imagePath != null) ? 6 : 0),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xDD000000),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
+                                  boxShadow: Palette.cardShadow,
+                                ),
+                                child: Stack(
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => BilingualVideoPlayerDialog(videoPath: _videoPath!),
+                                        );
+                                      },
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(15),
+                                        child: Container(
+                                          color: const Color(0xDD000000),
+                                          child: Center(
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(Icons.play_circle_fill_rounded, size: 44, color: Palette.sky),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  'ดูคลิปวิดีโอ 🎥',
+                                                  style: AppTextStyles.label(12, color: Colors.white),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      top: 6,
+                                      right: 6,
+                                      child: GestureDetector(
+                                        onTap: () => setState(() => _videoPath = null),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xB3000000),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ],
                     const SizedBox(height: 24),
 
                     // Section Title

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:skill_wallet_kizuna/l10n/app_localizations.dart';
@@ -85,17 +87,27 @@ class PlayingResultDetailScreen extends StatelessWidget {
     // ดึง evidence (อาจเป็น Map หรือ JSON string)
     Map<String, dynamic>? evidence;
     if (record['evidence'] is Map) {
-      evidence = record['evidence'] as Map<String, dynamic>;
+      evidence = Map<String, dynamic>.from(record['evidence'] as Map);
+    } else if (record['evidence'] is String) {
+      try {
+        final parsed = jsonDecode(record['evidence'] as String);
+        if (parsed is Map) {
+          evidence = Map<String, dynamic>.from(parsed);
+        }
+      } catch (_) {}
     }
 
     final diary = evidence?['description'] as String? ?? '';
-    final imagePath =
-        (evidence?['imageUrl'] ?? evidence?['imagePathLocal']) as String?;
-    final videoPath =
-        (evidence?['videoUrl'] ?? evidence?['videoPathLocal']) as String?;
+    final imagePath = (evidence?['imageUrl'] ??
+            evidence?['imagePathLocal'] ??
+            evidence?['image_url'] ??
+            evidence?['image_path']) as String?;
+    final videoPath = (evidence?['videoUrl'] ??
+            evidence?['videoPathLocal'] ??
+            evidence?['video_url'] ??
+            evidence?['video_path']) as String?;
 
     // ตรวจสอบ category
-    final isLanguageCategory = category == 'ด้านภาษา';
     final isAnalysisCategory = category == 'ด้านคำนวณ';
 
     return Scaffold(
@@ -190,14 +202,14 @@ class PlayingResultDetailScreen extends StatelessWidget {
 
                   // ==================== Content by Category ====================
 
-                  // สำหรับ Language: แสดง segments แทน diary/evidence
-                  if (isLanguageCategory) ...[
+                  // สำหรับ Language: แสดง segments (ถ้ามี)
+                  if (_getSegmentResults().isNotEmpty) ...[
                     _buildLanguageSegmentsSection(loc),
                     const SizedBox(height: 25),
-                  ]
-                  // สำหรับ Physical และอื่นๆ: แสดง diary, image, video ตามปกติ
-                  else ...[
-                    // 2. Diary Section
+                  ],
+
+                  // Diary / Notes Section (ถ้ามีบันทึก)
+                  if (diary.isNotEmpty) ...[
                     Text(
                       loc.playingresult_diary,
                       style: AppTextStyles.body(20,
@@ -212,16 +224,15 @@ class PlayingResultDetailScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        diary.isNotEmpty ? diary : loc.playingresult_noNotes,
-                        style: AppTextStyles.body(16,
-                            color: diary.isNotEmpty
-                                ? Colors.black87
-                                : Colors.grey),
+                        diary,
+                        style: AppTextStyles.body(16, color: Colors.black87),
                       ),
                     ),
                     const SizedBox(height: 25),
+                  ],
 
-                    // 3. Image Section
+                  // Image Evidence Section (ถ้ามีรูปภาพ)
+                  if (imagePath != null && imagePath.isNotEmpty) ...[
                     Text(
                       loc.playingresult_image,
                       style: AppTextStyles.body(20,
@@ -238,27 +249,27 @@ class PlayingResultDetailScreen extends StatelessWidget {
                       child: _buildImageWidget(imagePath, loc),
                     ),
                     const SizedBox(height: 25),
+                  ],
 
-                    // 4. Video Section (if exists)
-                    if (videoPath != null && videoPath.isNotEmpty) ...[
-                      Text(
-                        loc.playingresult_video,
-                        style: AppTextStyles.body(20,
-                            color: Palette.error, weight: FontWeight.bold),
+                  // Video Evidence Section (ถ้ามีคลิปวิดีโอ)
+                  if (videoPath != null && videoPath.isNotEmpty) ...[
+                    Text(
+                      loc.playingresult_video,
+                      style: AppTextStyles.body(20,
+                          color: Palette.error, weight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      height: 220,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        height: 220,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: _EvidenceVideoPlayer(source: videoPath),
-                      ),
-                      const SizedBox(height: 25),
-                    ],
+                      clipBehavior: Clip.antiAlias,
+                      child: _EvidenceVideoPlayer(source: videoPath),
+                    ),
+                    const SizedBox(height: 25),
                   ],
 
                   // สำหรับ Analysis: เพิ่มส่วนผลการตอบคำถามท้ายสุด
@@ -334,18 +345,37 @@ class PlayingResultDetailScreen extends StatelessWidget {
   }
 
   Widget _buildImageWidget(String? imagePath, AppLocalizations loc) {
-    // ถ้ามี local path และไฟล์ยังอยู่
-    if (imagePath != null &&
-        imagePath.isNotEmpty &&
-        (imagePath.startsWith('http://') || imagePath.startsWith('https://'))) {
+    if (imagePath == null || imagePath.trim().isEmpty) {
+      return _buildEmptyImageState(loc);
+    }
+    final trimmed = imagePath.trim();
+
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('blob:')) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(20),
-        child: Image.network(ApiConfig.resolveAssetUrl(imagePath),
-            fit: BoxFit.cover, width: double.infinity, height: 200),
+        child: Image.network(
+          ApiConfig.resolveAssetUrl(trimmed),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: 200,
+          errorBuilder: (_, __, ___) => _buildEmptyImageState(loc),
+        ),
       );
     }
-    if (imagePath != null && imagePath.isNotEmpty) {
-      final file = File(imagePath);
+
+    if (kIsWeb) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Image.network(
+          trimmed,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: 200,
+          errorBuilder: (_, __, ___) => _buildEmptyImageState(loc),
+        ),
+      );
+    } else {
+      final file = File(trimmed);
       if (file.existsSync()) {
         return ClipRRect(
           borderRadius: BorderRadius.circular(20),
@@ -354,12 +384,16 @@ class PlayingResultDetailScreen extends StatelessWidget {
             fit: BoxFit.cover,
             width: double.infinity,
             height: 200,
+            errorBuilder: (_, __, ___) => _buildEmptyImageState(loc),
           ),
         );
       }
     }
 
-    // ถ้าไม่มีรูป
+    return _buildEmptyImageState(loc);
+  }
+
+  Widget _buildEmptyImageState(AppLocalizations loc) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -654,6 +688,9 @@ class _EvidenceVideoPlayerState extends State<_EvidenceVideoPlayer> {
   @override
   void initState() {
     super.initState();
+    try {
+      MediaKit.ensureInitialized();
+    } catch (_) {}
     _player = Player();
     _controller = VideoController(_player);
     final source = widget.source.startsWith('http')

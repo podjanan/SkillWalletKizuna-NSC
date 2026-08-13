@@ -62,9 +62,16 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
 
       // กรองเฉพาะ category ที่ต้องการ
       final filteredHistory = history.where((record) {
-        final category = _normalizeCategory(
-          record['activity']?['category'] as String?,
-        );
+        final rawCategory = (record['activity']?['category'] as String?) ??
+            (record['evidence'] is Map ? record['evidence']['category'] as String? : null);
+        final activityKey =
+            record['evidence'] is Map ? record['evidence']['activityKey'] as String? : null;
+
+        String? category = _normalizeCategory(rawCategory);
+        if (category == null &&
+            (activityKey == 'bilingual-songs' || activityKey == 'space-adventure')) {
+          category = 'ด้านภาษา';
+        }
         return category == _normalizedGameName;
       }).toList();
 
