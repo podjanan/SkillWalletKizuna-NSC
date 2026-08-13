@@ -210,6 +210,7 @@ services:
       - WHISPER_MODE=local
       - WHISPER_LOCAL_URL=http://whisper:8000
       - INTERNAL_API_URL=http://app:3000/api
+      - INTERNAL_AUTH_URL=http://app:3000
       - OLLAMA_URL=http://ollama:11434
       - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:3b}
       - OLLAMA_VISION_MODEL=${OLLAMA_VISION_MODEL:-gemma3:4b}
