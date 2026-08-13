@@ -38,7 +38,7 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
   // 1. CONSTANTS & STATE
   // ----------------------------------------------------
 
-  static const nextBlue = Color(0xFF1487FF);
+  static const nextBlue = Palette.terracotta;
   static const prevGrey = Color(0xFFD6D5D3);
 
   // 🎥 YouTube controller (ใช้ package youtube_player_iframe)
@@ -196,8 +196,7 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
     final data = draft['data'] as Map<String, dynamic>? ?? {};
     if (!mounted) return;
     final savedCurrent = data['current'] as int? ?? 1;
-    final savedSegments =
-        (data['segmentResults'] as List<dynamic>?)
+    final savedSegments = (data['segmentResults'] as List<dynamic>?)
             ?.map((e) => SegmentResult.fromDraftJson(e as Map<String, dynamic>))
             .map((r) => r.status == SegmentStatus.processing
                 ? r.copyWith(status: SegmentStatus.idle)
@@ -228,8 +227,7 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
       activityJson: widget.activity.toJson(),
       data: {
         'current': current,
-        'segmentResults':
-            _segmentResults.map((r) => r.toDraftJson()).toList(),
+        'segmentResults': _segmentResults.map((r) => r.toDraftJson()).toList(),
       },
     );
   }
@@ -304,7 +302,8 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
   Future<void> _openInYouTube() async {
     if (_youtubeVideoId.isEmpty) return;
     final appUri = Uri.parse('youtube://watch?v=$_youtubeVideoId');
-    final webUri = Uri.parse('https://www.youtube.com/watch?v=$_youtubeVideoId');
+    final webUri =
+        Uri.parse('https://www.youtube.com/watch?v=$_youtubeVideoId');
     if (await canLaunchUrl(appUri)) {
       await launchUrl(appUri);
     } else {
@@ -607,8 +606,8 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
       final msg = e.toString().contains('SocketException')
           ? l.common_noServer
           : l.audio_analyseFailed;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(msg), backgroundColor: Palette.errorStrong));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: Palette.errorStrong));
     });
   }
 
@@ -710,8 +709,8 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
       _isSubmitting.value = false;
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              AppLocalizations.of(context)!.itemintro_questError(e.toString()))));
+          content: Text(AppLocalizations.of(context)!
+              .itemintro_questError(e.toString()))));
     }
   }
 
@@ -952,8 +951,7 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
                         Text(
                           AppLocalizations.of(context)!
                               .itemintro_segmentOf(current, totalSegments),
-                          style: AppTextStyles.label(13,
-                              color: Palette.sky),
+                          style: AppTextStyles.label(13, color: Palette.sky),
                         ),
                       ],
                     ),
@@ -975,105 +973,105 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
           ),
           // Sticky bottom navigation
           Container(
-              color: Palette.cream,
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                  child: Row(
-                children: [
-                  Expanded(
-                    child: _bottomBtn(
-                      label: AppLocalizations.of(context)!.itemintro_previous,
-                      bg: prevGrey,
-                      fg: Palette.deepGrey,
-                      onTap: current > 1
-                          ? () {
-                              if (_isRecording) {
-                                _triggerShake();
-                                return;
+            color: Palette.cream,
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _bottomBtn(
+                        label: AppLocalizations.of(context)!.itemintro_previous,
+                        bg: prevGrey,
+                        fg: Palette.deepGrey,
+                        onTap: current > 1
+                            ? () {
+                                if (_isRecording) {
+                                  _triggerShake();
+                                  return;
+                                }
+                                setState(() {
+                                  current--;
+                                  final r = _segmentResults[current - 1];
+                                  state = switch (r.status) {
+                                    SegmentStatus.done => 'reviewed',
+                                    SegmentStatus.processing => 'processing',
+                                    _ => 'idle',
+                                  };
+                                  point = r.maxScore;
+                                });
                               }
-                              setState(() {
-                                current--;
-                                final r = _segmentResults[current - 1];
-                                state = switch (r.status) {
-                                  SegmentStatus.done => 'reviewed',
-                                  SegmentStatus.processing => 'processing',
-                                  _ => 'idle',
-                                };
-                                point = r.maxScore;
-                              });
-                            }
-                          : null,
+                            : null,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 80,
-                    height: 48,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Palette.sky.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                          color: Palette.sky.withValues(alpha: 0.3)),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '$completedSegmentsCount/$totalSegments',
-                          style: AppTextStyles.heading(14,
-                              color: Palette.sky),
-                        ),
-                        Text(
-                          AppLocalizations.of(context)!.common_done,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Palette.sky,
-                            fontWeight: FontWeight.w600,
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 80,
+                      height: 48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Palette.sky.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                            color: Palette.sky.withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '$completedSegmentsCount/$totalSegments',
+                            style:
+                                AppTextStyles.heading(14, color: Palette.sky),
                           ),
-                        ),
-                      ],
+                          Text(
+                            AppLocalizations.of(context)!.common_done,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Palette.sky,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _bottomBtn(
-                      label: current == totalSegments
-                          ? AppLocalizations.of(context)!.summary_reviewShort
-                          : AppLocalizations.of(context)!.itemintro_next,
-                      bg: nextBlue,
-                      fg: Colors.white,
-                      onTap: () {
-                        if (_isRecording) {
-                          _triggerShake();
-                          return;
-                        }
-                        if (current < totalSegments) {
-                          setState(() {
-                            current++;
-                            final r = _segmentResults[current - 1];
-                            state = switch (r.status) {
-                              SegmentStatus.done => 'reviewed',
-                              SegmentStatus.processing => 'processing',
-                              _ => 'idle',
-                            };
-                            point = r.maxScore;
-                          });
-                        } else {
-                          _openSummary();
-                        }
-                      },
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _bottomBtn(
+                        label: current == totalSegments
+                            ? AppLocalizations.of(context)!.summary_reviewShort
+                            : AppLocalizations.of(context)!.itemintro_next,
+                        bg: nextBlue,
+                        fg: Colors.white,
+                        onTap: () {
+                          if (_isRecording) {
+                            _triggerShake();
+                            return;
+                          }
+                          if (current < totalSegments) {
+                            setState(() {
+                              current++;
+                              final r = _segmentResults[current - 1];
+                              state = switch (r.status) {
+                                SegmentStatus.done => 'reviewed',
+                                SegmentStatus.processing => 'processing',
+                                _ => 'idle',
+                              };
+                              point = r.maxScore;
+                            });
+                          } else {
+                            _openSummary();
+                          }
+                        },
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-          ],
-        ),
+        ],
+      ),
     );
   }
 
@@ -1221,8 +1219,8 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
                         ),
                         Text(
                           '$completedSegmentsCount/$totalSegments ${AppLocalizations.of(context)!.common_done}',
-                          style: AppTextStyles.body(12,
-                              color: Palette.labelGrey),
+                          style:
+                              AppTextStyles.body(12, color: Palette.labelGrey),
                         ),
                       ],
                     ),
@@ -1232,10 +1230,8 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
                       borderRadius: BorderRadius.circular(6),
                       child: LinearProgressIndicator(
                         value: isReviewed ? score / 100 : 0,
-                        backgroundColor:
-                            accent.withValues(alpha: 0.12),
-                        valueColor:
-                            const AlwaysStoppedAnimation<Color>(accent),
+                        backgroundColor: accent.withValues(alpha: 0.12),
+                        valueColor: const AlwaysStoppedAnimation<Color>(accent),
                         minHeight: 7,
                       ),
                     ),
@@ -1257,7 +1253,7 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
     final bool isReviewed = state == 'reviewed';
     final bool isRecordingAvailable =
         (result.audioUrl != null && result.audioUrl!.isNotEmpty) ||
-        (result.audioBytes != null && result.audioBytes!.isNotEmpty);
+            (result.audioBytes != null && result.audioBytes!.isNotEmpty);
 
     Color statusColor;
     IconData statusIcon;
@@ -1329,9 +1325,8 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
           const SizedBox(height: 10),
           // Playback button
           GestureDetector(
-            onTap: isRecordingAvailable
-                ? () => _playOwnRecording(result)
-                : null,
+            onTap:
+                isRecordingAvailable ? () => _playOwnRecording(result) : null,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               height: 42,
@@ -1366,7 +1361,8 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
                                 .itemintro_pausePlayback
                             : AppLocalizations.of(context)!
                                 .itemintro_listenRecording)
-                        : AppLocalizations.of(context)!.itemintro_recordToPlayback,
+                        : AppLocalizations.of(context)!
+                            .itemintro_recordToPlayback,
                     style: AppTextStyles.label(13,
                         color: isRecordingAvailable
                             ? accent

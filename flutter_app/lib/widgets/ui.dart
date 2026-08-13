@@ -76,7 +76,7 @@ class GradientButton extends StatelessWidget {
     this.isLoading = false,
   });
 
-  /// Convenience: primary sky-blue button
+  /// Convenience: primary warm-orange button.
   factory GradientButton.primary({
     Key? key,
     required String label,

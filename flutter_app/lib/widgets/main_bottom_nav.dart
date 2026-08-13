@@ -21,7 +21,7 @@ class _MainBottomNavState extends State<MainBottomNav> {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFFFFFCF8),
+      color: Palette.surfaceWarm,
       child: SafeArea(
         top: false,
         minimum: const EdgeInsets.fromLTRB(16, 8, 16, 10),
@@ -29,12 +29,12 @@ class _MainBottomNavState extends State<MainBottomNav> {
           height: 62,
           padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 5),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Palette.surface,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: const Color(0xFFF0E3DC)),
+            border: Border.all(color: Palette.outlineWarm),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF6B3C26).withValues(alpha: .10),
+                color: Palette.terracotta.withValues(alpha: .12),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),

@@ -254,7 +254,10 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
                   onTap: () => Navigator.pop(context, ImageSource.camera),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.photo_library, color: Colors.blue),
+                  leading: const Icon(
+                    Icons.photo_library,
+                    color: Palette.terracotta,
+                  ),
                   title: Text(AppLocalizations.of(context)!.common_gallery,
                       style: AppTextStyles.body(14)),
                   onTap: () => Navigator.pop(context, ImageSource.gallery),
@@ -675,8 +678,10 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
                             horizontal: 48, vertical: 14),
                         decoration: BoxDecoration(
                           gradient: _isPlaying
-                              ? const LinearGradient(
-                                  colors: [Palette.sky, Color(0xFF0DA8F4)])
+                              ? const LinearGradient(colors: [
+                                  Palette.terracottaLight,
+                                  Palette.terracottaDark,
+                                ])
                               : null,
                           color: _isPlaying ? null : Colors.white,
                           borderRadius: BorderRadius.circular(32),
@@ -718,8 +723,10 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
                           decoration: BoxDecoration(
                             gradient: _isPlaying
                                 ? null
-                                : const LinearGradient(
-                                    colors: [Palette.sky, Color(0xFF0DA8F4)]),
+                                : const LinearGradient(colors: [
+                                    Palette.terracottaLight,
+                                    Palette.terracottaDark,
+                                  ]),
                             color: _isPlaying
                                 ? Palette.sky.withValues(alpha: 0.1)
                                 : null,

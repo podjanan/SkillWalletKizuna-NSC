@@ -1329,13 +1329,13 @@ class _TvModeScreenState extends State<_TvModeScreen> {
     final progress = ((_currentPage + 1) / total).clamp(0.0, 1.0);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A1628),
+      backgroundColor: const Color(0xFF33231F),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF0A1628), Color(0xFF0F2240), Color(0xFF0A1628)],
+            colors: [Color(0xFF33231F), Color(0xFF4A2D24), Color(0xFF33231F)],
           ),
         ),
         child: SafeArea(

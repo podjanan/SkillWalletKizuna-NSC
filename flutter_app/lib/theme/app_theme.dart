@@ -15,8 +15,8 @@ class AppTheme {
     // OLD base TextTheme: GoogleFonts.luckiestGuyTextTheme
     // NEW: Nunito for all text — matches AppTextStyles.heading/body/label
     TextTheme tt = GoogleFonts.nunitoTextTheme(base.textTheme).apply(
-      bodyColor: Colors.black87,
-      displayColor: Colors.black87,
+      bodyColor: Palette.text,
+      displayColor: Palette.text,
     );
 
     TextStyle withThaiFallback(TextStyle? s) => (s ?? const TextStyle()).merge(
@@ -44,17 +44,29 @@ class AppTheme {
     return base.copyWith(
       scaffoldBackgroundColor: Colors.transparent,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Palette.yellowBright,
-        surface: Palette.cream,
+        seedColor: Palette.terracotta,
+        brightness: Brightness.light,
+      ).copyWith(
+        primary: Palette.terracotta,
+        onPrimary: Colors.white,
+        secondary: Palette.success,
+        onSecondary: Colors.white,
+        surface: Palette.surface,
+        onSurface: Palette.text,
+        outline: Palette.outlineWarm,
+        outlineVariant: Palette.divider,
+        error: Palette.errorStrong,
       ),
+      dividerColor: Palette.divider,
+      disabledColor: Palette.labelGrey.withValues(alpha: .55),
       textTheme: tt,
       primaryTextTheme: tt,
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Palette.sky,
+          backgroundColor: Palette.terracotta,
           foregroundColor: Colors.white,
           elevation: 4,
-          shadowColor: Palette.sky.withValues(alpha: 0.45),
+          shadowColor: Palette.terracotta.withValues(alpha: 0.35),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -66,7 +78,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: Palette.pink,
+          foregroundColor: Palette.terracottaDark,
           textStyle: withThaiFallback(
             const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
@@ -74,28 +86,89 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: Palette.surface,
         hintStyle: withThaiFallback(
-          const TextStyle(color: Colors.black54),
+          const TextStyle(color: Palette.labelGrey),
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: Colors.black.withValues(alpha: .08),
+            color: Palette.outlineWarm,
           ),
         ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Palette.outlineWarm),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Palette.terracotta, width: 1.8),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: Palette.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 2,
+        shadowColor: Palette.terracotta.withValues(alpha: .12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: Palette.outlineWarm),
+        ),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: Palette.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Palette.surface,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: Palette.surface,
+      ),
+      chipTheme: base.chipTheme.copyWith(
+        backgroundColor: Palette.surfaceWarm,
+        selectedColor: Palette.terracotta.withValues(alpha: .18),
+        side: const BorderSide(color: Palette.outlineWarm),
+        labelStyle: const TextStyle(color: Palette.text),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: Palette.terracotta,
+        linearTrackColor: Palette.progressBg,
+        circularTrackColor: Palette.progressBg,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: Palette.surface,
+        indicatorColor: Palette.terracotta.withValues(alpha: .16),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? Palette.terracotta
+                : Palette.labelGrey,
+          ),
+        ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: Palette.terracotta,
+        foregroundColor: Colors.white,
+      ),
+      snackBarTheme: const SnackBarThemeData(
+        backgroundColor: Palette.deepGrey,
+        contentTextStyle: TextStyle(color: Colors.white),
+        actionTextColor: Palette.yellowLight,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black87,
+        foregroundColor: Palette.text,
         centerTitle: true,
         // OLD appBar title: GoogleFonts.luckiestGuy(fontSize: 22, fontWeight: FontWeight.w900)
         titleTextStyle: withThaiFallback(
           GoogleFonts.nunito(
             fontSize: 22,
             fontWeight: FontWeight.w800,
-            color: Colors.black87,
+            color: Palette.text,
           ),
         ),
       ),

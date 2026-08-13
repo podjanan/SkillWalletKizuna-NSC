@@ -34,7 +34,7 @@ class AppTextStyles {
   static TextStyle body(double size, {Color? color, FontWeight? weight}) {
     return GoogleFonts.nunito(
       fontSize: size,
-      color: color ?? Colors.black,
+      color: color ?? Palette.text,
       fontWeight: weight,
     ).copyWith(
       fontFamilyFallback: [_thaiFallback],

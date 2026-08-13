@@ -1032,7 +1032,7 @@ class _DynamicVocabularyGameScreenState
       },
       child: Scaffold(
         backgroundColor: _isTvMode && _screen == _ScreenState.gameplayScreen
-            ? const Color(0xFF071A34)
+            ? const Color(0xFF3B2620)
             : Colors.transparent,
         appBar: _isTvMode && _screen == _ScreenState.gameplayScreen
             ? null
@@ -1146,7 +1146,11 @@ class _DynamicVocabularyGameScreenState
                 _topBadge(Icons.emoji_events_rounded, 'High: $_highScore',
                     Colors.orange),
                 const SizedBox(width: 8),
-                _topBadge(Icons.timer_rounded, _timeLimitLabel, Colors.blue),
+                _topBadge(
+                  Icons.timer_rounded,
+                  _timeLimitLabel,
+                  Palette.terracotta,
+                ),
               ],
             ),
           ],
@@ -1397,7 +1401,7 @@ class _DynamicVocabularyGameScreenState
     final ss = (_secondsLeft % 60).toString().padLeft(2, '0');
 
     return ColoredBox(
-      color: const Color(0xFF071A34),
+      color: const Color(0xFF3B2620),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
         child: Column(
@@ -1419,17 +1423,17 @@ class _DynamicVocabularyGameScreenState
                   padding:
                       const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF103357),
+                    color: const Color(0xFF4F3027),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: const Row(
                     children: [
                       Icon(Icons.tv_rounded,
-                          color: Color(0xFF24AEFF), size: 21),
+                          color: Color(0xFFF3A071), size: 21),
                       SizedBox(width: 7),
                       Text('TV Mode',
                           style: TextStyle(
-                              color: Color(0xFF24AEFF), fontSize: 16)),
+                              color: Color(0xFFF3A071), fontSize: 16)),
                     ],
                   ),
                 ),
@@ -1443,7 +1447,7 @@ class _DynamicVocabularyGameScreenState
                 minHeight: 5,
                 backgroundColor: Colors.white.withValues(alpha: 0.13),
                 valueColor:
-                    const AlwaysStoppedAnimation<Color>(Color(0xFF1DA9FA)),
+                    const AlwaysStoppedAnimation<Color>(Color(0xFFE98B63)),
               ),
             ),
             const SizedBox(height: 8),
@@ -1452,15 +1456,15 @@ class _DynamicVocabularyGameScreenState
                 Text(
                   '${_currentIndex + 1} / ${_words.length}',
                   style:
-                      const TextStyle(color: Color(0xFF24AEFF), fontSize: 13),
+                      const TextStyle(color: Color(0xFFF3A071), fontSize: 13),
                 ),
                 const Spacer(),
                 const Icon(Icons.timer_rounded,
-                    color: Color(0xFF24AEFF), size: 16),
+                    color: Color(0xFFF3A071), size: 16),
                 const SizedBox(width: 5),
                 Text('$mm:$ss',
                     style: const TextStyle(
-                        color: Color(0xFF24AEFF), fontSize: 14)),
+                        color: Color(0xFFF3A071), fontSize: 14)),
               ],
             ),
             const SizedBox(height: 18),
@@ -1471,10 +1475,10 @@ class _DynamicVocabularyGameScreenState
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: const Color(0xFF137FC1)),
+                  border: Border.all(color: const Color(0xFFB95738)),
                   boxShadow: const [
                     BoxShadow(
-                        color: Color(0x4424AEFF),
+                        color: Color(0x44E47751),
                         blurRadius: 28,
                         offset: Offset(0, 8)),
                   ],
@@ -1514,8 +1518,8 @@ class _DynamicVocabularyGameScreenState
                   onPressed: () => _speakWord(item.word),
                   icon: const Icon(Icons.volume_up_rounded),
                   style: IconButton.styleFrom(
-                    foregroundColor: const Color(0xFF24AEFF),
-                    backgroundColor: const Color(0xFF103357),
+                    foregroundColor: const Color(0xFFF3A071),
+                    backgroundColor: const Color(0xFF4F3027),
                   ),
                 ),
                 const SizedBox(width: 22),
@@ -1528,7 +1532,7 @@ class _DynamicVocabularyGameScreenState
                         width: 28,
                         height: 28,
                         child: CircularProgressIndicator(
-                          color: Color(0xFF24AEFF),
+                          color: Color(0xFFF3A071),
                           strokeWidth: 2.5,
                         ),
                       ),

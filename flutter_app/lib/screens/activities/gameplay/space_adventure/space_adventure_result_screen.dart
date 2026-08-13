@@ -76,7 +76,7 @@ class _SpaceAdventureResultScreenState
         const SnackBar(
           content: Text(
               'Sharing is supported on mobile devices. Right-click the image to save on Web!'),
-          backgroundColor: Colors.blueAccent,
+          backgroundColor: Palette.terracotta,
         ),
       );
       return;

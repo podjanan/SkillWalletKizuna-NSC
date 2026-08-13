@@ -133,7 +133,7 @@ class _ChildrenInfoScreenState extends State<ChildrenInfoScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 20, vertical: 16),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFBBDEFB),
+                                color: Palette.surfaceWarm,
                                 borderRadius: BorderRadius.circular(26),
                               ),
                               child: Row(
@@ -207,8 +207,7 @@ class _ChildrenInfoScreenState extends State<ChildrenInfoScreen> {
                           Text(
                             l10n.register_backBtn,
                             style: AppTextStyles.heading(22,
-                                color:
-                                    _isLoading ? Colors.grey : Palette.pink),
+                                color: _isLoading ? Colors.grey : Palette.pink),
                           ),
                         ],
                       ),
@@ -233,8 +232,8 @@ class _ChildrenInfoScreenState extends State<ChildrenInfoScreen> {
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : Text(
@@ -288,8 +287,8 @@ class _ChildrenInfoScreenState extends State<ChildrenInfoScreen> {
                 ),
               ),
               ...options.map((option) => ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 2),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
                     title: Text(
                       option,
                       style: AppTextStyles.body(16, color: Colors.black87),
@@ -386,7 +385,7 @@ class _ChildrenInfoScreenState extends State<ChildrenInfoScreen> {
 
   InputDecoration _dec({String? hint}) => InputDecoration(
         filled: true,
-        fillColor: const Color(0xFFBBDEFB),
+        fillColor: Palette.surfaceWarm,
         hintText: hint,
         hintStyle: AppTextStyles.body(14, color: Colors.black38),
         contentPadding:

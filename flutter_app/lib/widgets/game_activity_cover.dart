@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/palette.dart';
 
 enum GameCoverType { voiceQuest, spaceAdventure, singTogether }
 
@@ -35,9 +36,9 @@ class GameActivityCover extends StatelessWidget {
         break;
       case GameCoverType.singTogether:
         imagePath = 'assets/images/voice_quest_cover.png';
-        fallbackBg = const Color(0xFFE3F2FD);
+        fallbackBg = Palette.surfaceWarm;
         fallbackIcon = Icons.music_note_rounded;
-        fallbackIconColor = const Color(0xFF2196F3);
+        fallbackIconColor = Palette.terracotta;
         break;
     }
 

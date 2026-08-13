@@ -84,7 +84,6 @@ class _MathSimulationActivityScreenState
   bool _isTvMode = false;
   int _totalScoreEarned = 0;
 
-
   @override
   void initState() {
     super.initState();
@@ -261,8 +260,10 @@ class _MathSimulationActivityScreenState
         final idx = int.tryParse(k);
         if (idx != null && _answerControllers[idx] != null) {
           _answerControllers[idx]!.text = v?.toString() ?? '';
-          if (_segmentResults[idx].recognizedText == null || _segmentResults[idx].recognizedText!.isEmpty) {
-            _segmentResults[idx] = _segmentResults[idx].copyWith(recognizedText: v?.toString() ?? '');
+          if (_segmentResults[idx].recognizedText == null ||
+              _segmentResults[idx].recognizedText!.isEmpty) {
+            _segmentResults[idx] = _segmentResults[idx]
+                .copyWith(recognizedText: v?.toString() ?? '');
           }
         }
       });
@@ -384,7 +385,9 @@ class _MathSimulationActivityScreenState
           'id': index + 1,
           'questionIndex': index + 1,
           'question': MathOpDetector.normalizeQuestion(
-            segment['question']?.toString() ?? segment['text']?.toString() ?? '',
+            segment['question']?.toString() ??
+                segment['text']?.toString() ??
+                '',
           ),
           'answer': segment['answer']?.toString() ?? '',
         }
@@ -405,8 +408,9 @@ class _MathSimulationActivityScreenState
       if (response['results'] != null &&
           (response['results'] as List).isNotEmpty) {
         final item = (response['results'] as List).first;
-        final detectedText =
-            item['detectedText']?.toString() ?? item['detectedAnswer']?.toString() ?? '';
+        final detectedText = item['detectedText']?.toString() ??
+            item['detectedAnswer']?.toString() ??
+            '';
         final isCorrect = item['isCorrect'] as bool? ?? false;
         final engine = response['engine']?.toString() ?? 'Gemini Vision AI';
 
@@ -808,7 +812,7 @@ class _MathSimulationActivityScreenState
       },
       child: Scaffold(
         backgroundColor: _isTvMode && _phase == _Phase.running
-            ? const Color(0xFF071A34)
+            ? const Color(0xFF3B2620)
             : const Color(0xFFFFFDF6), // warm cream background
         appBar: _phase != _Phase.scanning &&
                 !(_isTvMode && _phase == _Phase.running)
@@ -914,7 +918,7 @@ class _MathSimulationActivityScreenState
     final progress = (_currentQuestionIndex + 1) / totalQuestions;
 
     return ColoredBox(
-      color: const Color(0xFF071A34),
+      color: const Color(0xFF3B2620),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
@@ -937,17 +941,17 @@ class _MathSimulationActivityScreenState
                     padding:
                         const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF103357),
+                      color: const Color(0xFF4F3027),
                       borderRadius: BorderRadius.circular(22),
                     ),
                     child: const Row(
                       children: [
                         Icon(Icons.tv_rounded,
-                            color: Color(0xFF24AEFF), size: 21),
+                            color: Color(0xFFF3A071), size: 21),
                         SizedBox(width: 7),
                         Text('TV Mode',
                             style: TextStyle(
-                                color: Color(0xFF24AEFF), fontSize: 16)),
+                                color: Color(0xFFF3A071), fontSize: 16)),
                       ],
                     ),
                   ),
@@ -961,7 +965,7 @@ class _MathSimulationActivityScreenState
                   minHeight: 5,
                   backgroundColor: Colors.white.withValues(alpha: 0.13),
                   valueColor:
-                      const AlwaysStoppedAnimation<Color>(Color(0xFF1DA9FA)),
+                      const AlwaysStoppedAnimation<Color>(Color(0xFFE98B63)),
                 ),
               ),
               const SizedBox(height: 8),
@@ -970,7 +974,7 @@ class _MathSimulationActivityScreenState
                 child: Text(
                   '${_currentQuestionIndex + 1} / $totalQuestions',
                   style:
-                      const TextStyle(color: Color(0xFF24AEFF), fontSize: 13),
+                      const TextStyle(color: Color(0xFFF3A071), fontSize: 13),
                 ),
               ),
               const Spacer(flex: 2),
@@ -979,12 +983,12 @@ class _MathSimulationActivityScreenState
                     const EdgeInsets.symmetric(horizontal: 25, vertical: 10),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF35B8FF), Color(0xFF1689DC)],
+                    colors: [Color(0xFFF3A071), Color(0xFFBF5738)],
                   ),
                   borderRadius: BorderRadius.circular(28),
                   boxShadow: const [
                     BoxShadow(
-                        color: Color(0x5524AEFF),
+                        color: Color(0x55E47751),
                         blurRadius: 24,
                         offset: Offset(0, 8)),
                   ],
@@ -1005,10 +1009,10 @@ class _MathSimulationActivityScreenState
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFF163D66), Color(0xFF123557)],
+                    colors: [Color(0xFF5A352A), Color(0xFF442A22)],
                   ),
                   borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: const Color(0xFF137FC1)),
+                  border: Border.all(color: const Color(0xFFB95738)),
                 ),
                 child: imageUrl.isNotEmpty
                     ? AspectRatio(
@@ -1051,7 +1055,7 @@ class _MathSimulationActivityScreenState
                         margin: const EdgeInsets.symmetric(horizontal: 3),
                         decoration: BoxDecoration(
                           color: index == _currentQuestionIndex
-                              ? const Color(0xFF20AEFF)
+                              ? const Color(0xFFF3A071)
                               : Colors.white.withValues(alpha: 0.28),
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -1123,7 +1127,7 @@ class _MathSimulationActivityScreenState
     ];
     return Material(
       color: primary
-          ? const Color(0xFF209FEF)
+          ? const Color(0xFFE98B63)
           : Colors.white.withValues(alpha: enabled ? 0.08 : 0.03),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
@@ -1262,7 +1266,8 @@ class _MathSimulationActivityScreenState
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     height: isActive ? 8 : 6,
-                    margin: const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 3, vertical: 4),
                     decoration: BoxDecoration(
                       color: color,
                       borderRadius: BorderRadius.circular(4),
@@ -1549,7 +1554,6 @@ class _MathSimulationActivityScreenState
               ),
             ],
           ),
-
           if (hasImage) ...[
             const SizedBox(height: 14),
             ClipRRect(
@@ -1594,9 +1598,7 @@ class _MathSimulationActivityScreenState
               ),
             ),
           ],
-
           const SizedBox(height: 14),
-
           SizedBox(
             width: double.infinity,
             height: 48,
@@ -1610,7 +1612,9 @@ class _MathSimulationActivityScreenState
                           color: Colors.white, strokeWidth: 2.5),
                     )
                   : Icon(
-                      hasImage ? Icons.camera_alt_rounded : Icons.photo_camera_rounded,
+                      hasImage
+                          ? Icons.camera_alt_rounded
+                          : Icons.photo_camera_rounded,
                       color: Colors.white),
               label: Text(
                 isScanning
@@ -1621,16 +1625,13 @@ class _MathSimulationActivityScreenState
                 style: AppTextStyles.heading(15, color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: status == true
-                    ? Palette.success
-                    : Palette.sky,
+                backgroundColor: status == true ? Palette.success : Palette.sky,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),
                 elevation: 2,
               ),
             ),
           ),
-
           const SizedBox(height: 10),
           Row(
             children: [
@@ -1669,7 +1670,8 @@ class _MathSimulationActivityScreenState
                     children: [
                       Icon(Icons.check,
                           size: 16,
-                          color: status == true ? Colors.white : Palette.success),
+                          color:
+                              status == true ? Colors.white : Palette.success),
                       const SizedBox(width: 4),
                       Text('ถูก',
                           style: TextStyle(

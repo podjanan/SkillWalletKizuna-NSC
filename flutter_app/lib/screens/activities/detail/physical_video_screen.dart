@@ -516,7 +516,8 @@ class _PhysicalVideoScreenState extends State<PhysicalVideoScreen> {
                       child: GestureDetector(
                         onTap: () async {
                           // Clear WebView to stop any audio/video playing in the background
-                          _webController?.loadData(data: '<html><body></body></html>');
+                          _webController?.loadData(
+                              data: '<html><body></body></html>');
                           if (Platform.isIOS) {
                             await _webController?.pauseAllMediaPlayback();
                           }
@@ -542,7 +543,10 @@ class _PhysicalVideoScreenState extends State<PhysicalVideoScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Palette.sky, Color(0xFF0DA8F4)],
+                              colors: [
+                                Palette.terracottaLight,
+                                Palette.terracottaDark
+                              ],
                             ),
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: Palette.buttonShadow,

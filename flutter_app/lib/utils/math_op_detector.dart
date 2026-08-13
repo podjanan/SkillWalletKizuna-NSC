@@ -4,25 +4,25 @@ class MathOpDetector {
   MathOpDetector._();
 
   // ── Display symbols (Unicode) ──────────────────────────
-  static const String plus     = '+';
-  static const String minus    = '−';   // U+2212 MINUS SIGN
-  static const String multiply = '×';   // U+00D7 MULTIPLICATION SIGN
-  static const String divide   = '÷';   // U+00F7 DIVISION SIGN
+  static const String plus = '+';
+  static const String minus = '−'; // U+2212 MINUS SIGN
+  static const String multiply = '×'; // U+00D7 MULTIPLICATION SIGN
+  static const String divide = '÷'; // U+00F7 DIVISION SIGN
 
   // ── Colour per operator (hex, no Flutter dependency) ──
   // Matches Palette: successAlt / sky / warning / pink
   static const Map<String, int> opColorValue = {
-    plus:     0xFF66BB6A, // Palette.successAlt  — green
-    minus:    0xFF0D92F4, // Palette.sky          — blue
+    plus: 0xFF66BB6A, // Palette.successAlt  — green
+    minus: 0xFFE47751, // Palette.terracotta   — warm orange
     multiply: 0xFFFF9800, // Palette.warning      — orange
-    divide:   0xFFEA5B6F, // Palette.pink         — pink
+    divide: 0xFFEA5B6F, // Palette.pink         — pink
   };
 
   // ── Regex — operator must sit between two digit characters ──
-  static final _plusRe     = RegExp(r'\d\s*\+\s*\d');
-  static final _minusRe    = RegExp(r'\d\s*[-−]\s*\d');
+  static final _plusRe = RegExp(r'\d\s*\+\s*\d');
+  static final _minusRe = RegExp(r'\d\s*[-−]\s*\d');
   static final _multiplyRe = RegExp(r'\d\s*[*×xX]\s*\d');
-  static final _divideRe   = RegExp(r'\d\s*[/÷]\s*\d');
+  static final _divideRe = RegExp(r'\d\s*[/÷]\s*\d');
 
   // ── Public API ─────────────────────────────────────────
 
@@ -34,15 +34,19 @@ class MathOpDetector {
     final segs = segments is List ? segments : <dynamic>[];
 
     final counts = <String, int>{
-      plus: 0, minus: 0, multiply: 0, divide: 0,
+      plus: 0,
+      minus: 0,
+      multiply: 0,
+      divide: 0,
     };
 
     for (final seg in segs) {
       final text = (seg['question'] ?? seg['text'] ?? '').toString();
-      counts[plus]     = counts[plus]!     + _plusRe.allMatches(text).length;
-      counts[minus]    = counts[minus]!    + _minusRe.allMatches(text).length;
-      counts[multiply] = counts[multiply]! + _multiplyRe.allMatches(text).length;
-      counts[divide]   = counts[divide]!   + _divideRe.allMatches(text).length;
+      counts[plus] = counts[plus]! + _plusRe.allMatches(text).length;
+      counts[minus] = counts[minus]! + _minusRe.allMatches(text).length;
+      counts[multiply] =
+          counts[multiply]! + _multiplyRe.allMatches(text).length;
+      counts[divide] = counts[divide]! + _divideRe.allMatches(text).length;
     }
 
     return counts.entries
