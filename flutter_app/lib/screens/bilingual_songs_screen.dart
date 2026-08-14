@@ -25,7 +25,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
   List<String> _extraChildIds = [];
   bool _isCreatingOwnSong = false;
   String _customInputType = 'vocabulary';
-  String _customMusicStyle = 'เพลงเด็กสนุกสนาน';
+  String _customMusicStyle = 'kids';
   final TextEditingController _customSongPromptController =
       TextEditingController();
 
@@ -211,6 +211,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFFFFFCEB),
       body: SafeArea(
@@ -261,7 +262,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                             border: Border.all(color: Palette.sky, width: 2),
                           ),
                           child: Text(
-                            'EASY',
+                            l.sing_difficultyEasy,
                             style: AppTextStyles.label(12, color: Palette.sky),
                           ),
                         ),
@@ -283,7 +284,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                                       size: 16, color: Colors.amber),
                                   const SizedBox(width: 6),
                                   Text(
-                                    'High: 100',
+                                    l.sing_highScore,
                                     style: AppTextStyles.label(12,
                                         color: Colors.black87),
                                   ),
@@ -307,7 +308,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                                       size: 16, color: Palette.sky),
                                   const SizedBox(width: 6),
                                   Text(
-                                    '10 Min',
+                                    l.sing_durationMinutes,
                                     style: AppTextStyles.label(12,
                                         color: Colors.black87),
                                   ),
@@ -359,7 +360,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                                     size: 16, color: Colors.white),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Language',
+                                  l.sing_languageBadge,
                                   style: AppTextStyles.label(13,
                                       color: Colors.white),
                                 ),
@@ -369,8 +370,8 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                           const SizedBox(height: 12),
 
                           // Heading Text
-                          const Text(
-                            'Sing the song,\nwin the stars!',
+                          Text(
+                            l.sing_heroTitle,
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 26,
@@ -386,8 +387,8 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                             children: [
                               Expanded(
                                 child: _buildSongSourceCard(
-                                  title: 'เลือกเพลงจากเรา',
-                                  subtitle: 'เพลงพร้อมเล่น',
+                                  title: l.sing_selectOurSongs,
+                                  subtitle: l.sing_readyToPlay,
                                   icon: Icons.library_music_rounded,
                                   selected: !_isCreatingOwnSong,
                                   onTap: () => setState(
@@ -397,8 +398,8 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: _buildSongSourceCard(
-                                  title: 'สร้างเพลงเอง',
-                                  subtitle: 'คำศัพท์ / ประโยค',
+                                  title: l.sing_createOwnSong,
+                                  subtitle: l.sing_wordsOrSentences,
                                   icon: Icons.auto_awesome_rounded,
                                   selected: _isCreatingOwnSong,
                                   onTap: () =>
@@ -412,7 +413,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                           // Song Selector Dropdown
                           if (!_isCreatingOwnSong && _songs.isNotEmpty) ...[
                             _buildLabelInput(
-                              label: 'Choose Song',
+                              label: l.sing_chooseSong,
                               child: DropdownButtonHideUnderline(
                                 child: DropdownButton<BilingualSongModel>(
                                   value: _selectedSong ?? _songs.first,
@@ -471,15 +472,17 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                                             CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            'เด็กที่จะร้องเพลงด้วยกัน (${_extraChildIds.length + 1} คน)',
+                                            l.sing_singingChildren(
+                                                _extraChildIds.length + 1),
                                             style: AppTextStyles.label(13,
                                                 color: Palette.text),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
                                             _extraChildIds.isEmpty
-                                                ? 'แตะที่นี่เพื่อเลือกเด็กเพิ่ม'
-                                                : '+ เพิ่มเด็กเรียบร้อยแล้ว ${_extraChildIds.length} คน',
+                                                ? l.sing_tapAddChild
+                                                : l.sing_childrenAdded(
+                                                    _extraChildIds.length),
                                             style: AppTextStyles.body(11,
                                                 color: _extraChildIds.isEmpty
                                                     ? Colors.grey
@@ -520,7 +523,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                                         size: 24, color: Colors.white),
                                     const SizedBox(width: 8),
                                     Text(
-                                      'START SINGING',
+                                      l.sing_startSinging,
                                       style: AppTextStyles.label(15,
                                           color: Colors.white),
                                     ),
@@ -538,8 +541,8 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                                 borderRadius: BorderRadius.circular(18),
                                 border: Border.all(color: Colors.grey.shade300),
                               ),
-                              child: const Text(
-                                'ยังไม่มีเพลงจากระบบในขณะนี้',
+                              child: Text(
+                                l.sing_noSongs,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(color: Colors.grey),
                               ),
@@ -602,7 +605,14 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
   }
 
   Widget _buildCustomSongComposer() {
+    final l = AppLocalizations.of(context)!;
     final isVocabulary = _customInputType == 'vocabulary';
+    final musicStyles = <String, String>{
+      'kids': l.sing_styleKids,
+      'dance': l.sing_styleDance,
+      'warm': l.sing_styleWarm,
+      'hiphop': l.sing_styleHipHop,
+    };
 
     return Container(
       width: double.infinity,
@@ -627,12 +637,12 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                     color: Colors.orange, size: 22),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'สร้างเพลงฝึกจำของครอบครัว',
+                      l.sing_familySongTitle,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w900,
@@ -640,7 +650,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                       ),
                     ),
                     Text(
-                      'ใส่เนื้อหาที่อยากให้เด็กจดจำ แล้วนำไปแต่งเป็นเพลง',
+                      l.sing_familySongSubtitle,
                       style: TextStyle(fontSize: 11, color: Colors.black54),
                     ),
                   ],
@@ -649,8 +659,8 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
-            'อยากฝึกแบบไหน?',
+          Text(
+            l.sing_trainingType,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
@@ -667,7 +677,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                   avatar: Icon(Icons.abc_rounded,
                       size: 20,
                       color: isVocabulary ? Colors.white : Palette.sky),
-                  label: const Text('คำศัพท์'),
+                  label: Text(l.sing_vocabulary),
                   labelStyle: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: isVocabulary ? Colors.white : Colors.black87,
@@ -688,7 +698,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                   avatar: Icon(Icons.short_text_rounded,
                       size: 20,
                       color: !isVocabulary ? Colors.white : Palette.sky),
-                  label: const Text('รูปประโยค'),
+                  label: Text(l.sing_sentence),
                   labelStyle: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: !isVocabulary ? Colors.white : Colors.black87,
@@ -706,9 +716,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
           ),
           const SizedBox(height: 14),
           Text(
-            isVocabulary
-                ? 'คำศัพท์ที่อยากให้เด็กฝึกจำ'
-                : 'รูปประโยคที่อยากให้เด็กฝึกจำ',
+            isVocabulary ? l.sing_vocabularyPrompt : l.sing_sentencePrompt,
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
@@ -722,9 +730,8 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
             maxLines: 5,
             textInputAction: TextInputAction.newline,
             decoration: InputDecoration(
-              hintText: isVocabulary
-                  ? 'เช่น apple, banana, orange, happy'
-                  : 'เช่น I brush my teeth every morning.\nฉันแปรงฟันทุกเช้า',
+              hintText:
+                  isVocabulary ? l.sing_vocabularyHint : l.sing_sentenceHint,
               hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
               filled: true,
               fillColor: Colors.white,
@@ -745,21 +752,16 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
           ),
           const SizedBox(height: 14),
           _buildLabelInput(
-            label: 'แนวเพลง',
+            label: l.sing_musicStyle,
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _customMusicStyle,
                 isExpanded: true,
                 icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                items: const [
-                  'เพลงเด็กสนุกสนาน',
-                  'ป๊อปเต้นตามได้',
-                  'เพลงช้าอบอุ่น',
-                  'ฮิปฮอปสำหรับเด็ก',
-                ]
+                items: musicStyles.entries
                     .map((style) => DropdownMenuItem(
-                          value: style,
-                          child: Text(style),
+                          value: style.key,
+                          child: Text(style.value),
                         ))
                     .toList(),
                 onChanged: (value) {
@@ -777,15 +779,14 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
             child: ElevatedButton.icon(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                        'UI พร้อมแล้ว — ระบบสร้างเพลงจะเชื่อมต่อในขั้นตอนถัดไป'),
+                  SnackBar(
+                    content: Text(l.sing_uiOnlyNotice),
                   ),
                 );
               },
               icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
               label: Text(
-                'สร้างเพลงจากเนื้อหานี้',
+                l.sing_createSongButton,
                 style: AppTextStyles.label(15, color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(

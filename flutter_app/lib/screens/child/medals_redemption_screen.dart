@@ -1557,7 +1557,22 @@ class _MedalsRedemptionScreenState extends State<MedalsRedemptionScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  log['action'] as String,
+                                  log['actionType'] == 'redeem'
+                                      ? AppLocalizations.of(context)!
+                                          .history_redeemed(
+                                          (log['actionName'] as String?)
+                                                      ?.isNotEmpty ==
+                                                  true
+                                              ? log['actionName'] as String
+                                              : AppLocalizations.of(context)!
+                                                  .history_rewardFallback,
+                                        )
+                                      : ((log['actionName'] as String?)
+                                                  ?.isNotEmpty ==
+                                              true
+                                          ? log['actionName'] as String
+                                          : AppLocalizations.of(context)!
+                                              .medalredemption_activity),
                                   style: AppTextStyles.heading(16),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,

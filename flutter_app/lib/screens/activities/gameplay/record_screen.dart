@@ -148,9 +148,11 @@ class _RecordScreenState extends State<RecordScreen> {
             debugPrint('Web startStream not supported: $e');
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                    content: Text(
-                        'Recording stream not supported in this browser.')),
+                SnackBar(
+                  content: Text(
+                    AppLocalizations.of(context)!.record_streamUnsupported,
+                  ),
+                ),
               );
             }
             setState(() {

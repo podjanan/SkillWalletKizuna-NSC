@@ -122,107 +122,111 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 child: LayoutBuilder(
                   builder: (context, constraints) => SingleChildScrollView(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
                       child: IntrinsicHeight(
                         child: Column(
                           children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(5, 4, 5, 0),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: SizedBox(
-                            width: double.infinity,
-                            height: math.max(
-                              240,
-                              math.min(
-                                (constraints.maxWidth - 10) * 470 / 366,
-                                constraints.maxHeight - 250,
-                              ),
-                            ),
-                            child: Image.asset(
-                              'assets/images/kizuna_welcome_children.png',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text('KIZUNA', style: AppTextStyles.brand(44)),
-                      const SizedBox(height: 7),
-                      Text(
-                        "Let's get started!\nAlready part of our community? Welcome back.\nNew here? Join us to learn and grow together.",
-                        textAlign: TextAlign.center,
-                        style: AppTextStyles.body(
-                          13,
-                          color: Palette.authGrey,
-                        ).copyWith(height: 1.25),
-                      ),
-                      SizedBox(
-                        height: math.min(64, constraints.maxHeight * .07),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(27, 0, 25, 28),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: SizedBox(
-                                height: 31,
-                                child: OutlinedButton(
-                                  onPressed:
-                                      isLoading ? null : _showDisclaimerDialog,
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Palette.terracotta,
-                                    backgroundColor: Colors.white,
-                                    padding: EdgeInsets.zero,
-                                    side: const BorderSide(
-                                      color: Palette.terracotta,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(9),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(5, 4, 5, 0),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  height: math.max(
+                                    240,
+                                    math.min(
+                                      (constraints.maxWidth - 10) * 470 / 366,
+                                      constraints.maxHeight - 250,
                                     ),
                                   ),
-                                  child: Text(
-                                    'Disclaimer',
-                                    style: AppTextStyles.heading(
-                                      15,
-                                      color: Palette.terracotta,
-                                    ),
+                                  child: Image.asset(
+                                    'assets/images/kizuna_welcome_children.png',
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: SizedBox(
-                                height: 31,
-                                child: ElevatedButton(
-                                  onPressed: isLoading
-                                      ? null
-                                      : () => Navigator.pushNamed(
-                                            context,
-                                            AppRoutes.emailLogin,
+                            const SizedBox(height: 2),
+                            Text('KIZUNA', style: AppTextStyles.brand(44)),
+                            const SizedBox(height: 7),
+                            Text(
+                              l10n.welcome_intro,
+                              textAlign: TextAlign.center,
+                              style: AppTextStyles.body(
+                                13,
+                                color: Palette.authGrey,
+                              ).copyWith(height: 1.25),
+                            ),
+                            SizedBox(
+                              height: math.min(64, constraints.maxHeight * .07),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(27, 0, 25, 28),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 31,
+                                      child: OutlinedButton(
+                                        onPressed: isLoading
+                                            ? null
+                                            : _showDisclaimerDialog,
+                                        style: OutlinedButton.styleFrom(
+                                          foregroundColor: Palette.terracotta,
+                                          backgroundColor: Colors.white,
+                                          padding: EdgeInsets.zero,
+                                          side: const BorderSide(
+                                            color: Palette.terracotta,
                                           ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Palette.terracotta,
-                                    padding: EdgeInsets.zero,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(9),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(9),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          l10n.common_disclaimer,
+                                          style: AppTextStyles.heading(
+                                            15,
+                                            color: Palette.terracotta,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  child: Text(
-                                    'Log In',
-                                    style: AppTextStyles.heading(
-                                      15,
-                                      color: Colors.white,
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: SizedBox(
+                                      height: 31,
+                                      child: ElevatedButton(
+                                        onPressed: isLoading
+                                            ? null
+                                            : () => Navigator.pushNamed(
+                                                  context,
+                                                  AppRoutes.emailLogin,
+                                                ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Palette.terracotta,
+                                          padding: EdgeInsets.zero,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(9),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          l10n.common_login,
+                                          style: AppTextStyles.heading(
+                                            15,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
                           ],
                         ),
                       ),

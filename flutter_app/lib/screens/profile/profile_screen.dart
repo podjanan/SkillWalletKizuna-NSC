@@ -263,7 +263,8 @@ class ProfileScreenState extends State<ProfileScreen> {
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
+                    SnackBar(
+                        content: Text(l.common_errorGeneric(e.toString()))),
                   );
                 }
               }

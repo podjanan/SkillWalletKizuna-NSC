@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../theme/palette.dart';
 import '../../theme/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 
 class AuthLoadingScreen extends StatelessWidget {
   const AuthLoadingScreen({super.key});
@@ -23,13 +24,13 @@ class AuthLoadingScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              'กำลังโหลด...',
+              AppLocalizations.of(context)!.common_loading,
               style: AppTextStyles.body(18,
                   color: Palette.sky, weight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
             Text(
-              'กรุณารอสักครู่',
+              AppLocalizations.of(context)!.common_pleaseWait,
               style: AppTextStyles.body(14, color: Colors.black54),
             ),
           ],

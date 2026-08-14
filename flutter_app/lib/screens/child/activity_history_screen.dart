@@ -31,6 +31,20 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
   String get _normalizedGameName =>
       _normalizeCategory(widget.gameName) ?? widget.gameName;
 
+  String _localizedGameName(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    switch (_normalizedGameName) {
+      case 'ด้านภาษา':
+        return l.childprofile_language;
+      case 'ด้านร่างกาย':
+        return l.childprofile_physical;
+      case 'ด้านคำนวณ':
+        return l.childprofile_calculation;
+      default:
+        return widget.gameName;
+    }
+  }
+
   Color get _accent {
     switch (_normalizedGameName) {
       case 'ด้านภาษา':
@@ -164,7 +178,7 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      widget.gameName,
+                      _localizedGameName(context),
                       style: AppTextStyles.heading(
                         22,
                         color: Palette.terracotta,
@@ -283,7 +297,7 @@ class _ActivityHistoryScreenState extends State<ActivityHistoryScreen> {
           const SizedBox(height: 8),
           Text(
             AppLocalizations.of(context)!
-                .activityhistory_inCategory(widget.gameName),
+                .activityhistory_inCategory(_localizedGameName(context)),
             style: AppTextStyles.body(16, color: Colors.grey),
           ),
         ],

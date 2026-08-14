@@ -32,16 +32,17 @@ class Palette {
   static const bluePill = Color(0xFFF0AA85);
 
   // ── Semantic ─────────────────────────────────────────
-  static const success = Color(0xFF8CAF7F);
-  static const successAlt = Color(0xFF76A06F);
-  static const successDark = Color(0xFF577F55);
+  // Fresh, saturated greens used by success states, progress and confirm CTAs.
+  static const success = Color(0xFF22C55E);
+  static const successAlt = Color(0xFF16A34A);
+  static const successDark = Color(0xFF15803D);
   static const error = Color(0xFFFF8A8A);
   static const errorStrong = Color(0xFFE85C5C);
   static const warning = Color(0xFFF09A3E);
   static const warningLight = Color(0xFFF7B968);
 
   // ── Accents ──────────────────────────────────────────
-  static const teal = Color(0xFF7EA98A); // muted botanical secondary
+  static const teal = Color(0xFF10B981);
   static const pink = Color(0xFFE7866F);
   static const purple = Color(0xFFC78B68);
   static const yellow = Color(0xFFF3C96B);
@@ -79,7 +80,7 @@ class Palette {
   static LinearGradient get successGradient => const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [Color(0xFFA8C49B), successDark],
+        colors: [Color(0xFF4ADE80), successAlt],
       );
 
   /// Danger / delete button gradient

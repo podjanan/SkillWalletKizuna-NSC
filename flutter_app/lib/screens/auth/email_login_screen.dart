@@ -47,10 +47,14 @@ class _GoogleMarkPainter extends CustomPainter {
       ..strokeWidth = 4
       ..strokeCap = StrokeCap.butt;
     const sweep = 1.35;
-    canvas.drawArc(rect, -0.25, sweep, false, paint..color = const Color(0xFF4285F4));
-    canvas.drawArc(rect, 1.10, sweep, false, paint..color = const Color(0xFF34A853));
-    canvas.drawArc(rect, 2.45, sweep, false, paint..color = const Color(0xFFFBBC05));
-    canvas.drawArc(rect, 3.80, sweep, false, paint..color = const Color(0xFFEA4335));
+    canvas.drawArc(
+        rect, -0.25, sweep, false, paint..color = const Color(0xFF4285F4));
+    canvas.drawArc(
+        rect, 1.10, sweep, false, paint..color = const Color(0xFF34A853));
+    canvas.drawArc(
+        rect, 2.45, sweep, false, paint..color = const Color(0xFFFBBC05));
+    canvas.drawArc(
+        rect, 3.80, sweep, false, paint..color = const Color(0xFFEA4335));
     canvas.drawLine(
       Offset(size.width * .53, size.height * .52),
       Offset(size.width - 1.5, size.height * .52),
@@ -186,8 +190,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             size: 20,
                           ),
                           onPressed: () => setState(() {
-                            _obscureConfirmPassword =
-                                !_obscureConfirmPassword;
+                            _obscureConfirmPassword = !_obscureConfirmPassword;
                           }),
                         ),
                         validator: (value) {
@@ -234,7 +237,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                       const SizedBox(height: 24),
                       _socialButton(
                         icon: const _GoogleMark(),
-                        label: 'Continue with Google',
+                        label: l10n.common_continueGoogle,
                         provider: 'google',
                       ),
                       const SizedBox(height: 12),
@@ -252,7 +255,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                             size: 16,
                           ),
                         ),
-                        label: 'Continue with Facebook',
+                        label: l10n.common_continueFacebook,
                         provider: 'facebook',
                       ),
                     ],
@@ -260,9 +263,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                     Center(
                       child: TextButton(
                         onPressed: () => setState(() {
-                          _mode = isRegister
-                              ? _AuthMode.login
-                              : _AuthMode.register;
+                          _mode =
+                              isRegister ? _AuthMode.login : _AuthMode.register;
                           _formKey.currentState?.reset();
                         }),
                         child: Text.rich(
@@ -428,8 +430,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 const TextSpan(text: ' '),
                 TextSpan(
                   text: l10n.auth_termsOfService,
-                  style:
-                      AppTextStyles.body(14, color: Palette.terracotta).copyWith(
+                  style: AppTextStyles.body(14, color: Palette.terracotta)
+                      .copyWith(
                     decoration: TextDecoration.underline,
                   ),
                   recognizer: TapGestureRecognizer()
@@ -438,8 +440,8 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 TextSpan(text: ' ${l10n.auth_and} '),
                 TextSpan(
                   text: l10n.auth_privacyPolicy,
-                  style:
-                      AppTextStyles.body(14, color: Palette.terracotta).copyWith(
+                  style: AppTextStyles.body(14, color: Palette.terracotta)
+                      .copyWith(
                     decoration: TextDecoration.underline,
                   ),
                   recognizer: TapGestureRecognizer()

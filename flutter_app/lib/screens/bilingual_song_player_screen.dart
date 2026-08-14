@@ -5,6 +5,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:media_kit/media_kit.dart' hide PlayerState;
 import 'package:media_kit_video/media_kit_video.dart';
+import '../l10n/app_localizations.dart';
 import '../models/bilingual_song_model.dart';
 import '../services/api_config.dart';
 import '../theme/app_text_styles.dart';
@@ -205,6 +206,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final isThai = Localizations.localeOf(context).languageCode == 'th';
     return Scaffold(
       backgroundColor: const Color(0xFFFFFCEB), // Warm Cream Voice Quest Theme
       body: SafeArea(
@@ -224,7 +227,9 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                     child: Column(
                       children: [
                         Text(
-                          widget.song.titleEn,
+                          isThai && widget.song.titleTh.isNotEmpty
+                              ? widget.song.titleTh
+                              : widget.song.titleEn,
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w900,
@@ -233,16 +238,6 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                           textAlign: TextAlign.center,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (widget.song.titleTh.isNotEmpty)
-                          Text(
-                            widget.song.titleTh,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
                       ],
                     ),
                   ),
@@ -254,8 +249,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                       size: 24,
                     ),
                     tooltip: _showGuitarChords
-                        ? 'ซ่อนคอร์ดกีต้าร์'
-                        : 'แสดงคอร์ดกีต้าร์ผู้ปกครอง',
+                        ? l.sing_hideChords
+                        : l.sing_showChords,
                     onPressed: () {
                       setState(() {
                         _showGuitarChords = !_showGuitarChords;
@@ -264,8 +259,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                         SnackBar(
                           content: Text(
                             _showGuitarChords
-                                ? '🎸 เปิดโหมดคอร์ดกีต้าร์สำหรับผู้ปกครองแล้ว'
-                                : '🙈 ซ่อนคอร์ดกีต้าร์แล้ว',
+                                ? '🎸 ${l.sing_chordsShown}'
+                                : '🙈 ${l.sing_chordsHidden}',
                           ),
                           duration: const Duration(seconds: 1),
                         ),
@@ -395,9 +390,9 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
-                                        child: const Text(
-                                          'วิดีโอเต้นจะเล่นพร้อมเพลง',
-                                          style: TextStyle(
+                                        child: Text(
+                                          l.sing_videoSyncHint,
+                                          style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
@@ -446,8 +441,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                               const SizedBox(width: 8),
                               Text(
                                 (_imagePath != null || _videoPath != null)
-                                    ? 'แนบไฟล์หลักฐานแล้ว'
-                                    : 'ถ่ายรูป / อัดคลิปวิดีโอหลักฐาน',
+                                    ? l.sing_evidenceAttached
+                                    : l.sing_captureEvidence,
                                 style: AppTextStyles.label(13,
                                     color: _showMediaSection
                                         ? Palette.sky
@@ -462,8 +457,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                     color: Palette.success,
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: const Text('✓ แนบแล้ว',
-                                      style: TextStyle(
+                                  child: Text('✓ ${l.sing_attached}',
+                                      style: const TextStyle(
                                           fontSize: 10,
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold)),
@@ -495,8 +490,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                 _handleMediaSelection(isVideo: true),
                             icon: const Icon(Icons.videocam_rounded,
                                 size: 18, color: Palette.sky),
-                            label: const Text('อัดคลิปวิดีโอ',
-                                style: TextStyle(
+                            label: Text(l.sing_recordVideo,
+                                style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     color: Palette.sky)),
@@ -516,8 +511,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                 _handleMediaSelection(isVideo: false),
                             icon: const Icon(Icons.camera_alt_rounded,
                                 size: 18, color: Colors.amber),
-                            label: const Text('ถ่ายรูปภาพ',
-                                style: TextStyle(
+                            label: Text(l.sing_takePhoto,
+                                style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.amber)),
@@ -630,7 +625,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                                     color: Palette.sky),
                                                 const SizedBox(height: 4),
                                                 Text(
-                                                  'คลิกเปิดคลิป 🎥',
+                                                  l.sing_openVideo,
                                                   style: AppTextStyles.label(12,
                                                       color: Colors.white),
                                                 ),
@@ -826,7 +821,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                 size: 18, color: Colors.amber),
                             const SizedBox(width: 6),
                             Text(
-                              'คำศัพท์น่ารู้ประจำเพลง:',
+                              l.sing_songVocabulary,
                               style: AppTextStyles.label(13,
                                   color: Colors.black87),
                             ),
@@ -901,7 +896,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
         ),
       ),
       bottomNavigationBar: StickyBottomButton(
-        label: 'เสร็จสิ้น & ให้คะแนนเด็ก (Finish & Score)',
+        label: AppLocalizations.of(context)!.common_finish,
         onPressed: _handleFinish,
         color: Palette.success,
       ),
@@ -927,12 +922,13 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
           children: [
             if (word.phonetic != null && word.phonetic!.isNotEmpty)
               Text(
-                'คำอ่าน: ${word.phonetic}',
+                AppLocalizations.of(context)!
+                    .sing_pronunciation(word.phonetic!),
                 style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
             const SizedBox(height: 8),
             Text(
-              'คำแปล: ${word.thaiMeaning}',
+              AppLocalizations.of(context)!.sing_translation(word.thaiMeaning),
               style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -943,9 +939,9 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('ตกลง',
-                style:
-                    TextStyle(color: Palette.sky, fontWeight: FontWeight.bold)),
+            child: Text(AppLocalizations.of(context)!.common_ok,
+                style: const TextStyle(
+                    color: Palette.sky, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

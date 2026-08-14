@@ -1789,4 +1789,877 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get math_simulation_nextBtn => 'NEXT';
+
+  @override
+  String get sing_languageBadge => 'Language';
+
+  @override
+  String get sing_heroTitle => 'Sing the song,\nwin the stars!';
+
+  @override
+  String get sing_selectOurSongs => 'Choose Our Songs';
+
+  @override
+  String get sing_readyToPlay => 'Ready to play';
+
+  @override
+  String get sing_createOwnSong => 'Create Your Own';
+
+  @override
+  String get sing_wordsOrSentences => 'Words / Sentences';
+
+  @override
+  String get sing_chooseSong => 'Choose Song';
+
+  @override
+  String sing_singingChildren(int count) {
+    return 'Children singing together ($count)';
+  }
+
+  @override
+  String get sing_tapAddChild => 'Tap here to add children';
+
+  @override
+  String sing_childrenAdded(int count) {
+    return 'Added $count more child(ren)';
+  }
+
+  @override
+  String get sing_startSinging => 'START SINGING';
+
+  @override
+  String get sing_noSongs => 'No songs are available right now';
+
+  @override
+  String get sing_familySongTitle => 'Create a Family Memory Song';
+
+  @override
+  String get sing_familySongSubtitle =>
+      'Enter something your child should remember and turn it into a song';
+
+  @override
+  String get sing_trainingType => 'What would you like to practice?';
+
+  @override
+  String get sing_vocabulary => 'Vocabulary';
+
+  @override
+  String get sing_sentence => 'Sentence';
+
+  @override
+  String get sing_vocabularyPrompt => 'Words for your child to remember';
+
+  @override
+  String get sing_sentencePrompt => 'Sentences for your child to remember';
+
+  @override
+  String get sing_vocabularyHint => 'e.g. apple, banana, orange, happy';
+
+  @override
+  String get sing_sentenceHint => 'e.g. I brush my teeth every morning.';
+
+  @override
+  String get sing_musicStyle => 'Music Style';
+
+  @override
+  String get sing_styleKids => 'Fun Kids Song';
+
+  @override
+  String get sing_styleDance => 'Dance Pop';
+
+  @override
+  String get sing_styleWarm => 'Warm Slow Song';
+
+  @override
+  String get sing_styleHipHop => 'Kids Hip-Hop';
+
+  @override
+  String get sing_uiOnlyNotice =>
+      'The interface is ready. Song generation will be connected in the next step.';
+
+  @override
+  String get sing_createSongButton => 'Create Song from This Content';
+
+  @override
+  String get sing_showChords => 'Show Parent Guitar Chords';
+
+  @override
+  String get sing_hideChords => 'Hide Guitar Chords';
+
+  @override
+  String get sing_chordsShown => 'Guitar chord mode is on';
+
+  @override
+  String get sing_chordsHidden => 'Guitar chords are hidden';
+
+  @override
+  String get sing_videoSyncHint => 'The dance video plays with the song';
+
+  @override
+  String get sing_evidenceAttached => 'Evidence attached';
+
+  @override
+  String get sing_captureEvidence => 'Take a photo or record evidence video';
+
+  @override
+  String get sing_attached => 'Attached';
+
+  @override
+  String get sing_recordVideo => 'Record Video';
+
+  @override
+  String get sing_takePhoto => 'Take Photo';
+
+  @override
+  String get sing_openVideo => 'Open Video';
+
+  @override
+  String get sing_songVocabulary => 'Song Vocabulary:';
+
+  @override
+  String sing_pronunciation(String value) {
+    return 'Pronunciation: $value';
+  }
+
+  @override
+  String sing_translation(String value) {
+    return 'Meaning: $value';
+  }
+
+  @override
+  String get sing_cameraPreparing => 'Preparing the camera...';
+
+  @override
+  String get sing_cameraRecording => 'Recording video with the song...';
+
+  @override
+  String get sing_hubSubtitle =>
+      'Bilingual songs with a guitar chord mode for parents';
+
+  @override
+  String get sing_evaluationTitle => 'Evaluate Sing Together';
+
+  @override
+  String sing_selectMediaSource(String media) {
+    return 'Select $media source';
+  }
+
+  @override
+  String get sing_childFallback => 'Child';
+
+  @override
+  String sing_saveScoreError(String error) {
+    return 'Could not save the score: $error';
+  }
+
+  @override
+  String sing_scoreChild(String name) {
+    return 'Score $name';
+  }
+
+  @override
+  String get sing_scoreLabel => 'Score (0–100)';
+
+  @override
+  String sing_duration(int minutes, int seconds) {
+    return 'Singing time: $minutes min $seconds sec';
+  }
+
+  @override
+  String get sing_imageVideoEvidence => 'Photo / Video Evidence';
+
+  @override
+  String get sing_change => 'Change';
+
+  @override
+  String get sing_watchVideo => 'Watch Video 🎥';
+
+  @override
+  String sing_evaluateChildren(int count) {
+    return 'Evaluate Children ($count)';
+  }
+
+  @override
+  String get sing_notesTitle => 'Additional Comments';
+
+  @override
+  String get sing_notesHint =>
+      'e.g. sang clearly and pronounced the vocabulary correctly...';
+
+  @override
+  String get sing_savingScore => 'Saving score...';
+
+  @override
+  String get sing_saveScore => 'Save Singing Score';
+
+  @override
+  String get common_loading => 'Loading...';
+
+  @override
+  String get common_pleaseWait => 'Please wait';
+
+  @override
+  String get common_add => 'Add';
+
+  @override
+  String common_attachmentError(String error) {
+    return 'Could not attach media: $error';
+  }
+
+  @override
+  String languageList_loadError(String error) {
+    return 'Could not load activities: $error';
+  }
+
+  @override
+  String get languageList_empty => 'No activities in this category yet';
+
+  @override
+  String get dynamic_listening => 'Listening...';
+
+  @override
+  String get dynamic_holdToSpeak => 'Hold to speak';
+
+  @override
+  String get dynamic_greatJob => 'Great job!';
+
+  @override
+  String get dynamic_niceTry => 'Nice try!';
+
+  @override
+  String get disclaimer_title => 'Software Terms of Use';
+
+  @override
+  String get disclaimer_acceptCheck =>
+      'I have read, understood, and accepted these terms';
+
+  @override
+  String get disclaimer_acceptButton => 'Accept and Continue';
+
+  @override
+  String get disclaimer_intro =>
+      'Skill Wallet Kizuna was developed for the 28th National Software Contest (NSC 2026) to support children\'s learning and skill development through family activities.';
+
+  @override
+  String get disclaimer_developers => 'Developers';
+
+  @override
+  String get disclaimer_advisor => 'Advisor';
+
+  @override
+  String get disclaimer_terms => 'Terms of Use';
+
+  @override
+  String get disclaimer_license =>
+      'The intellectual property belongs to the developers. The developers permit NSTDA to distribute this software ‘as is’ for temporary, non-exclusive, educational or personal non-commercial use without charge.';
+
+  @override
+  String get disclaimer_liability =>
+      'NSTDA and the developers are not liable for loss, damage, errors, software performance, or consequences related to its use. Users are responsible for operation and maintenance.';
+
+  @override
+  String get daily_singTogether => 'Sing Together';
+
+  @override
+  String get createActivity_physicalTitle => 'Create Physical Activity';
+
+  @override
+  String get createActivity_calculateTitle => 'Create Calculation Activity';
+
+  @override
+  String get createActivity_mathTitle => 'Create Math Problems Activity';
+
+  @override
+  String get createActivity_voiceTitle => 'Create Voice Quest';
+
+  @override
+  String get createActivity_spaceTitle => 'Create Space Adventure';
+
+  @override
+  String get createActivity_maxScoreRequired =>
+      'Please enter the maximum score';
+
+  @override
+  String get createActivity_timeRequired => 'Please enter the time limit';
+
+  @override
+  String get createActivity_itemScoreRequired =>
+      'Please enter the score per item';
+
+  @override
+  String get createActivity_wordCategory => 'Word Category';
+
+  @override
+  String get createActivity_timeLimit => 'Time Limit (Seconds)';
+
+  @override
+  String get createActivity_scorePerItem => 'Score Per Detected Item';
+
+  @override
+  String get wordCategory_animals => '🦁 Animals';
+
+  @override
+  String get wordCategory_food => '🍎 Food';
+
+  @override
+  String get wordCategory_vehicles => '🚀 Vehicles';
+
+  @override
+  String get wordCategory_nature => '🌈 Nature';
+
+  @override
+  String get wordCategory_bedroom => '🛏️ Bedroom';
+
+  @override
+  String get wordCategory_school => '🎒 School';
+
+  @override
+  String get disclaimer_developer1 => 'Mr. Kanok Klinsuwan';
+
+  @override
+  String get disclaimer_developer2 => 'Mr. Podjanan Osatanan';
+
+  @override
+  String get disclaimer_developer3 => 'Mr. Nawapon Kitinanprakorn';
+
+  @override
+  String get disclaimer_advisorName =>
+      'Asst. Prof. Dr. Suwatchai Kamonsantiroj';
+
+  @override
+  String math_scanCorrect(int index, String text) {
+    return 'Question $index: detected “$text” (correct ✓)';
+  }
+
+  @override
+  String math_scanIncorrect(int index, String text) {
+    return 'Question $index: detected “$text” (does not match)';
+  }
+
+  @override
+  String get math_noRecognition => 'No result was detected from the image';
+
+  @override
+  String math_scanQuestionError(int index, String error) {
+    return 'Could not scan question $index: $error';
+  }
+
+  @override
+  String get math_noAnswerFound => 'No answer found';
+
+  @override
+  String get math_invalidServerResponse =>
+      'The server returned an invalid response';
+
+  @override
+  String math_scanError(String error) {
+    return 'Scan failed: $error';
+  }
+
+  @override
+  String math_submitError(String error) {
+    return 'Submission failed: $error';
+  }
+
+  @override
+  String get math_scanResultTitle => 'Answer Scan Results';
+
+  @override
+  String get math_activityTitle => 'Math Scenario Activity';
+
+  @override
+  String get math_exitTvMode => 'Exit Smart TV Mode';
+
+  @override
+  String math_questionImage(int index) {
+    return 'Question $index image';
+  }
+
+  @override
+  String get math_swipeNextImage => 'Swipe to view the next image';
+
+  @override
+  String get math_end => 'End';
+
+  @override
+  String get math_noImage => 'No image is available for this question';
+
+  @override
+  String get math_activityDetails => 'Activity Details';
+
+  @override
+  String get math_defaultDescription =>
+      'Practice analytical thinking and solve math problems from real-world images. Write each answer on paper before scanning.';
+
+  @override
+  String get math_paperInstruction =>
+      'Prepare paper and a pencil. Write each number clearly so the camera can scan it.';
+
+  @override
+  String math_questionProgress(int current, int total) {
+    return 'Question $current of $total';
+  }
+
+  @override
+  String get math_proposition => 'PROBLEM SCENARIO';
+
+  @override
+  String get math_reviewAll => 'Review All Results';
+
+  @override
+  String math_cameraCheck(int index) {
+    return 'Check with Camera (Question $index)';
+  }
+
+  @override
+  String get math_readingHandwriting => 'Reading handwriting from the photo...';
+
+  @override
+  String math_readCorrect(String text) {
+    return 'Detected “$text” (correct ✓)';
+  }
+
+  @override
+  String math_readIncorrect(String text) {
+    return 'Detected “$text” (does not match)';
+  }
+
+  @override
+  String get math_takePhotoHint =>
+      'Photograph the handwritten answer for this question';
+
+  @override
+  String get math_thisQuestionImage => 'This Question\'s Image';
+
+  @override
+  String get math_readingAi => 'AI is reading the handwriting...';
+
+  @override
+  String get math_retakeQuestion => 'Retake This Question';
+
+  @override
+  String get math_scanQuestion => 'Take Photo / Scan This Question';
+
+  @override
+  String get math_editNumber => 'Edit Number';
+
+  @override
+  String get math_readingAll => 'Reading Answers from the Image';
+
+  @override
+  String get math_waitFindingNumbers =>
+      'Please wait while the system finds all numbers';
+
+  @override
+  String get math_checkAll => 'Check All Answers';
+
+  @override
+  String get math_reviewBeforeFinish =>
+      'Review and edit the results before finishing';
+
+  @override
+  String get math_answerList => 'Answer List';
+
+  @override
+  String math_solutionValue(String value) {
+    return 'Solution: $value';
+  }
+
+  @override
+  String get math_noAnswerDetected => 'No answer detected';
+
+  @override
+  String get math_rescan => 'Scan Again';
+
+  @override
+  String get math_wellDone => 'Well Done!';
+
+  @override
+  String get math_rewardSaved => 'Your score and reward points have been saved';
+
+  @override
+  String history_redeemed(String name) {
+    return 'Redeemed $name';
+  }
+
+  @override
+  String get history_rewardFallback => 'Reward';
+
+  @override
+  String spaceScan_pickerError(String error) {
+    return 'Unable to open image picker: $error';
+  }
+
+  @override
+  String get spaceScan_failed => 'Scan failed.';
+
+  @override
+  String spaceScan_reason(String reason) {
+    return 'Reason: $reason';
+  }
+
+  @override
+  String get spaceScan_selectSource => 'Select image source';
+
+  @override
+  String get spaceScan_scanFirst =>
+      'Please scan your room to find adventure objects first!';
+
+  @override
+  String get spaceScan_deleteItem => 'Delete Item?';
+
+  @override
+  String spaceScan_deleteConfirm(String item) {
+    return 'Are you sure you want to remove “$item” from this quest?';
+  }
+
+  @override
+  String get spaceScan_delete => 'Delete';
+
+  @override
+  String get spaceScan_noTargets =>
+      'This area does not have any target items yet.';
+
+  @override
+  String get spaceScan_choosePreset => 'Choose preset area';
+
+  @override
+  String get spaceScan_presetDescription =>
+      'Use target items managed in Space Adventure CMS.';
+
+  @override
+  String get spaceScan_noPresets =>
+      'No preset areas are available yet.\nPlease add one in Space Adventure CMS.';
+
+  @override
+  String get spaceScan_phase => 'Phase 1: Room scan';
+
+  @override
+  String get spaceScan_intro =>
+      'Take a photo of your room to find quest items.';
+
+  @override
+  String get spaceScan_usePreset => 'Use preset';
+
+  @override
+  String get spaceScan_cmsItems => 'CMS item list';
+
+  @override
+  String get spaceScan_scanRoom => 'Scan room';
+
+  @override
+  String get spaceScan_findItems => 'Find items in photo';
+
+  @override
+  String get spaceScan_tapPhoto => 'Tap below to take a photo';
+
+  @override
+  String get spaceScan_scanning => 'Scanning for items...';
+
+  @override
+  String get spaceScan_itemsDetected => 'Items detected:';
+
+  @override
+  String get spaceScan_startQuest => 'Start quest';
+
+  @override
+  String get spaceScan_rescan => 'Re-scan';
+
+  @override
+  String get dynamic_languageTitle => 'Language';
+
+  @override
+  String get dynamic_tagline => 'Say the word,\nwin the stars!';
+
+  @override
+  String get dynamic_chooseCategory => 'Choose Category';
+
+  @override
+  String get dynamic_todayGoal => 'TODAY\'S GOAL';
+
+  @override
+  String get dynamic_startQuest => 'Start Quest';
+
+  @override
+  String get dynamic_exitTvMode => 'Exit TV Mode';
+
+  @override
+  String get dynamic_tvMode => 'TV Mode';
+
+  @override
+  String get dynamic_listen => 'Listen';
+
+  @override
+  String dynamic_progress(int current, int total) {
+    return 'Word $current of $total';
+  }
+
+  @override
+  String get dynamic_sayWord => 'Say the word:';
+
+  @override
+  String dynamic_meaning(String meaning) {
+    return 'Meaning: $meaning';
+  }
+
+  @override
+  String dynamic_listenWord(String word) {
+    return 'Listen: $word';
+  }
+
+  @override
+  String get dynamic_evaluating => 'Evaluating your voice...';
+
+  @override
+  String get dynamic_speakInstruction =>
+      'Press and hold while speaking. Release when done.';
+
+  @override
+  String get dynamic_youSaid => 'YOU SAID:';
+
+  @override
+  String dynamic_targetWord(String word) {
+    return 'Target word: $word';
+  }
+
+  @override
+  String get dynamic_listenVoice => 'Listen to your voice';
+
+  @override
+  String get dynamic_speakAgain => 'Speak Again';
+
+  @override
+  String get dynamic_questComplete => 'Quest Complete!';
+
+  @override
+  String get dynamic_totalScore => 'Total Score';
+
+  @override
+  String get dynamic_playRecordingError => 'Cannot play this recording.';
+
+  @override
+  String get dynamic_micPermission =>
+      'Microphone permission denied. Please allow mic access!';
+
+  @override
+  String get dynamic_noSpeech =>
+      'No speech heard. Hold the mic and speak clearly!';
+
+  @override
+  String get spaceQuest_timeout => 'Space time warp! Time ran out!';
+
+  @override
+  String get spaceQuest_verifyError => 'Verification error, please try again!';
+
+  @override
+  String get spaceQuest_objectHunter => 'Object Hunter';
+
+  @override
+  String spaceQuest_score(int score) {
+    return 'Score: $score';
+  }
+
+  @override
+  String spaceQuest_mission(int current, int total) {
+    return 'SPACE MISSION QUEST $current/$total';
+  }
+
+  @override
+  String get spaceQuest_capture => 'Capture the item';
+
+  @override
+  String get spaceQuest_findTake => 'Find and take a photo of the item';
+
+  @override
+  String get spaceQuest_verify => 'Verify match';
+
+  @override
+  String get spaceQuest_selectChild =>
+      'Please select a child profile before saving the score.';
+
+  @override
+  String get spaceQuest_shareWeb =>
+      'Sharing is supported on mobile devices. Right-click the image to save on Web!';
+
+  @override
+  String get spaceQuest_sharePhoto => 'Share photo';
+
+  @override
+  String get spaceQuest_recapture => 'Recapture';
+
+  @override
+  String get spaceQuest_complete => 'Quest Complete!';
+
+  @override
+  String get spaceQuest_totalScore => 'Total Score';
+
+  @override
+  String get addChild_title => 'Add Your Little Adventurer!';
+
+  @override
+  String get addChild_subtitle =>
+      'Add your child and start building healthy habits together.';
+
+  @override
+  String get addChild_name => 'Your Child Name';
+
+  @override
+  String get addChild_nameHint => 'e.g. Pokpong';
+
+  @override
+  String get addChild_birthDate => 'Date of Birth';
+
+  @override
+  String get addChild_relationship => 'Relationship';
+
+  @override
+  String get addChild_mother => 'Mother';
+
+  @override
+  String get addChild_button => 'Add Child';
+
+  @override
+  String get home_welcomeBack => 'Welcome back';
+
+  @override
+  String get home_whosHere => 'Who\'s here?';
+
+  @override
+  String get home_add => 'Add';
+
+  @override
+  String get home_rewardPoints => 'Reward points';
+
+  @override
+  String get home_redeem => 'Redeem';
+
+  @override
+  String get home_activities => 'Activities';
+
+  @override
+  String get home_newBadge => 'NEW';
+
+  @override
+  String get home_spaceDescription => 'Scan your room and find hidden items!';
+
+  @override
+  String get common_continueGoogle => 'Continue with Google';
+
+  @override
+  String get common_continueFacebook => 'Continue with Facebook';
+
+  @override
+  String get common_home => 'Home';
+
+  @override
+  String get common_disclaimer => 'Disclaimer';
+
+  @override
+  String get common_login => 'Log In';
+
+  @override
+  String get common_copiedShareText => 'Copied share text';
+
+  @override
+  String get common_copyShareText => 'Copy share text';
+
+  @override
+  String get createActivity_choosePrompt =>
+      'Choose the activity you want to create';
+
+  @override
+  String get sing_difficultyEasy => 'EASY';
+
+  @override
+  String get sing_highScore => 'High: 100';
+
+  @override
+  String get sing_durationMinutes => '10 Min';
+
+  @override
+  String get dynamic_todayCategory => 'TODAY\'S CATEGORY';
+
+  @override
+  String get dynamic_speaking => 'Speaking';
+
+  @override
+  String get dynamic_silence => '(Silence)';
+
+  @override
+  String dynamic_scoreEarned(int score) {
+    return '+$score Score';
+  }
+
+  @override
+  String get dynamic_perfect => 'Perfect! 🏆';
+
+  @override
+  String dynamic_voiceMatch(int percent) {
+    return '$percent% Voice Match 🎙';
+  }
+
+  @override
+  String get dynamic_nextWord => 'Next word';
+
+  @override
+  String spaceQuest_findItem(String item) {
+    return 'FIND ITEM: $item';
+  }
+
+  @override
+  String get spaceQuest_timeoutReason => 'Time ran out before verification!';
+
+  @override
+  String get spaceQuest_scanResults => 'Scan results';
+
+  @override
+  String get spaceQuest_correctMatch => 'CORRECT MATCH';
+
+  @override
+  String get spaceQuest_mismatch => 'MISMATCH DETECTED';
+
+  @override
+  String spaceQuest_verifiedTarget(String item) {
+    return 'Vision AI verified your target: $item';
+  }
+
+  @override
+  String spaceQuest_notMatched(String item) {
+    return 'This photo does not match $item yet. Please try again.';
+  }
+
+  @override
+  String spaceQuest_scored(int points, int total) {
+    return 'Scored +$points points! Current total: $total';
+  }
+
+  @override
+  String spaceQuest_currentTotal(int total) {
+    return 'Current total: $total points';
+  }
+
+  @override
+  String get spaceQuest_saving => 'Saving score...';
+
+  @override
+  String get spaceQuest_next => 'Next quest';
+
+  @override
+  String get home_parentFallback => 'Parent';
+
+  @override
+  String get welcome_intro =>
+      'Let\'s get started!\nAlready part of our community? Welcome back.\nNew here? Join us to learn and grow together.';
+
+  @override
+  String get common_shareDownloadImage => 'Share / Download image';
+
+  @override
+  String itemintro_noSegments(String name) {
+    return 'Error: No segments found for $name.';
+  }
+
+  @override
+  String get record_streamUnsupported =>
+      'Recording stream is not supported in this browser.';
 }

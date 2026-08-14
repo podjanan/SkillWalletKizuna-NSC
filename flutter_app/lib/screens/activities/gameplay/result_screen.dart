@@ -62,12 +62,12 @@ class _ResultScreenState extends State<ResultScreen>
     String two(int n) => n.toString().padLeft(2, '0');
     final mm = two(time.inMinutes % 60), ss = two(time.inSeconds % 60);
 
-    final double pct = maxScore > 0
-        ? (scoreEarned / maxScore).clamp(0.0, 1.0)
-        : 0.0;
+    final double pct =
+        maxScore > 0 ? (scoreEarned / maxScore).clamp(0.0, 1.0) : 0.0;
     final Color scoreColor = pct <= 0.5
         ? Color.lerp(const Color(0xFFE53935), const Color(0xFFFDD835), pct * 2)!
-        : Color.lerp(const Color(0xFFFDD835), const Color(0xFF43A047), (pct - 0.5) * 2)!;
+        : Color.lerp(
+            const Color(0xFFFDD835), Palette.success, (pct - 0.5) * 2)!;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -219,7 +219,8 @@ class _ResultScreenState extends State<ResultScreen>
                             }
                           }
                         : null,
-                    icon: const Icon(Icons.replay, color: Colors.white, size: 22),
+                    icon:
+                        const Icon(Icons.replay, color: Colors.white, size: 22),
                     label: Text(
                       AppLocalizations.of(context)!.result_playAgainBtn,
                       style: AppTextStyles.heading(18, color: Palette.white),
@@ -244,7 +245,8 @@ class _ResultScreenState extends State<ResultScreen>
                       AppRoutes.authenticatedHome,
                       (route) => false,
                     ),
-                    icon: Icon(Icons.home_outlined, color: Palette.sky, size: 22),
+                    icon:
+                        Icon(Icons.home_outlined, color: Palette.sky, size: 22),
                     label: Text(
                       AppLocalizations.of(context)!.result_backToActivitiesBtn,
                       style: AppTextStyles.heading(18, color: Palette.sky),

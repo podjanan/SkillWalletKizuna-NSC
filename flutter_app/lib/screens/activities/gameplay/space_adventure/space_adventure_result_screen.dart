@@ -73,9 +73,8 @@ class _SpaceAdventureResultScreenState
   void _sharePhoto() async {
     if (kIsWeb) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Sharing is supported on mobile devices. Right-click the image to save on Web!'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.spaceQuest_shareWeb),
           backgroundColor: Palette.terracotta,
         ),
       );
@@ -174,9 +173,8 @@ class _SpaceAdventureResultScreenState
     final activity = widget.activity;
     if (childId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Please select a child profile before saving the score.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.spaceQuest_selectChild),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -247,6 +245,7 @@ class _SpaceAdventureResultScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final isSummary = _showSummary;
     final activity = widget.activity;
 
@@ -278,7 +277,7 @@ class _SpaceAdventureResultScreenState
           isSummary
               ? ActivityL10n.localizedActivityType(
                   context, activity?.category ?? 'PHYSICAL')
-              : 'Scan results',
+              : l.spaceQuest_scanResults,
           style: AppTextStyles.heading(20, color: Colors.black87),
         ),
         centerTitle: true,
@@ -312,6 +311,7 @@ class _SpaceAdventureResultScreenState
   }
 
   Widget _buildResultView() {
+    final l = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -375,7 +375,9 @@ class _SpaceAdventureResultScreenState
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      widget.isMatch ? 'CORRECT MATCH' : 'MISMATCH DETECTED',
+                      widget.isMatch
+                          ? l.spaceQuest_correctMatch
+                          : l.spaceQuest_mismatch,
                       style: AppTextStyles.heading(
                         14,
                         color: widget.isMatch
@@ -388,8 +390,8 @@ class _SpaceAdventureResultScreenState
                 const SizedBox(height: 12),
                 Text(
                   widget.isMatch
-                      ? 'Vision AI verified your target: ${widget.targetObject}'
-                      : 'This photo does not match ${widget.targetObject} yet. Please try again.',
+                      ? l.spaceQuest_verifiedTarget(widget.targetObject)
+                      : l.spaceQuest_notMatched(widget.targetObject),
                   textAlign: TextAlign.center,
                   style: AppTextStyles.body(13, color: Colors.black87),
                 ),
@@ -404,8 +406,11 @@ class _SpaceAdventureResultScreenState
                   ),
                   child: Text(
                     widget.isMatch
-                        ? 'Scored +${widget.pointsEarned} Points! Current Total: ${widget.currentScore}'
-                        : 'Current Total: ${widget.currentScore} Points',
+                        ? l.spaceQuest_scored(
+                            widget.pointsEarned,
+                            widget.currentScore,
+                          )
+                        : l.spaceQuest_currentTotal(widget.currentScore),
                     style: AppTextStyles.label(13, color: Palette.skyDark),
                   ),
                 ),
@@ -420,7 +425,7 @@ class _SpaceAdventureResultScreenState
               if (widget.isMatch && widget.imageBytes != null) ...[
                 Expanded(
                   child: GradientButton.primary(
-                    label: 'Share photo',
+                    label: l.spaceQuest_sharePhoto,
                     onTap: _sharePhoto,
                     fontSize: 14,
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -430,7 +435,7 @@ class _SpaceAdventureResultScreenState
               ] else if (!widget.isMatch) ...[
                 Expanded(
                   child: GradientButton.primary(
-                    label: 'Recapture',
+                    label: l.spaceQuest_recapture,
                     onTap: _isFinishing ? null : _retryQuest,
                     fontSize: 14,
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -441,8 +446,8 @@ class _SpaceAdventureResultScreenState
               Expanded(
                 child: GradientButton.success(
                   label: (widget.detectedObjects.length <= 1)
-                      ? (_isFinishing ? 'Saving score...' : 'Done')
-                      : 'Next quest',
+                      ? (_isFinishing ? l.spaceQuest_saving : l.common_done)
+                      : l.spaceQuest_next,
                   onTap: _isFinishing ? null : _nextQuest,
                   fontSize: 14,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -486,13 +491,13 @@ class _SpaceAdventureResultScreenState
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Quest Complete!',
+                  l.spaceQuest_complete,
                   textAlign: TextAlign.center,
                   style: AppTextStyles.heading(28, color: Palette.text),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Total Score',
+                  l.spaceQuest_totalScore,
                   style: AppTextStyles.label(13, color: Palette.deepGrey),
                 ),
                 FittedBox(
@@ -604,7 +609,7 @@ class _SpaceAdventureResultScreenState
           // Action Buttons
           if (!_scoreSaved) ...[
             GradientButton.success(
-              label: 'Done',
+              label: l.common_done,
               onTap: _finishMission,
               isLoading: _isFinishing,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -828,7 +833,7 @@ class _SpaceAdventureResultScreenState
                       else
                         const Center(
                           child: Icon(Icons.check_circle_outline,
-                              color: Colors.green, size: 36),
+                              color: Palette.success, size: 36),
                         ),
                       Positioned(
                         top: 4,
@@ -914,7 +919,10 @@ class _SpaceAdventureResultScreenState
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาดในการแนบสื่อ: $e')),
+        SnackBar(
+          content:
+              Text(AppLocalizations.of(context)!.common_attachmentError('$e')),
+        ),
       );
     }
   }

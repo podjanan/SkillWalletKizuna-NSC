@@ -12,7 +12,7 @@ class MathOpDetector {
   // ── Colour per operator (hex, no Flutter dependency) ──
   // Matches Palette: successAlt / sky / warning / pink
   static const Map<String, int> opColorValue = {
-    plus: 0xFF66BB6A, // Palette.successAlt  — green
+    plus: 0xFF22C55E, // Palette.success — vivid green
     minus: 0xFFE47751, // Palette.terracotta   — warm orange
     multiply: 0xFFFF9800, // Palette.warning      — orange
     divide: 0xFFEA5B6F, // Palette.pink         — pink

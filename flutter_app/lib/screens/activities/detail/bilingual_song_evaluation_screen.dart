@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../models/bilingual_song_model.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../providers/user_provider.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/activity_service.dart';
@@ -73,6 +74,7 @@ class _BilingualSongEvaluationScreenState
   }
 
   Future<void> _pickMedia({required bool isVideo}) async {
+    final l = AppLocalizations.of(context)!;
     try {
       final ImagePicker picker = ImagePicker();
       final source = await showDialog<ImageSource>(
@@ -80,7 +82,9 @@ class _BilingualSongEvaluationScreenState
             builder: (ctx) => AlertDialog(
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
-              title: Text('เลือกแหล่งที่มา${isVideo ? "วิดีโอ" : "รูปภาพ"}',
+              title: Text(
+                  l.sing_selectMediaSource(
+                      isVideo ? l.common_video : l.common_image),
                   style: AppTextStyles.heading(16)),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -88,13 +92,13 @@ class _BilingualSongEvaluationScreenState
                   ListTile(
                     leading: const Icon(Icons.camera_alt_rounded,
                         color: Palette.sky),
-                    title: const Text('ถ่ายด้วยกล้อง'),
+                    title: Text(l.common_camera),
                     onTap: () => Navigator.pop(ctx, ImageSource.camera),
                   ),
                   ListTile(
                     leading: const Icon(Icons.photo_library_rounded,
                         color: Colors.purple),
-                    title: const Text('เลือกจากคลังภาพ'),
+                    title: Text(l.common_gallery),
                     onTap: () => Navigator.pop(ctx, ImageSource.gallery),
                   ),
                 ],
@@ -119,15 +123,16 @@ class _BilingualSongEvaluationScreenState
     }
   }
 
-  String _getChildName(List<Map<String, dynamic>> children, String childId) {
+  String _getChildName(
+      List<Map<String, dynamic>> children, String childId, String fallback) {
     try {
       final item = children.firstWhere(
         (c) => (c['child'] as Map<String, dynamic>?)?['child_id'] == childId,
       );
       return (item['child'] as Map<String, dynamic>?)?['name_surname'] ??
-          'น้อง';
+          fallback;
     } catch (_) {
-      return 'น้อง';
+      return fallback;
     }
   }
 
@@ -149,7 +154,7 @@ class _BilingualSongEvaluationScreenState
           const Color(0xFFE53935), const Color(0xFFFDD835), t * 2)!;
     } else {
       return Color.lerp(
-          const Color(0xFFFDD835), const Color(0xFF43A047), (t - 0.5) * 2)!;
+          const Color(0xFFFDD835), Palette.success, (t - 0.5) * 2)!;
     }
   }
 
@@ -202,7 +207,9 @@ class _BilingualSongEvaluationScreenState
       debugPrint('❌ Submit score failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('เกิดข้อผิดพลาดในการบันทึกคะแนน: $e')),
+          SnackBar(
+              content: Text(
+                  AppLocalizations.of(context)!.sing_saveScoreError('$e'))),
         );
       }
     } finally {
@@ -211,25 +218,27 @@ class _BilingualSongEvaluationScreenState
   }
 
   void _showChildScoreDialog(String childId, String childName) {
+    final l = AppLocalizations.of(context)!;
     final tempController = TextEditingController(
       text: (_childScores[childId] ?? 100).toString(),
     );
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('ให้คะแนน $childName', style: AppTextStyles.heading(18)),
+        title: Text(l.sing_scoreChild(childName),
+            style: AppTextStyles.heading(18)),
         content: TextField(
           controller: tempController,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'คะแนน (0 - 100)',
+          decoration: InputDecoration(
+            labelText: l.sing_scoreLabel,
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('ยกเลิก', style: AppTextStyles.body(14)),
+            child: Text(l.common_cancel, style: AppTextStyles.body(14)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -240,7 +249,8 @@ class _BilingualSongEvaluationScreenState
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Palette.sky),
-            child: const Text('ตกลง', style: TextStyle(color: Colors.white)),
+            child:
+                Text(l.common_ok, style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -371,6 +381,7 @@ class _BilingualSongEvaluationScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final userProvider = context.watch<UserProvider>();
     final currentChildId = userProvider.currentChildId ?? '';
     final allIds = <String>{currentChildId, ...widget.extraChildIds}
@@ -388,7 +399,7 @@ class _BilingualSongEvaluationScreenState
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'ให้คะแนนร้องเพลง Sing Together',
+          l.sing_evaluationTitle,
           style: AppTextStyles.heading(18, color: Colors.black87),
         ),
         centerTitle: true,
@@ -434,7 +445,10 @@ class _BilingualSongEvaluationScreenState
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'เวลาที่ใช้ร้อง: ${widget.timeSpentSeconds ~/ 60} นาที ${widget.timeSpentSeconds % 60} วินาที',
+                                  l.sing_duration(
+                                    widget.timeSpentSeconds ~/ 60,
+                                    widget.timeSpentSeconds % 60,
+                                  ),
                                   style: AppTextStyles.body(13,
                                       color: Colors.grey.shade600),
                                 ),
@@ -451,7 +465,7 @@ class _BilingualSongEvaluationScreenState
                       children: [
                         Expanded(
                           child: Text(
-                            'หลักฐานรูปภาพ / วิดีโอ',
+                            l.sing_imageVideoEvidence,
                             style:
                                 AppTextStyles.label(14, color: Colors.black87),
                             overflow: TextOverflow.ellipsis,
@@ -475,7 +489,9 @@ class _BilingualSongEvaluationScreenState
                                     size: 14, color: Palette.sky),
                                 const SizedBox(width: 4),
                                 Text(
-                                  _imagePath == null ? '+ รูป' : 'เปลี่ยน',
+                                  _imagePath == null
+                                      ? '+ ${l.common_image}'
+                                      : l.sing_change,
                                   style: AppTextStyles.label(12,
                                       color: Palette.sky),
                                 ),
@@ -501,7 +517,9 @@ class _BilingualSongEvaluationScreenState
                                     size: 14, color: Colors.purple),
                                 const SizedBox(width: 4),
                                 Text(
-                                  _videoPath == null ? '+ วิดีโอ' : 'เปลี่ยน',
+                                  _videoPath == null
+                                      ? '+ ${l.common_video}'
+                                      : l.sing_change,
                                   style: AppTextStyles.label(12,
                                       color: Colors.purple),
                                 ),
@@ -604,7 +622,7 @@ class _BilingualSongEvaluationScreenState
                                                     color: Palette.sky),
                                                 const SizedBox(height: 4),
                                                 Text(
-                                                  'ดูคลิปวิดีโอ 🎥',
+                                                  l.sing_watchVideo,
                                                   style: AppTextStyles.label(12,
                                                       color: Colors.white),
                                                 ),
@@ -646,7 +664,7 @@ class _BilingualSongEvaluationScreenState
                             size: 22, color: Colors.amber),
                         const SizedBox(width: 8),
                         Text(
-                          'ประเมินคะแนนเด็ก (${allIds.length} คน)',
+                          l.sing_evaluateChildren(allIds.length),
                           style:
                               AppTextStyles.heading(16, color: Colors.black87),
                         ),
@@ -656,7 +674,8 @@ class _BilingualSongEvaluationScreenState
 
                     // Children Score Rows
                     ...allIds.map((cid) {
-                      final name = _getChildName(userProvider.children, cid);
+                      final name = _getChildName(
+                          userProvider.children, cid, l.sing_childFallback);
                       return _buildChildScoreRow(cid, name);
                     }),
 
@@ -664,7 +683,7 @@ class _BilingualSongEvaluationScreenState
 
                     // Note / Feedback
                     Text(
-                      'บันทึกข้อคิดเห็นเพิ่มเติม',
+                      l.sing_notesTitle,
                       style: AppTextStyles.label(14, color: Colors.black87),
                     ),
                     const SizedBox(height: 8),
@@ -678,16 +697,15 @@ class _BilingualSongEvaluationScreenState
                       child: TextField(
                         controller: _notesController,
                         maxLines: 3,
-                        decoration: const InputDecoration(
-                          hintText:
-                              'เช่น ร้องเสียงดังฟังชัด, ออกเสียงคำศัพท์ได้ถูกต้อง...',
+                        decoration: InputDecoration(
+                          hintText: l.sing_notesHint,
                           filled: false,
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
                           disabledBorder: InputBorder.none,
                           hintStyle:
-                              TextStyle(fontSize: 13, color: Colors.grey),
+                              const TextStyle(fontSize: 13, color: Colors.grey),
                         ),
                       ),
                     ),
@@ -698,9 +716,7 @@ class _BilingualSongEvaluationScreenState
 
             // Submit Button
             StickyBottomButton(
-              label: _isSubmitting
-                  ? 'กำลังบันทึกคะแนน...'
-                  : 'บันทึกคะแนนการร้องเพลง',
+              label: _isSubmitting ? l.sing_savingScore : l.sing_saveScore,
               onPressed: _isSubmitting ? null : _handleSubmit,
               isLoading: _isSubmitting,
               color: Palette.success,

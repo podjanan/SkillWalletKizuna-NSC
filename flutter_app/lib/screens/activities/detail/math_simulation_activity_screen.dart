@@ -442,8 +442,10 @@ class _MathSimulationActivityScreenState
                     Expanded(
                       child: Text(
                         isCorrect
-                            ? 'ตรวจข้อ ${index + 1}: อ่านได้ "$detectedText" (ถูกต้อง ✓)'
-                            : 'ตรวจข้อ ${index + 1}: อ่านได้ "$detectedText" (ไม่ตรงกับเฉลย)',
+                            ? AppLocalizations.of(context)!
+                                .math_scanCorrect(index + 1, detectedText)
+                            : AppLocalizations.of(context)!
+                                .math_scanIncorrect(index + 1, detectedText),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -456,7 +458,7 @@ class _MathSimulationActivityScreenState
           }
         }
       } else {
-        throw Exception('ไม่พบผลการอ่านจากภาพ');
+        throw Exception(AppLocalizations.of(context)!.math_noRecognition);
       }
     } catch (e) {
       if (mounted) {
@@ -465,7 +467,8 @@ class _MathSimulationActivityScreenState
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('เกิดข้อผิดพลาดในการสแกนข้อ ${index + 1}: $e'),
+            content: Text(AppLocalizations.of(context)!
+                .math_scanQuestionError(index + 1, '$e')),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -548,7 +551,8 @@ class _MathSimulationActivityScreenState
               _answerStatus[i] = isCorrect;
             } else {
               _segmentResults[i] = _segmentResults[i].copyWith(
-                recognizedText: 'ไม่พบคำตอบ (No answer found)',
+                recognizedText:
+                    AppLocalizations.of(context)!.math_noAnswerFound,
                 maxScore: 0,
               );
               _answerStatus[i] = false;
@@ -556,14 +560,15 @@ class _MathSimulationActivityScreenState
           }
         });
       } else {
-        throw Exception('เซิร์ฟเวอร์ส่งข้อมูลกลับในรูปแบบที่ไม่ถูกต้อง');
+        throw Exception(
+            AppLocalizations.of(context)!.math_invalidServerResponse);
       }
     } catch (e) {
       _scanAnimationController.stop();
       setState(() => _phase = _Phase.running);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('เกิดข้อผิดพลาดในการสแกน: $e'),
+          content: Text(AppLocalizations.of(context)!.math_scanError('$e')),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -692,7 +697,9 @@ class _MathSimulationActivityScreenState
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาดในการแนบสื่อ: $e')),
+        SnackBar(
+            content: Text(
+                AppLocalizations.of(context)!.common_attachmentError('$e'))),
       );
     }
   }
@@ -785,7 +792,9 @@ class _MathSimulationActivityScreenState
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('ส่งคำตอบล้มเหลว: $e')),
+        SnackBar(
+            content:
+                Text(AppLocalizations.of(context)!.math_submitError('$e'))),
       );
     } finally {
       setState(() => _isSubmitting = false);
@@ -839,15 +848,15 @@ class _MathSimulationActivityScreenState
                       ? ActivityL10n.localizedActivityType(
                           context, widget.activity.category)
                       : _phase == _Phase.reviewing
-                          ? 'ผลการสแกนการตรวจคำตอบ'
-                          : 'กิจกรรมคณิตศาสตร์ตามสถานการณ์จำลอง',
+                          ? l.math_scanResultTitle
+                          : l.math_activityTitle,
                   style: AppTextStyles.heading(20, color: Colors.black),
                 ),
                 actions: [
                   if (_phase == _Phase.ready || _phase == _Phase.running)
                     IconButton(
                       tooltip:
-                          _isTvMode ? 'ออกจากโหมด Smart TV' : 'โหมด Smart TV',
+                          _isTvMode ? l.math_exitTvMode : l.calculate_tvMode,
                       icon: Icon(
                         _isTvMode
                             ? Icons.fullscreen_exit_rounded
@@ -930,7 +939,7 @@ class _MathSimulationActivityScreenState
                     color: Colors.white.withValues(alpha: 0.10),
                     shape: const CircleBorder(),
                     child: IconButton(
-                      tooltip: 'ออกจากโหมด Smart TV',
+                      tooltip: AppLocalizations.of(context)!.math_exitTvMode,
                       onPressed: _toggleTvMode,
                       icon: const Icon(Icons.close_rounded,
                           color: Colors.white, size: 30),
@@ -944,13 +953,13 @@ class _MathSimulationActivityScreenState
                       color: const Color(0xFF4F3027),
                       borderRadius: BorderRadius.circular(22),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.tv_rounded,
+                        const Icon(Icons.tv_rounded,
                             color: Color(0xFFF3A071), size: 21),
-                        SizedBox(width: 7),
-                        Text('TV Mode',
-                            style: TextStyle(
+                        const SizedBox(width: 7),
+                        Text(AppLocalizations.of(context)!.calculate_tvMode,
+                            style: const TextStyle(
                                 color: Color(0xFFF3A071), fontSize: 16)),
                       ],
                     ),
@@ -994,7 +1003,8 @@ class _MathSimulationActivityScreenState
                   ],
                 ),
                 child: Text(
-                  'ภาพข้อที่ ${_currentQuestionIndex + 1}',
+                  AppLocalizations.of(context)!
+                      .math_questionImage(_currentQuestionIndex + 1),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 19,
@@ -1031,7 +1041,7 @@ class _MathSimulationActivityScreenState
               ),
               const SizedBox(height: 24),
               Text(
-                'เลื่อนไปดูรูปข้อถัดไป',
+                AppLocalizations.of(context)!.math_swipeNextImage,
                 style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.38), fontSize: 14),
               ),
@@ -1069,7 +1079,7 @@ class _MathSimulationActivityScreenState
                         : Icons.check_rounded,
                     label: _currentQuestionIndex < totalQuestions - 1
                         ? '${_currentQuestionIndex + 2}'
-                        : 'จบ',
+                        : AppLocalizations.of(context)!.math_end,
                     enabled: true,
                     primary: true,
                     iconAfter: true,
@@ -1099,7 +1109,7 @@ class _MathSimulationActivityScreenState
               color: Colors.white.withValues(alpha: 0.45), size: 54),
           const SizedBox(height: 10),
           Text(
-            'ยังไม่มีรูปสำหรับข้อนี้',
+            AppLocalizations.of(context)!.math_noImage,
             style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.55), fontSize: 15),
           ),
@@ -1157,7 +1167,7 @@ class _MathSimulationActivityScreenState
         children: [
           InfoBadges(activity: widget.activity),
           const SizedBox(height: 20),
-          Text('รายละเอียดกิจกรรม',
+          Text(AppLocalizations.of(context)!.math_activityDetails,
               style: AppTextStyles.heading(18, color: Palette.sky)),
           const SizedBox(height: 8),
           Container(
@@ -1172,7 +1182,7 @@ class _MathSimulationActivityScreenState
             child: Text(
               widget.activity.content.isNotEmpty
                   ? widget.activity.content
-                  : 'ฝึกคิดวิเคราะห์และแก้โจทย์คณิตศาสตร์ผ่านภาพสถานการณ์จริง บันทึกคำตอบลงในกระดาษก่อนกดสแกน',
+                  : AppLocalizations.of(context)!.math_defaultDescription,
               style: AppTextStyles.body(15),
             ),
           ),
@@ -1221,8 +1231,7 @@ class _MathSimulationActivityScreenState
                   color: Palette.sky, weight: FontWeight.w600),
               textAlign: TextAlign.center),
           const SizedBox(height: 6),
-          Text(
-              'เตรียมกระดาษจริงและดินสอเขียนคำตอบไว้ให้พร้อม\nตัวเลขคำตอบเขียนชัดๆ เพื่อสแกนตรวจคำตอบ',
+          Text(AppLocalizations.of(context)!.math_paperInstruction,
               style: AppTextStyles.body(13, color: Palette.deepGrey),
               textAlign: TextAlign.center),
         ],
@@ -1295,7 +1304,8 @@ class _MathSimulationActivityScreenState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'ข้อที่ ${_currentQuestionIndex + 1} จาก $totalQuestions',
+                l.math_questionProgress(
+                    _currentQuestionIndex + 1, totalQuestions),
                 style: AppTextStyles.heading(16, color: Palette.sky),
               ),
               Container(
@@ -1372,7 +1382,7 @@ class _MathSimulationActivityScreenState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'สถานการณ์ปัญหาวิเคราะห์ (PROPOSITION)',
+                              l.math_proposition,
                               style: AppTextStyles.heading(14,
                                   color: Colors.amber.shade800),
                             ),
@@ -1446,7 +1456,7 @@ class _MathSimulationActivityScreenState
                         child: Text(
                           _currentQuestionIndex < totalQuestions - 1
                               ? l.math_simulation_nextBtn
-                              : 'ตรวจสรุปผลทั้งหมด',
+                              : l.math_reviewAll,
                           style: const TextStyle(
                               color: Colors.white,
                               fontSize: 15,
@@ -1527,18 +1537,22 @@ class _MathSimulationActivityScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ตรวจคำตอบด้วยกล้องถ่ายรูป (ข้อที่ ${index + 1})',
+                      AppLocalizations.of(context)!.math_cameraCheck(index + 1),
                       style: AppTextStyles.heading(15, color: Colors.black87),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       isScanning
-                          ? 'กำลังอ่านลายมือจากภาพถ่าย...'
+                          ? AppLocalizations.of(context)!
+                              .math_readingHandwriting
                           : status == true
-                              ? 'อ่านได้ "$recognizedText" (ถูกต้อง ✓)'
+                              ? AppLocalizations.of(context)!
+                                  .math_readCorrect(recognizedText)
                               : status == false
-                                  ? 'อ่านได้ "$recognizedText" (ไม่ตรงเฉลย)'
-                                  : 'ถ่ายรูปเขียนมือเฉพาะข้อนี้เพื่อตรวจทันที',
+                                  ? AppLocalizations.of(context)!
+                                      .math_readIncorrect(recognizedText)
+                                  : AppLocalizations.of(context)!
+                                      .math_takePhotoHint,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -1580,14 +1594,16 @@ class _MathSimulationActivityScreenState
                           color: Colors.black.withValues(alpha: 0.65),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.photo_camera,
+                            const Icon(Icons.photo_camera,
                                 color: Colors.white, size: 14),
-                            SizedBox(width: 4),
-                            Text('ภาพข้อนี้',
-                                style: TextStyle(
+                            const SizedBox(width: 4),
+                            Text(
+                                AppLocalizations.of(context)!
+                                    .math_thisQuestionImage,
+                                style: const TextStyle(
                                     color: Colors.white, fontSize: 11)),
                           ],
                         ),
@@ -1618,10 +1634,10 @@ class _MathSimulationActivityScreenState
                       color: Colors.white),
               label: Text(
                 isScanning
-                    ? 'กำลังอ่านลายมือด้วย AI...'
+                    ? AppLocalizations.of(context)!.math_readingAi
                     : hasImage
-                        ? 'ถ่ายรูปตรวจข้อนี้ใหม่'
-                        : 'ถ่ายรูป / สแกนตรวจข้อนี้',
+                        ? AppLocalizations.of(context)!.math_retakeQuestion
+                        : AppLocalizations.of(context)!.math_scanQuestion,
                 style: AppTextStyles.heading(15, color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
@@ -1639,7 +1655,7 @@ class _MathSimulationActivityScreenState
                 child: OutlinedButton.icon(
                   onPressed: () => _showEditOcrDialog(index),
                   icon: Icon(Icons.edit, color: Palette.sky, size: 18),
-                  label: Text('แก้ไขตัวเลข',
+                  label: Text(AppLocalizations.of(context)!.math_editNumber,
                       style: AppTextStyles.body(13, color: Palette.sky)),
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Palette.sky.withValues(alpha: 0.6)),
@@ -1673,7 +1689,7 @@ class _MathSimulationActivityScreenState
                           color:
                               status == true ? Colors.white : Palette.success),
                       const SizedBox(width: 4),
-                      Text('ถูก',
+                      Text(AppLocalizations.of(context)!.calculate_correct,
                           style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -1707,7 +1723,7 @@ class _MathSimulationActivityScreenState
                           size: 16,
                           color: status == false ? Colors.white : Palette.pink),
                       const SizedBox(width: 4),
-                      Text('ผิด',
+                      Text(AppLocalizations.of(context)!.calculate_incorrect,
                           style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -1817,13 +1833,13 @@ class _MathSimulationActivityScreenState
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'กำลังอ่านคำตอบจากภาพ',
+                    AppLocalizations.of(context)!.math_readingAll,
                     style: AppTextStyles.heading(17, color: Colors.black87),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'กรุณารอสักครู่ ระบบกำลังค้นหาตัวเลขทั้งหมด',
+                    AppLocalizations.of(context)!.math_waitFindingNumbers,
                     style: AppTextStyles.body(13, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
@@ -1873,11 +1889,11 @@ class _MathSimulationActivityScreenState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'ตรวจคำตอบทั้งหมด',
+                      l.math_checkAll,
                       style: AppTextStyles.heading(16, color: Colors.black87),
                     ),
                     Text(
-                      'ตรวจสอบและแก้ไขผลก่อนกดเสร็จสิ้น',
+                      l.math_reviewBeforeFinish,
                       style:
                           const TextStyle(fontSize: 12, color: Colors.black54),
                     ),
@@ -1895,7 +1911,7 @@ class _MathSimulationActivityScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // List of question cards
-                Text('รายการคำตอบ',
+                Text(l.math_answerList,
                     style: AppTextStyles.heading(16, color: Colors.black87)),
                 const SizedBox(height: 10),
 
@@ -1974,7 +1990,10 @@ class _MathSimulationActivityScreenState
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              'เฉลย: ${segment['answer']?.toString() ?? ''}',
+                                              l.math_solutionValue(
+                                                  segment['answer']
+                                                          ?.toString() ??
+                                                      ''),
                                               style: AppTextStyles.label(12,
                                                   color: Palette.success),
                                             ),
@@ -2006,14 +2025,14 @@ class _MathSimulationActivityScreenState
                                     ),
                                     child: Row(
                                       children: [
-                                        Text('คำตอบ: ',
+                                        Text(l.calculate_answerLabel,
                                             style: AppTextStyles.body(13,
                                                 color: Colors.grey.shade600)),
                                         Expanded(
                                           child: Text(
                                             ocrText.isNotEmpty
                                                 ? ocrText
-                                                : 'ยังไม่พบคำตอบ',
+                                                : l.math_noAnswerDetected,
                                             style: AppTextStyles.body(14,
                                                 weight: FontWeight.bold),
                                             overflow: TextOverflow.ellipsis,
@@ -2075,7 +2094,7 @@ class _MathSimulationActivityScreenState
                                                         : Palette.success),
                                                 const SizedBox(width: 6),
                                                 Text(
-                                                  'ถูกต้อง',
+                                                  l.calculate_correct,
                                                   style: AppTextStyles.heading(
                                                       14,
                                                       color: isCorrect
@@ -2134,7 +2153,7 @@ class _MathSimulationActivityScreenState
                                                         : Palette.pink),
                                                 const SizedBox(width: 6),
                                                 Text(
-                                                  'ไม่ถูกต้อง',
+                                                  l.calculate_incorrect,
                                                   style: AppTextStyles.heading(
                                                       14,
                                                       color: isIncorrect
@@ -2166,7 +2185,7 @@ class _MathSimulationActivityScreenState
                   child: OutlinedButton.icon(
                     onPressed: _scanAnswerSheet,
                     icon: const Icon(Icons.camera_alt_outlined),
-                    label: const Text('สแกนใหม่'),
+                    label: Text(l.math_rescan),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: Palette.sky, width: 1.5),
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -2193,7 +2212,7 @@ class _MathSimulationActivityScreenState
         // Bottom submit all answers button
         StickyBottomButton(
           onPressed: _handleSubmit,
-          label: 'เสร็จสิ้น',
+          label: l.common_finish,
           color: Palette.success,
           isLoading: _isSubmitting,
         ),
@@ -2352,7 +2371,7 @@ class _MathSimulationActivityScreenState
                       else
                         const Center(
                             child: Icon(Icons.check_circle_outline,
-                                color: Colors.green, size: 36)),
+                                color: Palette.success, size: 36)),
                       Positioned(
                         top: 4,
                         right: 4,
@@ -2425,15 +2444,14 @@ class _MathSimulationActivityScreenState
               const SizedBox(height: 12),
 
               Text(
-                'เก่งมากเลย! (Well Done)',
-                style:
-                    AppTextStyles.heading(28, color: const Color(0xFF1B5E20)),
+                l.math_wellDone,
+                style: AppTextStyles.heading(28, color: Palette.successDark),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
-              const Text(
-                'บันทึกคะแนนสะสมแต้มรางวัลลงระบบเรียบร้อยแล้ว',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+              Text(
+                l.math_rewardSaved,
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
               ),
               const SizedBox(height: 24),
 
@@ -2442,7 +2460,7 @@ class _MathSimulationActivityScreenState
                 children: [
                   Expanded(
                     child: _buildSummaryKpiCard(
-                      label: 'SCORE',
+                      label: l.common_score,
                       value: '$_totalScoreEarned',
                       icon: Icons.workspace_premium,
                       color: Colors.amber.shade700,
@@ -2451,7 +2469,7 @@ class _MathSimulationActivityScreenState
                   const SizedBox(width: 10),
                   Expanded(
                     child: _buildSummaryKpiCard(
-                      label: 'TIMESpent',
+                      label: l.result_timeSpentLabel,
                       value: '${_formatTime(_elapsedSeconds).substring(3)}',
                       icon: Icons.timer_outlined,
                       color: Palette.sky,
@@ -2460,7 +2478,7 @@ class _MathSimulationActivityScreenState
                   const SizedBox(width: 10),
                   Expanded(
                     child: _buildSummaryKpiCard(
-                      label: 'CORRECT',
+                      label: l.calculate_correct,
                       value: '$correctCount/${_segments.length}',
                       icon: Icons.check_circle_outline,
                       color: Palette.success,
@@ -2473,7 +2491,7 @@ class _MathSimulationActivityScreenState
               // Detailed summary checklist
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('รายละเอียดการทำกิจกรรม',
+                child: Text(l.math_activityDetails,
                     style: AppTextStyles.heading(16, color: Colors.black54)),
               ),
               const SizedBox(height: 10),

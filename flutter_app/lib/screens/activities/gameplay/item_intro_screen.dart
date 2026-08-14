@@ -788,7 +788,8 @@ class _ItemIntroScreenState extends State<ItemIntroScreen>
         ),
         body: Center(
           child: Text(
-            'Error: No segments found for ${widget.activity.name}.',
+            AppLocalizations.of(context)!
+                .itemintro_noSegments(widget.activity.name),
             style: AppTextStyles.heading(20),
           ),
         ),

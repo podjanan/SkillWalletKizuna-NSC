@@ -148,7 +148,7 @@ class _ChildProfileScreenState extends State<ChildProfileScreen> {
             ),
             icon: const Icon(Icons.home_rounded),
             label: Text(
-              'Home',
+              l10n.common_home,
               style: AppTextStyles.heading(16, color: Colors.white),
             ),
           ),

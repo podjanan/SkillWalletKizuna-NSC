@@ -422,7 +422,7 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
           const Color(0xFFE53935), const Color(0xFFFDD835), t * 2)!;
     } else {
       return Color.lerp(
-          const Color(0xFFFDD835), const Color(0xFF43A047), (t - 0.5) * 2)!;
+          const Color(0xFFFDD835), Palette.success, (t - 0.5) * 2)!;
     }
   }
 
@@ -790,7 +790,7 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
                                 color: Palette.sky.withValues(alpha: 0.3)),
                           ),
                           child: Text(
-                            'Max: ${widget.activity.maxScore}',
+                            '${AppLocalizations.of(context)!.common_maxScoreLabel}: ${widget.activity.maxScore}',
                             style: AppTextStyles.label(13, color: Palette.sky),
                           ),
                         ),

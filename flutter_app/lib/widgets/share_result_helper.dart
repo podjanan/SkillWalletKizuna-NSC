@@ -155,7 +155,7 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
     await Clipboard.setData(ClipboardData(text: _buildShareText()));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Copied share text')),
+      SnackBar(content: Text(widget.l.common_copiedShareText)),
     );
   }
 
@@ -166,7 +166,8 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
     final pct = d.maxScore > 0 ? (d.score / d.maxScore).clamp(0.0, 1.0) : 0.0;
     final scoreColor = pct <= 0.5
         ? Color.lerp(const Color(0xFFE53935), const Color(0xFFFDD835), pct * 2)!
-        : Color.lerp(const Color(0xFFFDD835), const Color(0xFF43A047), (pct - 0.5) * 2)!;
+        : Color.lerp(
+            const Color(0xFFFDD835), Palette.success, (pct - 0.5) * 2)!;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -224,8 +225,8 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
                             Expanded(
                               child: Text(
                                 d.activityName,
-                                style:
-                                    AppTextStyles.label(13, color: Colors.white),
+                                style: AppTextStyles.label(13,
+                                    color: Colors.white),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -239,8 +240,8 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
                               ),
                               child: Text(
                                 '${d.score}/${d.maxScore}',
-                                style:
-                                    AppTextStyles.label(13, color: Colors.white),
+                                style: AppTextStyles.label(13,
+                                    color: Colors.white),
                               ),
                             ),
                           ],
@@ -277,7 +278,8 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
                       Text(
                         d.activityName.toUpperCase(),
                         textAlign: TextAlign.center,
-                        style: AppTextStyles.heading(16, color: Palette.deepGrey),
+                        style:
+                            AppTextStyles.heading(16, color: Palette.deepGrey),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -314,7 +316,7 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
             // Share button
             _ShareOptionButton(
               icon: kIsWeb ? Icons.download_rounded : Icons.share_rounded,
-              label: kIsWeb ? 'Share / Download image' : l.share_title,
+              label: kIsWeb ? l.common_shareDownloadImage : l.share_title,
               color: Palette.sky,
               onTap: _share,
               isLoading: _isSharing,
@@ -323,7 +325,7 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
               const SizedBox(height: 10),
               _ShareOptionButton(
                 icon: Icons.copy_rounded,
-                label: 'Copy share text',
+                label: l.common_copyShareText,
                 color: Palette.successAlt,
                 onTap: _copyShareText,
               ),

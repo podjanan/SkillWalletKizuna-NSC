@@ -13,12 +13,14 @@ import '../../../../theme/palette.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../widgets/ui.dart';
 import '../../../../widgets/game_activity_cover.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class SpaceAdventureScanScreen extends StatefulWidget {
   const SpaceAdventureScanScreen({super.key});
 
   @override
-  State<SpaceAdventureScanScreen> createState() => _SpaceAdventureScanScreenState();
+  State<SpaceAdventureScanScreen> createState() =>
+      _SpaceAdventureScanScreenState();
 }
 
 class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
@@ -32,7 +34,11 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
   List<String> _detectedObjects = [];
   List<SpaceAdventureArea> _areas = [];
   String? _scanError;
-  Map<String, dynamic> _gameSettings = {'scorePerItem': 10, 'timerLimit': 60, 'maxItems': 5};
+  Map<String, dynamic> _gameSettings = {
+    'scorePerItem': 10,
+    'timerLimit': 60,
+    'maxItems': 5
+  };
   Activity? _activity;
 
   bool _settingsLoaded = false;
@@ -65,7 +71,8 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
       if (activity.segments is Map) {
         final map = activity.segments as Map;
         timerLimit = int.tryParse(map['timeLimit']?.toString() ?? '60') ?? 60;
-        scorePerItem = int.tryParse(map['scorePerItem']?.toString() ?? '10') ?? 10;
+        scorePerItem =
+            int.tryParse(map['scorePerItem']?.toString() ?? '10') ?? 10;
         maxItems = int.tryParse(map['maxItems']?.toString() ?? '5') ?? 5;
       }
       if (mounted) {
@@ -100,17 +107,20 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
         draft['type'] == DraftService.typeSpaceAdventure &&
         draft['activityId'] == expectedActivityId) {
       final data = draft['data'] as Map<String, dynamic>? ?? {};
-      final detectedObjects = List<String>.from(data['detectedObjects'] as List<dynamic>? ?? []);
-      final completedItemsHistory = (data['completedItemsHistory'] as List<dynamic>? ?? [])
-          .map((item) => Map<String, dynamic>.from(item as Map))
-          .toList();
+      final detectedObjects =
+          List<String>.from(data['detectedObjects'] as List<dynamic>? ?? []);
+      final completedItemsHistory =
+          (data['completedItemsHistory'] as List<dynamic>? ?? [])
+              .map((item) => Map<String, dynamic>.from(item as Map))
+              .toList();
 
       if (mounted && detectedObjects.isNotEmpty) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => SpaceAdventureQuestScreen(
-              targetObject: data['targetObject'] as String? ?? detectedObjects.first,
+              targetObject:
+                  data['targetObject'] as String? ?? detectedObjects.first,
               timerLimit: data['timerLimit'] as int? ?? 60,
               scorePerItem: data['scorePerItem'] as int? ?? 10,
               detectedObjects: detectedObjects,
@@ -152,7 +162,9 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Unable to open image picker: $e'),
+          content: Text(
+            AppLocalizations.of(context)!.spaceScan_pickerError(e.toString()),
+          ),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -171,18 +183,21 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
     try {
       final base64String = base64Encode(bytes);
       final result = await _spaceService.scanRoom(base64String);
-      
+
       if (mounted) {
         setState(() {
           _detectedObjects = result.success ? result.objects : [];
+          final l = AppLocalizations.of(context)!;
           _scanError = result.success
               ? null
-              : '${result.error ?? 'Scan failed.'}${(result.reason ?? '').isNotEmpty ? '\nReason: ${result.reason}' : ''}';
+              : '${result.error ?? l.spaceScan_failed}${(result.reason ?? '').isNotEmpty ? '\n${l.spaceScan_reason(result.reason!)}' : ''}';
         });
         if (!result.success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(_scanError ?? 'Scan failed.'),
+              content: Text(
+                _scanError ?? AppLocalizations.of(context)!.spaceScan_failed,
+              ),
               backgroundColor: Colors.redAccent,
             ),
           );
@@ -215,7 +230,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          'Select image source',
+          AppLocalizations.of(context)!.spaceScan_selectSource,
           style: AppTextStyles.heading(18),
         ),
         content: Column(
@@ -224,7 +239,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
             ListTile(
               leading: const Icon(Icons.camera_alt, color: Palette.success),
               title: Text(
-                'Camera',
+                AppLocalizations.of(context)!.common_camera,
                 style: AppTextStyles.body(14),
               ),
               onTap: () => Navigator.pop(context, ImageSource.camera),
@@ -232,7 +247,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
             ListTile(
               leading: const Icon(Icons.photo_library, color: Palette.sky),
               title: Text(
-                'Gallery',
+                AppLocalizations.of(context)!.common_gallery,
                 style: AppTextStyles.body(14),
               ),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
@@ -246,8 +261,8 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
   void _finishScanAndStartQuest() {
     if (_detectedObjects.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please scan your room to find adventure objects first!'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.spaceScan_scanFirst),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -263,25 +278,26 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
-          'Delete Item?',
+          AppLocalizations.of(context)!.spaceScan_deleteItem,
           style: AppTextStyles.heading(18),
         ),
         content: Text(
-          'Are you sure you want to remove "${item.toUpperCase()}" from this quest?',
+          AppLocalizations.of(context)!
+              .spaceScan_deleteConfirm(item.toUpperCase()),
           style: AppTextStyles.body(14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
-              'Cancel',
+              AppLocalizations.of(context)!.common_cancel,
               style: AppTextStyles.body(14, color: Colors.grey),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             child: Text(
-              'Delete',
+              AppLocalizations.of(context)!.spaceScan_delete,
               style: AppTextStyles.body(14, color: Colors.redAccent),
             ),
           ),
@@ -299,8 +315,8 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
 
     if (availableObjects.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This area does not have any target items yet.'),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.spaceScan_noTargets),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -334,7 +350,8 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
       width: 76,
       height: 76,
       color: Palette.sky.withOpacity(0.12),
-      child: const Icon(Icons.meeting_room_outlined, color: Palette.sky, size: 34),
+      child:
+          const Icon(Icons.meeting_room_outlined, color: Palette.sky, size: 34),
     );
   }
 
@@ -363,7 +380,8 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
           ),
           child: Row(
             children: [
-              Icon(icon, color: selected ? Palette.sky : Colors.black45, size: 22),
+              Icon(icon,
+                  color: selected ? Palette.sky : Colors.black45, size: 22),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -395,6 +413,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
   }
 
   Widget _buildPresetAreaPanel() {
+    final l = AppLocalizations.of(context)!;
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -407,24 +426,26 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Choose preset area',
+            l.spaceScan_choosePreset,
             style: AppTextStyles.heading(18, color: Colors.black87),
           ),
           const SizedBox(height: 4),
           Text(
-            'Use target items managed in Space Adventure CMS.',
+            l.spaceScan_presetDescription,
             style: AppTextStyles.body(12, color: Colors.black54),
           ),
           const SizedBox(height: 14),
           Expanded(
             child: _isLoadingAreas
-                ? const Center(child: CircularProgressIndicator(color: Palette.sky))
+                ? const Center(
+                    child: CircularProgressIndicator(color: Palette.sky))
                 : _areas.isEmpty
                     ? Center(
                         child: Text(
-                          'No preset areas are available yet.\nPlease add one in Space Adventure CMS.',
+                          l.spaceScan_noPresets,
                           textAlign: TextAlign.center,
-                          style: AppTextStyles.body(14, color: Palette.deepGrey),
+                          style:
+                              AppTextStyles.body(14, color: Palette.deepGrey),
                         ),
                       )
                     : ListView.separated(
@@ -440,7 +461,8 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                               decoration: BoxDecoration(
                                 color: Palette.sky.withOpacity(0.06),
                                 borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: Palette.sky.withOpacity(0.2)),
+                                border: Border.all(
+                                    color: Palette.sky.withOpacity(0.2)),
                               ),
                               child: Row(
                                 children: [
@@ -448,34 +470,40 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                                     borderRadius: BorderRadius.circular(14),
                                     child: area.imageUrl.isNotEmpty
                                         ? Image.network(
-                                            ApiConfig.resolveAssetUrl(area.imageUrl),
+                                            ApiConfig.resolveAssetUrl(
+                                                area.imageUrl),
                                             width: 76,
                                             height: 76,
                                             fit: BoxFit.cover,
-                                            errorBuilder: (_, __, ___) => _areaPlaceholder(),
+                                            errorBuilder: (_, __, ___) =>
+                                                _areaPlaceholder(),
                                           )
                                         : _areaPlaceholder(),
                                   ),
                                   const SizedBox(width: 14),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           area.name.toUpperCase(),
-                                          style: AppTextStyles.label(14, color: Colors.black87),
+                                          style: AppTextStyles.label(14,
+                                              color: Colors.black87),
                                         ),
                                         const SizedBox(height: 6),
                                         Text(
                                           area.items.join(', '),
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
-                                          style: AppTextStyles.body(12, color: Palette.deepGrey),
+                                          style: AppTextStyles.body(12,
+                                              color: Palette.deepGrey),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Icon(Icons.play_arrow_rounded, size: 24, color: Palette.sky),
+                                  const Icon(Icons.play_arrow_rounded,
+                                      size: 24, color: Palette.sky),
                                 ],
                               ),
                             ),
@@ -490,6 +518,7 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -538,13 +567,14 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Phase 1: Room scan',
+                            l.spaceScan_phase,
                             style: AppTextStyles.label(13, color: Palette.sky),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Take a photo of your room to find quest items.',
-                            style: AppTextStyles.body(12, color: Colors.black87),
+                            l.spaceScan_intro,
+                            style:
+                                AppTextStyles.body(12, color: Colors.black87),
                           ),
                         ],
                       ),
@@ -559,16 +589,16 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                   _modeButton(
                     selected: _usePresetMode,
                     icon: Icons.list_alt_rounded,
-                    title: 'Use preset',
-                    subtitle: 'CMS item list',
+                    title: l.spaceScan_usePreset,
+                    subtitle: l.spaceScan_cmsItems,
                     onTap: () => setState(() => _usePresetMode = true),
                   ),
                   const SizedBox(width: 12),
                   _modeButton(
                     selected: !_usePresetMode,
                     icon: Icons.center_focus_strong_rounded,
-                    title: 'Scan room',
-                    subtitle: 'Find items in photo',
+                    title: l.spaceScan_scanRoom,
+                    subtitle: l.spaceScan_findItems,
                     onTap: () => setState(() => _usePresetMode = false),
                   ),
                 ],
@@ -580,126 +610,136 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                 child: _usePresetMode
                     ? _buildPresetAreaPanel()
                     : Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: _isScanning ? Palette.sky : Palette.divider,
-                      width: 3,
-                    ),
-                    boxShadow: Palette.cardShadow,
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          if (_roomImageBytes == null) ...[
-                            // Scanner HUD default
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(28),
+                          border: Border.all(
+                            color: _isScanning ? Palette.sky : Palette.divider,
+                            width: 3,
+                          ),
+                          boxShadow: Palette.cardShadow,
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            return Stack(
+                              alignment: Alignment.center,
                               children: [
-                                Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    color: Palette.sky.withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Palette.sky, width: 2),
-                                  ),
-                                  child: const Icon(
-                                    Icons.camera_alt_outlined,
-                                    color: Palette.sky,
-                                    size: 40,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                Text(
-                                  'Scan your room',
-                                  style: AppTextStyles.heading(18, color: Colors.black87),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Tap below to take a photo',
-                                  style: AppTextStyles.body(13, color: Colors.black54),
-                                ),
-                              ],
-                            ),
-                          ] else ...[
-                            // Captured image
-                            Image.memory(
-                              _roomImageBytes!,
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-
-                            // Scanning overlay
-                            if (_isScanning) ...[
-                              Container(
-                                color: Palette.sky.withOpacity(0.15),
-                              ),
-                              AnimatedBuilder(
-                                animation: _scanAnimationController,
-                                builder: (context, child) {
-                                  return Positioned(
-                                    top: _scanAnimationController.value * constraints.maxHeight,
-                                    left: 0,
-                                    right: 0,
-                                    child: Container(
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: Palette.sky,
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Palette.sky.withOpacity(0.8),
-                                            blurRadius: 12,
-                                            spreadRadius: 3,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              // Spinning loading indicator
-                              Positioned(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Palette.sky.withOpacity(0.5)),
-                                    boxShadow: Palette.cardShadow,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                if (_roomImageBytes == null) ...[
+                                  // Scanner HUD default
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
+                                      Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          color: Palette.sky.withOpacity(0.1),
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: Palette.sky, width: 2),
+                                        ),
+                                        child: const Icon(
+                                          Icons.camera_alt_outlined,
                                           color: Palette.sky,
-                                          strokeWidth: 2,
+                                          size: 40,
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
+                                      const SizedBox(height: 20),
                                       Text(
-                                        'Scanning for items...',
-                                        style: AppTextStyles.label(13, color: Palette.sky),
+                                        l.spaceScan_scanRoom,
+                                        style: AppTextStyles.heading(18,
+                                            color: Colors.black87),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        l.spaceScan_tapPhoto,
+                                        style: AppTextStyles.body(13,
+                                            color: Colors.black54),
                                       ),
                                     ],
                                   ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ],
-                      );
-                    },
-                  ),
-                ),
+                                ] else ...[
+                                  // Captured image
+                                  Image.memory(
+                                    _roomImageBytes!,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+
+                                  // Scanning overlay
+                                  if (_isScanning) ...[
+                                    Container(
+                                      color: Palette.sky.withOpacity(0.15),
+                                    ),
+                                    AnimatedBuilder(
+                                      animation: _scanAnimationController,
+                                      builder: (context, child) {
+                                        return Positioned(
+                                          top: _scanAnimationController.value *
+                                              constraints.maxHeight,
+                                          left: 0,
+                                          right: 0,
+                                          child: Container(
+                                            height: 6,
+                                            decoration: BoxDecoration(
+                                              color: Palette.sky,
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Palette.sky
+                                                      .withOpacity(0.8),
+                                                  blurRadius: 12,
+                                                  spreadRadius: 3,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    // Spinning loading indicator
+                                    Positioned(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 20, vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          border: Border.all(
+                                              color:
+                                                  Palette.sky.withOpacity(0.5)),
+                                          boxShadow: Palette.cardShadow,
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                color: Palette.sky,
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              l.spaceScan_scanning,
+                                              style: AppTextStyles.label(13,
+                                                  color: Palette.sky),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ],
+                            );
+                          },
+                        ),
+                      ),
               ),
               const SizedBox(height: 24),
 
@@ -709,17 +749,20 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                   decoration: BoxDecoration(
                     color: Colors.redAccent.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: Colors.redAccent.withOpacity(0.35)),
+                    border:
+                        Border.all(color: Colors.redAccent.withOpacity(0.35)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
+                      const Icon(Icons.error_outline,
+                          color: Colors.redAccent, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           _scanError!,
-                          style: AppTextStyles.body(12, color: Colors.redAccent),
+                          style:
+                              AppTextStyles.body(12, color: Colors.redAccent),
                         ),
                       ),
                     ],
@@ -729,9 +772,11 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
               ],
 
               // Scanned items output tag view
-              if (!_usePresetMode && _detectedObjects.isNotEmpty && !_isScanning) ...[
+              if (!_usePresetMode &&
+                  _detectedObjects.isNotEmpty &&
+                  !_isScanning) ...[
                 Text(
-                  'Items detected:',
+                  l.spaceScan_itemsDetected,
                   style: AppTextStyles.label(12, color: Colors.black54),
                 ),
                 const SizedBox(height: 10),
@@ -743,25 +788,30 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                     itemBuilder: (context, index) {
                       return Container(
                         margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
                           color: Palette.sky.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(15),
-                          border: Border.all(color: Palette.sky.withOpacity(0.3)),
+                          border:
+                              Border.all(color: Palette.sky.withOpacity(0.3)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.check_circle_outline, color: Palette.sky, size: 16),
+                            const Icon(Icons.check_circle_outline,
+                                color: Palette.sky, size: 16),
                             const SizedBox(width: 6),
                             Text(
                               _detectedObjects[index].toUpperCase(),
-                              style: AppTextStyles.label(12, color: Palette.skyDark),
+                              style: AppTextStyles.label(12,
+                                  color: Palette.skyDark),
                             ),
                             const SizedBox(width: 6),
                             GestureDetector(
                               onTap: () async {
-                                final confirm = await _showDeleteConfirmDialog(_detectedObjects[index]);
+                                final confirm = await _showDeleteConfirmDialog(
+                                    _detectedObjects[index]);
                                 if (confirm == true) {
                                   setState(() {
                                     _detectedObjects.removeAt(index);
@@ -787,9 +837,10 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (_roomImageBytes != null && _detectedObjects.isNotEmpty) ...[
+                    if (_roomImageBytes != null &&
+                        _detectedObjects.isNotEmpty) ...[
                       GradientButton.success(
-                        label: 'Start quest',
+                        label: l.spaceScan_startQuest,
                         onTap: _isScanning ? null : _finishScanAndStartQuest,
                         fontSize: 15,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -797,7 +848,9 @@ class _SpaceAdventureScanScreenState extends State<SpaceAdventureScanScreen>
                       const SizedBox(height: 12),
                     ],
                     GradientButton.primary(
-                      label: _roomImageBytes == null ? 'Scan room' : 'Re-scan',
+                      label: _roomImageBytes == null
+                          ? l.spaceScan_scanRoom
+                          : l.spaceScan_rescan,
                       onTap: _isScanning ? null : _captureRoom,
                       fontSize: 14,
                       padding: const EdgeInsets.symmetric(vertical: 14),

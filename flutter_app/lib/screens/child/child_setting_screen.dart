@@ -166,7 +166,7 @@ class _ChildSettingScreenState extends State<ChildSettingScreen> {
                   const SizedBox(width: 4),
                   Text(
                     Localizations.localeOf(context).languageCode == 'th'
-                        ? 'เพิ่ม'
+                        ? AppLocalizations.of(context)!.common_add
                         : 'Add',
                     style: AppTextStyles.label(13, color: Colors.white),
                   ),

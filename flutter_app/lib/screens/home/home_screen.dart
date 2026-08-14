@@ -972,6 +972,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ignore: unused_element
   Widget _buildHomeBody(BuildContext context) {
     final userProvider = context.watch<UserProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     if (userProvider.children.isEmpty) {
       return _buildNoChildrenPlaceholder();
@@ -1276,7 +1277,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
-                                'NEW',
+                                l10n.home_newBadge,
                                 style: AppTextStyles.label(10,
                                     color: Colors.white),
                               ),
@@ -1289,7 +1290,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Scan your room and find hidden items!',
+                              l10n.home_spaceDescription,
                               style: AppTextStyles.body(12,
                                   color: Palette.deepGrey),
                             ),
@@ -1529,11 +1530,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Welcome back',
+                        l10n.home_welcomeBack,
                         style: AppTextStyles.body(13, color: Palette.authGrey),
                       ),
                       Text(
-                        parentName.isEmpty ? 'Parent' : parentName,
+                        parentName.isEmpty
+                            ? l10n.home_parentFallback
+                            : parentName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.heading(20, color: Palette.text),
@@ -1544,7 +1547,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 OutlinedButton.icon(
                   onPressed: _showFilterBottomSheet,
                   icon: const Icon(Icons.tune_rounded, size: 17),
-                  label: const Text('Filter'),
+                  label: Text(l10n.home_filterTitle),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Palette.terracotta,
                     side: const BorderSide(color: Palette.terracotta),
@@ -1560,7 +1563,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 24),
-            Text("Who's here?", style: AppTextStyles.heading(17)),
+            Text(l10n.home_whosHere, style: AppTextStyles.heading(17)),
             const SizedBox(height: 12),
             SizedBox(
               height: 82,
@@ -1587,7 +1590,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text('Add', style: AppTextStyles.body(11)),
+                          Text(l10n.home_add, style: AppTextStyles.body(11)),
                         ],
                       ),
                     );
@@ -1595,7 +1598,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   final entry = userProvider.children[index];
                   final child = entry['child'] as Map<String, dynamic>? ?? {};
                   final id = child['child_id']?.toString();
-                  final name = child['name_surname']?.toString() ?? 'Child';
+                  final name = child['name_surname']?.toString() ??
+                      l10n.sing_childFallback;
                   final selected = id == userProvider.currentChildId;
                   return GestureDetector(
                     onTap:
@@ -1660,7 +1664,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Reward points',
+                          l10n.home_rewardPoints,
                           style: AppTextStyles.body(
                             13,
                             color: Palette.deepGrey,
@@ -1679,7 +1683,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               TextSpan(
-                                text: '  points',
+                                text: '  ${l10n.medalredemption_points}',
                                 style: AppTextStyles.body(13),
                               ),
                             ],
@@ -1703,7 +1707,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     child: Text(
-                      'Redeem',
+                      l10n.home_redeem,
                       style: AppTextStyles.heading(15, color: Colors.white),
                     ),
                   ),
@@ -1715,7 +1719,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               children: [
                 Expanded(
-                  child: Text('Activities', style: AppTextStyles.heading(20)),
+                  child: Text(
+                    l10n.home_activities,
+                    style: AppTextStyles.heading(20),
+                  ),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pushNamed(

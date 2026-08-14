@@ -6,6 +6,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../models/bilingual_song_model.dart';
+import '../../../l10n/app_localizations.dart';
 import '../../../theme/app_text_styles.dart';
 import '../../../theme/palette.dart';
 
@@ -69,7 +70,8 @@ class _SingTogetherCameraScreenState extends State<SingTogetherCameraScreen> {
     final controller = CameraController(
       cameraDescription,
       ResolutionPreset.medium,
-      enableAudio: true, // Captures mic audio & singing into the recorded video file
+      enableAudio:
+          true, // Captures mic audio & singing into the recorded video file
     );
 
     await prevController?.dispose();
@@ -175,8 +177,12 @@ class _SingTogetherCameraScreenState extends State<SingTogetherCameraScreen> {
                             child: FittedBox(
                               fit: BoxFit.cover,
                               child: SizedBox(
-                                width: _cameraController!.value.previewSize?.height ?? MediaQuery.of(context).size.width,
-                                height: _cameraController!.value.previewSize?.width ?? MediaQuery.of(context).size.height,
+                                width: _cameraController!
+                                        .value.previewSize?.height ??
+                                    MediaQuery.of(context).size.width,
+                                height: _cameraController!
+                                        .value.previewSize?.width ??
+                                    MediaQuery.of(context).size.height,
                                 child: CameraPreview(_cameraController!),
                               ),
                             ),
@@ -190,7 +196,8 @@ class _SingTogetherCameraScreenState extends State<SingTogetherCameraScreen> {
                                   size: 64, color: Colors.white70),
                               const SizedBox(height: 12),
                               Text(
-                                'กำลังเตรียมกล้องในแอป...',
+                                AppLocalizations.of(context)!
+                                    .sing_cameraPreparing,
                                 style: AppTextStyles.body(14,
                                     color: Colors.white70),
                                 textAlign: TextAlign.center,
@@ -240,7 +247,8 @@ class _SingTogetherCameraScreenState extends State<SingTogetherCameraScreen> {
                           Flexible(
                             child: Text(
                               widget.song.titleEn,
-                              style: AppTextStyles.label(12, color: Colors.white),
+                              style:
+                                  AppTextStyles.label(12, color: Colors.white),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -361,9 +369,9 @@ class _SingTogetherCameraScreenState extends State<SingTogetherCameraScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          const Text(
-                            'กำลังอัดวิดีโอพร้อมเพลง...',
-                            style: TextStyle(
+                          Text(
+                            AppLocalizations.of(context)!.sing_cameraRecording,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,

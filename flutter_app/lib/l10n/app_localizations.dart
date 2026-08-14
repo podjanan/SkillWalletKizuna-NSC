@@ -3427,6 +3427,1530 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'NEXT'**
   String get math_simulation_nextBtn;
+
+  /// No description provided for @sing_languageBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get sing_languageBadge;
+
+  /// No description provided for @sing_heroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sing the song,\nwin the stars!'**
+  String get sing_heroTitle;
+
+  /// No description provided for @sing_selectOurSongs.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Our Songs'**
+  String get sing_selectOurSongs;
+
+  /// No description provided for @sing_readyToPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to play'**
+  String get sing_readyToPlay;
+
+  /// No description provided for @sing_createOwnSong.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Your Own'**
+  String get sing_createOwnSong;
+
+  /// No description provided for @sing_wordsOrSentences.
+  ///
+  /// In en, this message translates to:
+  /// **'Words / Sentences'**
+  String get sing_wordsOrSentences;
+
+  /// No description provided for @sing_chooseSong.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Song'**
+  String get sing_chooseSong;
+
+  /// No description provided for @sing_singingChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'Children singing together ({count})'**
+  String sing_singingChildren(int count);
+
+  /// No description provided for @sing_tapAddChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap here to add children'**
+  String get sing_tapAddChild;
+
+  /// No description provided for @sing_childrenAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {count} more child(ren)'**
+  String sing_childrenAdded(int count);
+
+  /// No description provided for @sing_startSinging.
+  ///
+  /// In en, this message translates to:
+  /// **'START SINGING'**
+  String get sing_startSinging;
+
+  /// No description provided for @sing_noSongs.
+  ///
+  /// In en, this message translates to:
+  /// **'No songs are available right now'**
+  String get sing_noSongs;
+
+  /// No description provided for @sing_familySongTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a Family Memory Song'**
+  String get sing_familySongTitle;
+
+  /// No description provided for @sing_familySongSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter something your child should remember and turn it into a song'**
+  String get sing_familySongSubtitle;
+
+  /// No description provided for @sing_trainingType.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like to practice?'**
+  String get sing_trainingType;
+
+  /// No description provided for @sing_vocabulary.
+  ///
+  /// In en, this message translates to:
+  /// **'Vocabulary'**
+  String get sing_vocabulary;
+
+  /// No description provided for @sing_sentence.
+  ///
+  /// In en, this message translates to:
+  /// **'Sentence'**
+  String get sing_sentence;
+
+  /// No description provided for @sing_vocabularyPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Words for your child to remember'**
+  String get sing_vocabularyPrompt;
+
+  /// No description provided for @sing_sentencePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Sentences for your child to remember'**
+  String get sing_sentencePrompt;
+
+  /// No description provided for @sing_vocabularyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. apple, banana, orange, happy'**
+  String get sing_vocabularyHint;
+
+  /// No description provided for @sing_sentenceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. I brush my teeth every morning.'**
+  String get sing_sentenceHint;
+
+  /// No description provided for @sing_musicStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Music Style'**
+  String get sing_musicStyle;
+
+  /// No description provided for @sing_styleKids.
+  ///
+  /// In en, this message translates to:
+  /// **'Fun Kids Song'**
+  String get sing_styleKids;
+
+  /// No description provided for @sing_styleDance.
+  ///
+  /// In en, this message translates to:
+  /// **'Dance Pop'**
+  String get sing_styleDance;
+
+  /// No description provided for @sing_styleWarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Warm Slow Song'**
+  String get sing_styleWarm;
+
+  /// No description provided for @sing_styleHipHop.
+  ///
+  /// In en, this message translates to:
+  /// **'Kids Hip-Hop'**
+  String get sing_styleHipHop;
+
+  /// No description provided for @sing_uiOnlyNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'The interface is ready. Song generation will be connected in the next step.'**
+  String get sing_uiOnlyNotice;
+
+  /// No description provided for @sing_createSongButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Song from This Content'**
+  String get sing_createSongButton;
+
+  /// No description provided for @sing_showChords.
+  ///
+  /// In en, this message translates to:
+  /// **'Show Parent Guitar Chords'**
+  String get sing_showChords;
+
+  /// No description provided for @sing_hideChords.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide Guitar Chords'**
+  String get sing_hideChords;
+
+  /// No description provided for @sing_chordsShown.
+  ///
+  /// In en, this message translates to:
+  /// **'Guitar chord mode is on'**
+  String get sing_chordsShown;
+
+  /// No description provided for @sing_chordsHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'Guitar chords are hidden'**
+  String get sing_chordsHidden;
+
+  /// No description provided for @sing_videoSyncHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The dance video plays with the song'**
+  String get sing_videoSyncHint;
+
+  /// No description provided for @sing_evidenceAttached.
+  ///
+  /// In en, this message translates to:
+  /// **'Evidence attached'**
+  String get sing_evidenceAttached;
+
+  /// No description provided for @sing_captureEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo or record evidence video'**
+  String get sing_captureEvidence;
+
+  /// No description provided for @sing_attached.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached'**
+  String get sing_attached;
+
+  /// No description provided for @sing_recordVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Video'**
+  String get sing_recordVideo;
+
+  /// No description provided for @sing_takePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo'**
+  String get sing_takePhoto;
+
+  /// No description provided for @sing_openVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Video'**
+  String get sing_openVideo;
+
+  /// No description provided for @sing_songVocabulary.
+  ///
+  /// In en, this message translates to:
+  /// **'Song Vocabulary:'**
+  String get sing_songVocabulary;
+
+  /// No description provided for @sing_pronunciation.
+  ///
+  /// In en, this message translates to:
+  /// **'Pronunciation: {value}'**
+  String sing_pronunciation(String value);
+
+  /// No description provided for @sing_translation.
+  ///
+  /// In en, this message translates to:
+  /// **'Meaning: {value}'**
+  String sing_translation(String value);
+
+  /// No description provided for @sing_cameraPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the camera...'**
+  String get sing_cameraPreparing;
+
+  /// No description provided for @sing_cameraRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording video with the song...'**
+  String get sing_cameraRecording;
+
+  /// No description provided for @sing_hubSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bilingual songs with a guitar chord mode for parents'**
+  String get sing_hubSubtitle;
+
+  /// No description provided for @sing_evaluationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaluate Sing Together'**
+  String get sing_evaluationTitle;
+
+  /// No description provided for @sing_selectMediaSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Select {media} source'**
+  String sing_selectMediaSource(String media);
+
+  /// No description provided for @sing_childFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Child'**
+  String get sing_childFallback;
+
+  /// No description provided for @sing_saveScoreError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the score: {error}'**
+  String sing_saveScoreError(String error);
+
+  /// No description provided for @sing_scoreChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Score {name}'**
+  String sing_scoreChild(String name);
+
+  /// No description provided for @sing_scoreLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Score (0–100)'**
+  String get sing_scoreLabel;
+
+  /// No description provided for @sing_duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Singing time: {minutes} min {seconds} sec'**
+  String sing_duration(int minutes, int seconds);
+
+  /// No description provided for @sing_imageVideoEvidence.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo / Video Evidence'**
+  String get sing_imageVideoEvidence;
+
+  /// No description provided for @sing_change.
+  ///
+  /// In en, this message translates to:
+  /// **'Change'**
+  String get sing_change;
+
+  /// No description provided for @sing_watchVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch Video 🎥'**
+  String get sing_watchVideo;
+
+  /// No description provided for @sing_evaluateChildren.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaluate Children ({count})'**
+  String sing_evaluateChildren(int count);
+
+  /// No description provided for @sing_notesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional Comments'**
+  String get sing_notesTitle;
+
+  /// No description provided for @sing_notesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. sang clearly and pronounced the vocabulary correctly...'**
+  String get sing_notesHint;
+
+  /// No description provided for @sing_savingScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving score...'**
+  String get sing_savingScore;
+
+  /// No description provided for @sing_saveScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Singing Score'**
+  String get sing_saveScore;
+
+  /// No description provided for @common_loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get common_loading;
+
+  /// No description provided for @common_pleaseWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait'**
+  String get common_pleaseWait;
+
+  /// No description provided for @common_add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get common_add;
+
+  /// No description provided for @common_attachmentError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not attach media: {error}'**
+  String common_attachmentError(String error);
+
+  /// No description provided for @languageList_loadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load activities: {error}'**
+  String languageList_loadError(String error);
+
+  /// No description provided for @languageList_empty.
+  ///
+  /// In en, this message translates to:
+  /// **'No activities in this category yet'**
+  String get languageList_empty;
+
+  /// No description provided for @dynamic_listening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening...'**
+  String get dynamic_listening;
+
+  /// No description provided for @dynamic_holdToSpeak.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to speak'**
+  String get dynamic_holdToSpeak;
+
+  /// No description provided for @dynamic_greatJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Great job!'**
+  String get dynamic_greatJob;
+
+  /// No description provided for @dynamic_niceTry.
+  ///
+  /// In en, this message translates to:
+  /// **'Nice try!'**
+  String get dynamic_niceTry;
+
+  /// No description provided for @disclaimer_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Software Terms of Use'**
+  String get disclaimer_title;
+
+  /// No description provided for @disclaimer_acceptCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'I have read, understood, and accepted these terms'**
+  String get disclaimer_acceptCheck;
+
+  /// No description provided for @disclaimer_acceptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept and Continue'**
+  String get disclaimer_acceptButton;
+
+  /// No description provided for @disclaimer_intro.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill Wallet Kizuna was developed for the 28th National Software Contest (NSC 2026) to support children\'s learning and skill development through family activities.'**
+  String get disclaimer_intro;
+
+  /// No description provided for @disclaimer_developers.
+  ///
+  /// In en, this message translates to:
+  /// **'Developers'**
+  String get disclaimer_developers;
+
+  /// No description provided for @disclaimer_advisor.
+  ///
+  /// In en, this message translates to:
+  /// **'Advisor'**
+  String get disclaimer_advisor;
+
+  /// No description provided for @disclaimer_terms.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Use'**
+  String get disclaimer_terms;
+
+  /// No description provided for @disclaimer_license.
+  ///
+  /// In en, this message translates to:
+  /// **'The intellectual property belongs to the developers. The developers permit NSTDA to distribute this software ‘as is’ for temporary, non-exclusive, educational or personal non-commercial use without charge.'**
+  String get disclaimer_license;
+
+  /// No description provided for @disclaimer_liability.
+  ///
+  /// In en, this message translates to:
+  /// **'NSTDA and the developers are not liable for loss, damage, errors, software performance, or consequences related to its use. Users are responsible for operation and maintenance.'**
+  String get disclaimer_liability;
+
+  /// No description provided for @daily_singTogether.
+  ///
+  /// In en, this message translates to:
+  /// **'Sing Together'**
+  String get daily_singTogether;
+
+  /// No description provided for @createActivity_physicalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Physical Activity'**
+  String get createActivity_physicalTitle;
+
+  /// No description provided for @createActivity_calculateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Calculation Activity'**
+  String get createActivity_calculateTitle;
+
+  /// No description provided for @createActivity_mathTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Math Problems Activity'**
+  String get createActivity_mathTitle;
+
+  /// No description provided for @createActivity_voiceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Voice Quest'**
+  String get createActivity_voiceTitle;
+
+  /// No description provided for @createActivity_spaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Space Adventure'**
+  String get createActivity_spaceTitle;
+
+  /// No description provided for @createActivity_maxScoreRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the maximum score'**
+  String get createActivity_maxScoreRequired;
+
+  /// No description provided for @createActivity_timeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the time limit'**
+  String get createActivity_timeRequired;
+
+  /// No description provided for @createActivity_itemScoreRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter the score per item'**
+  String get createActivity_itemScoreRequired;
+
+  /// No description provided for @createActivity_wordCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Word Category'**
+  String get createActivity_wordCategory;
+
+  /// No description provided for @createActivity_timeLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Limit (Seconds)'**
+  String get createActivity_timeLimit;
+
+  /// No description provided for @createActivity_scorePerItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Score Per Detected Item'**
+  String get createActivity_scorePerItem;
+
+  /// No description provided for @wordCategory_animals.
+  ///
+  /// In en, this message translates to:
+  /// **'🦁 Animals'**
+  String get wordCategory_animals;
+
+  /// No description provided for @wordCategory_food.
+  ///
+  /// In en, this message translates to:
+  /// **'🍎 Food'**
+  String get wordCategory_food;
+
+  /// No description provided for @wordCategory_vehicles.
+  ///
+  /// In en, this message translates to:
+  /// **'🚀 Vehicles'**
+  String get wordCategory_vehicles;
+
+  /// No description provided for @wordCategory_nature.
+  ///
+  /// In en, this message translates to:
+  /// **'🌈 Nature'**
+  String get wordCategory_nature;
+
+  /// No description provided for @wordCategory_bedroom.
+  ///
+  /// In en, this message translates to:
+  /// **'🛏️ Bedroom'**
+  String get wordCategory_bedroom;
+
+  /// No description provided for @wordCategory_school.
+  ///
+  /// In en, this message translates to:
+  /// **'🎒 School'**
+  String get wordCategory_school;
+
+  /// No description provided for @disclaimer_developer1.
+  ///
+  /// In en, this message translates to:
+  /// **'Mr. Kanok Klinsuwan'**
+  String get disclaimer_developer1;
+
+  /// No description provided for @disclaimer_developer2.
+  ///
+  /// In en, this message translates to:
+  /// **'Mr. Podjanan Osatanan'**
+  String get disclaimer_developer2;
+
+  /// No description provided for @disclaimer_developer3.
+  ///
+  /// In en, this message translates to:
+  /// **'Mr. Nawapon Kitinanprakorn'**
+  String get disclaimer_developer3;
+
+  /// No description provided for @disclaimer_advisorName.
+  ///
+  /// In en, this message translates to:
+  /// **'Asst. Prof. Dr. Suwatchai Kamonsantiroj'**
+  String get disclaimer_advisorName;
+
+  /// No description provided for @math_scanCorrect.
+  ///
+  /// In en, this message translates to:
+  /// **'Question {index}: detected “{text}” (correct ✓)'**
+  String math_scanCorrect(int index, String text);
+
+  /// No description provided for @math_scanIncorrect.
+  ///
+  /// In en, this message translates to:
+  /// **'Question {index}: detected “{text}” (does not match)'**
+  String math_scanIncorrect(int index, String text);
+
+  /// No description provided for @math_noRecognition.
+  ///
+  /// In en, this message translates to:
+  /// **'No result was detected from the image'**
+  String get math_noRecognition;
+
+  /// No description provided for @math_scanQuestionError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not scan question {index}: {error}'**
+  String math_scanQuestionError(int index, String error);
+
+  /// No description provided for @math_noAnswerFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No answer found'**
+  String get math_noAnswerFound;
+
+  /// No description provided for @math_invalidServerResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'The server returned an invalid response'**
+  String get math_invalidServerResponse;
+
+  /// No description provided for @math_scanError.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan failed: {error}'**
+  String math_scanError(String error);
+
+  /// No description provided for @math_submitError.
+  ///
+  /// In en, this message translates to:
+  /// **'Submission failed: {error}'**
+  String math_submitError(String error);
+
+  /// No description provided for @math_scanResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer Scan Results'**
+  String get math_scanResultTitle;
+
+  /// No description provided for @math_activityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Math Scenario Activity'**
+  String get math_activityTitle;
+
+  /// No description provided for @math_exitTvMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit Smart TV Mode'**
+  String get math_exitTvMode;
+
+  /// No description provided for @math_questionImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Question {index} image'**
+  String math_questionImage(int index);
+
+  /// No description provided for @math_swipeNextImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe to view the next image'**
+  String get math_swipeNextImage;
+
+  /// No description provided for @math_end.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get math_end;
+
+  /// No description provided for @math_noImage.
+  ///
+  /// In en, this message translates to:
+  /// **'No image is available for this question'**
+  String get math_noImage;
+
+  /// No description provided for @math_activityDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity Details'**
+  String get math_activityDetails;
+
+  /// No description provided for @math_defaultDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Practice analytical thinking and solve math problems from real-world images. Write each answer on paper before scanning.'**
+  String get math_defaultDescription;
+
+  /// No description provided for @math_paperInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare paper and a pencil. Write each number clearly so the camera can scan it.'**
+  String get math_paperInstruction;
+
+  /// No description provided for @math_questionProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Question {current} of {total}'**
+  String math_questionProgress(int current, int total);
+
+  /// No description provided for @math_proposition.
+  ///
+  /// In en, this message translates to:
+  /// **'PROBLEM SCENARIO'**
+  String get math_proposition;
+
+  /// No description provided for @math_reviewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Review All Results'**
+  String get math_reviewAll;
+
+  /// No description provided for @math_cameraCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Check with Camera (Question {index})'**
+  String math_cameraCheck(int index);
+
+  /// No description provided for @math_readingHandwriting.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading handwriting from the photo...'**
+  String get math_readingHandwriting;
+
+  /// No description provided for @math_readCorrect.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected “{text}” (correct ✓)'**
+  String math_readCorrect(String text);
+
+  /// No description provided for @math_readIncorrect.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected “{text}” (does not match)'**
+  String math_readIncorrect(String text);
+
+  /// No description provided for @math_takePhotoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Photograph the handwritten answer for this question'**
+  String get math_takePhotoHint;
+
+  /// No description provided for @math_thisQuestionImage.
+  ///
+  /// In en, this message translates to:
+  /// **'This Question\'s Image'**
+  String get math_thisQuestionImage;
+
+  /// No description provided for @math_readingAi.
+  ///
+  /// In en, this message translates to:
+  /// **'AI is reading the handwriting...'**
+  String get math_readingAi;
+
+  /// No description provided for @math_retakeQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Retake This Question'**
+  String get math_retakeQuestion;
+
+  /// No description provided for @math_scanQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo / Scan This Question'**
+  String get math_scanQuestion;
+
+  /// No description provided for @math_editNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Number'**
+  String get math_editNumber;
+
+  /// No description provided for @math_readingAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading Answers from the Image'**
+  String get math_readingAll;
+
+  /// No description provided for @math_waitFindingNumbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait while the system finds all numbers'**
+  String get math_waitFindingNumbers;
+
+  /// No description provided for @math_checkAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Check All Answers'**
+  String get math_checkAll;
+
+  /// No description provided for @math_reviewBeforeFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Review and edit the results before finishing'**
+  String get math_reviewBeforeFinish;
+
+  /// No description provided for @math_answerList.
+  ///
+  /// In en, this message translates to:
+  /// **'Answer List'**
+  String get math_answerList;
+
+  /// No description provided for @math_solutionValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Solution: {value}'**
+  String math_solutionValue(String value);
+
+  /// No description provided for @math_noAnswerDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'No answer detected'**
+  String get math_noAnswerDetected;
+
+  /// No description provided for @math_rescan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan Again'**
+  String get math_rescan;
+
+  /// No description provided for @math_wellDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Well Done!'**
+  String get math_wellDone;
+
+  /// No description provided for @math_rewardSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Your score and reward points have been saved'**
+  String get math_rewardSaved;
+
+  /// No description provided for @history_redeemed.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeemed {name}'**
+  String history_redeemed(String name);
+
+  /// No description provided for @history_rewardFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Reward'**
+  String get history_rewardFallback;
+
+  /// No description provided for @spaceScan_pickerError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open image picker: {error}'**
+  String spaceScan_pickerError(String error);
+
+  /// No description provided for @spaceScan_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan failed.'**
+  String get spaceScan_failed;
+
+  /// No description provided for @spaceScan_reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason: {reason}'**
+  String spaceScan_reason(String reason);
+
+  /// No description provided for @spaceScan_selectSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Select image source'**
+  String get spaceScan_selectSource;
+
+  /// No description provided for @spaceScan_scanFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Please scan your room to find adventure objects first!'**
+  String get spaceScan_scanFirst;
+
+  /// No description provided for @spaceScan_deleteItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Item?'**
+  String get spaceScan_deleteItem;
+
+  /// No description provided for @spaceScan_deleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove “{item}” from this quest?'**
+  String spaceScan_deleteConfirm(String item);
+
+  /// No description provided for @spaceScan_delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get spaceScan_delete;
+
+  /// No description provided for @spaceScan_noTargets.
+  ///
+  /// In en, this message translates to:
+  /// **'This area does not have any target items yet.'**
+  String get spaceScan_noTargets;
+
+  /// No description provided for @spaceScan_choosePreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose preset area'**
+  String get spaceScan_choosePreset;
+
+  /// No description provided for @spaceScan_presetDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Use target items managed in Space Adventure CMS.'**
+  String get spaceScan_presetDescription;
+
+  /// No description provided for @spaceScan_noPresets.
+  ///
+  /// In en, this message translates to:
+  /// **'No preset areas are available yet.\nPlease add one in Space Adventure CMS.'**
+  String get spaceScan_noPresets;
+
+  /// No description provided for @spaceScan_phase.
+  ///
+  /// In en, this message translates to:
+  /// **'Phase 1: Room scan'**
+  String get spaceScan_phase;
+
+  /// No description provided for @spaceScan_intro.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a photo of your room to find quest items.'**
+  String get spaceScan_intro;
+
+  /// No description provided for @spaceScan_usePreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Use preset'**
+  String get spaceScan_usePreset;
+
+  /// No description provided for @spaceScan_cmsItems.
+  ///
+  /// In en, this message translates to:
+  /// **'CMS item list'**
+  String get spaceScan_cmsItems;
+
+  /// No description provided for @spaceScan_scanRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan room'**
+  String get spaceScan_scanRoom;
+
+  /// No description provided for @spaceScan_findItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Find items in photo'**
+  String get spaceScan_findItems;
+
+  /// No description provided for @spaceScan_tapPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap below to take a photo'**
+  String get spaceScan_tapPhoto;
+
+  /// No description provided for @spaceScan_scanning.
+  ///
+  /// In en, this message translates to:
+  /// **'Scanning for items...'**
+  String get spaceScan_scanning;
+
+  /// No description provided for @spaceScan_itemsDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Items detected:'**
+  String get spaceScan_itemsDetected;
+
+  /// No description provided for @spaceScan_startQuest.
+  ///
+  /// In en, this message translates to:
+  /// **'Start quest'**
+  String get spaceScan_startQuest;
+
+  /// No description provided for @spaceScan_rescan.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-scan'**
+  String get spaceScan_rescan;
+
+  /// No description provided for @dynamic_languageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get dynamic_languageTitle;
+
+  /// No description provided for @dynamic_tagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Say the word,\nwin the stars!'**
+  String get dynamic_tagline;
+
+  /// No description provided for @dynamic_chooseCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Category'**
+  String get dynamic_chooseCategory;
+
+  /// No description provided for @dynamic_todayGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'TODAY\'S GOAL'**
+  String get dynamic_todayGoal;
+
+  /// No description provided for @dynamic_startQuest.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Quest'**
+  String get dynamic_startQuest;
+
+  /// No description provided for @dynamic_exitTvMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit TV Mode'**
+  String get dynamic_exitTvMode;
+
+  /// No description provided for @dynamic_tvMode.
+  ///
+  /// In en, this message translates to:
+  /// **'TV Mode'**
+  String get dynamic_tvMode;
+
+  /// No description provided for @dynamic_listen.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen'**
+  String get dynamic_listen;
+
+  /// No description provided for @dynamic_progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Word {current} of {total}'**
+  String dynamic_progress(int current, int total);
+
+  /// No description provided for @dynamic_sayWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Say the word:'**
+  String get dynamic_sayWord;
+
+  /// No description provided for @dynamic_meaning.
+  ///
+  /// In en, this message translates to:
+  /// **'Meaning: {meaning}'**
+  String dynamic_meaning(String meaning);
+
+  /// No description provided for @dynamic_listenWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen: {word}'**
+  String dynamic_listenWord(String word);
+
+  /// No description provided for @dynamic_evaluating.
+  ///
+  /// In en, this message translates to:
+  /// **'Evaluating your voice...'**
+  String get dynamic_evaluating;
+
+  /// No description provided for @dynamic_speakInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Press and hold while speaking. Release when done.'**
+  String get dynamic_speakInstruction;
+
+  /// No description provided for @dynamic_youSaid.
+  ///
+  /// In en, this message translates to:
+  /// **'YOU SAID:'**
+  String get dynamic_youSaid;
+
+  /// No description provided for @dynamic_targetWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Target word: {word}'**
+  String dynamic_targetWord(String word);
+
+  /// No description provided for @dynamic_listenVoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen to your voice'**
+  String get dynamic_listenVoice;
+
+  /// No description provided for @dynamic_speakAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak Again'**
+  String get dynamic_speakAgain;
+
+  /// No description provided for @dynamic_questComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Quest Complete!'**
+  String get dynamic_questComplete;
+
+  /// No description provided for @dynamic_totalScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Score'**
+  String get dynamic_totalScore;
+
+  /// No description provided for @dynamic_playRecordingError.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot play this recording.'**
+  String get dynamic_playRecordingError;
+
+  /// No description provided for @dynamic_micPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission denied. Please allow mic access!'**
+  String get dynamic_micPermission;
+
+  /// No description provided for @dynamic_noSpeech.
+  ///
+  /// In en, this message translates to:
+  /// **'No speech heard. Hold the mic and speak clearly!'**
+  String get dynamic_noSpeech;
+
+  /// No description provided for @spaceQuest_timeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Space time warp! Time ran out!'**
+  String get spaceQuest_timeout;
+
+  /// No description provided for @spaceQuest_verifyError.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification error, please try again!'**
+  String get spaceQuest_verifyError;
+
+  /// No description provided for @spaceQuest_objectHunter.
+  ///
+  /// In en, this message translates to:
+  /// **'Object Hunter'**
+  String get spaceQuest_objectHunter;
+
+  /// No description provided for @spaceQuest_score.
+  ///
+  /// In en, this message translates to:
+  /// **'Score: {score}'**
+  String spaceQuest_score(int score);
+
+  /// No description provided for @spaceQuest_mission.
+  ///
+  /// In en, this message translates to:
+  /// **'SPACE MISSION QUEST {current}/{total}'**
+  String spaceQuest_mission(int current, int total);
+
+  /// No description provided for @spaceQuest_capture.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture the item'**
+  String get spaceQuest_capture;
+
+  /// No description provided for @spaceQuest_findTake.
+  ///
+  /// In en, this message translates to:
+  /// **'Find and take a photo of the item'**
+  String get spaceQuest_findTake;
+
+  /// No description provided for @spaceQuest_verify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify match'**
+  String get spaceQuest_verify;
+
+  /// No description provided for @spaceQuest_selectChild.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a child profile before saving the score.'**
+  String get spaceQuest_selectChild;
+
+  /// No description provided for @spaceQuest_shareWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing is supported on mobile devices. Right-click the image to save on Web!'**
+  String get spaceQuest_shareWeb;
+
+  /// No description provided for @spaceQuest_sharePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Share photo'**
+  String get spaceQuest_sharePhoto;
+
+  /// No description provided for @spaceQuest_recapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Recapture'**
+  String get spaceQuest_recapture;
+
+  /// No description provided for @spaceQuest_complete.
+  ///
+  /// In en, this message translates to:
+  /// **'Quest Complete!'**
+  String get spaceQuest_complete;
+
+  /// No description provided for @spaceQuest_totalScore.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Score'**
+  String get spaceQuest_totalScore;
+
+  /// No description provided for @addChild_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Your Little Adventurer!'**
+  String get addChild_title;
+
+  /// No description provided for @addChild_subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your child and start building healthy habits together.'**
+  String get addChild_subtitle;
+
+  /// No description provided for @addChild_name.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Child Name'**
+  String get addChild_name;
+
+  /// No description provided for @addChild_nameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Pokpong'**
+  String get addChild_nameHint;
+
+  /// No description provided for @addChild_birthDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date of Birth'**
+  String get addChild_birthDate;
+
+  /// No description provided for @addChild_relationship.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationship'**
+  String get addChild_relationship;
+
+  /// No description provided for @addChild_mother.
+  ///
+  /// In en, this message translates to:
+  /// **'Mother'**
+  String get addChild_mother;
+
+  /// No description provided for @addChild_button.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Child'**
+  String get addChild_button;
+
+  /// No description provided for @home_welcomeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get home_welcomeBack;
+
+  /// No description provided for @home_whosHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Who\'s here?'**
+  String get home_whosHere;
+
+  /// No description provided for @home_add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get home_add;
+
+  /// No description provided for @home_rewardPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Reward points'**
+  String get home_rewardPoints;
+
+  /// No description provided for @home_redeem.
+  ///
+  /// In en, this message translates to:
+  /// **'Redeem'**
+  String get home_redeem;
+
+  /// No description provided for @home_activities.
+  ///
+  /// In en, this message translates to:
+  /// **'Activities'**
+  String get home_activities;
+
+  /// No description provided for @home_newBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'NEW'**
+  String get home_newBadge;
+
+  /// No description provided for @home_spaceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan your room and find hidden items!'**
+  String get home_spaceDescription;
+
+  /// No description provided for @common_continueGoogle.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Google'**
+  String get common_continueGoogle;
+
+  /// No description provided for @common_continueFacebook.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue with Facebook'**
+  String get common_continueFacebook;
+
+  /// No description provided for @common_home.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get common_home;
+
+  /// No description provided for @common_disclaimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Disclaimer'**
+  String get common_disclaimer;
+
+  /// No description provided for @common_login.
+  ///
+  /// In en, this message translates to:
+  /// **'Log In'**
+  String get common_login;
+
+  /// No description provided for @common_copiedShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied share text'**
+  String get common_copiedShareText;
+
+  /// No description provided for @common_copyShareText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy share text'**
+  String get common_copyShareText;
+
+  /// No description provided for @createActivity_choosePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the activity you want to create'**
+  String get createActivity_choosePrompt;
+
+  /// No description provided for @sing_difficultyEasy.
+  ///
+  /// In en, this message translates to:
+  /// **'EASY'**
+  String get sing_difficultyEasy;
+
+  /// No description provided for @sing_highScore.
+  ///
+  /// In en, this message translates to:
+  /// **'High: 100'**
+  String get sing_highScore;
+
+  /// No description provided for @sing_durationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'10 Min'**
+  String get sing_durationMinutes;
+
+  /// No description provided for @dynamic_todayCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'TODAY\'S CATEGORY'**
+  String get dynamic_todayCategory;
+
+  /// No description provided for @dynamic_speaking.
+  ///
+  /// In en, this message translates to:
+  /// **'Speaking'**
+  String get dynamic_speaking;
+
+  /// No description provided for @dynamic_silence.
+  ///
+  /// In en, this message translates to:
+  /// **'(Silence)'**
+  String get dynamic_silence;
+
+  /// No description provided for @dynamic_scoreEarned.
+  ///
+  /// In en, this message translates to:
+  /// **'+{score} Score'**
+  String dynamic_scoreEarned(int score);
+
+  /// No description provided for @dynamic_perfect.
+  ///
+  /// In en, this message translates to:
+  /// **'Perfect! 🏆'**
+  String get dynamic_perfect;
+
+  /// No description provided for @dynamic_voiceMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% Voice Match 🎙'**
+  String dynamic_voiceMatch(int percent);
+
+  /// No description provided for @dynamic_nextWord.
+  ///
+  /// In en, this message translates to:
+  /// **'Next word'**
+  String get dynamic_nextWord;
+
+  /// No description provided for @spaceQuest_findItem.
+  ///
+  /// In en, this message translates to:
+  /// **'FIND ITEM: {item}'**
+  String spaceQuest_findItem(String item);
+
+  /// No description provided for @spaceQuest_timeoutReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Time ran out before verification!'**
+  String get spaceQuest_timeoutReason;
+
+  /// No description provided for @spaceQuest_scanResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan results'**
+  String get spaceQuest_scanResults;
+
+  /// No description provided for @spaceQuest_correctMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'CORRECT MATCH'**
+  String get spaceQuest_correctMatch;
+
+  /// No description provided for @spaceQuest_mismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'MISMATCH DETECTED'**
+  String get spaceQuest_mismatch;
+
+  /// No description provided for @spaceQuest_verifiedTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Vision AI verified your target: {item}'**
+  String spaceQuest_verifiedTarget(String item);
+
+  /// No description provided for @spaceQuest_notMatched.
+  ///
+  /// In en, this message translates to:
+  /// **'This photo does not match {item} yet. Please try again.'**
+  String spaceQuest_notMatched(String item);
+
+  /// No description provided for @spaceQuest_scored.
+  ///
+  /// In en, this message translates to:
+  /// **'Scored +{points} points! Current total: {total}'**
+  String spaceQuest_scored(int points, int total);
+
+  /// No description provided for @spaceQuest_currentTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Current total: {total} points'**
+  String spaceQuest_currentTotal(int total);
+
+  /// No description provided for @spaceQuest_saving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving score...'**
+  String get spaceQuest_saving;
+
+  /// No description provided for @spaceQuest_next.
+  ///
+  /// In en, this message translates to:
+  /// **'Next quest'**
+  String get spaceQuest_next;
+
+  /// No description provided for @home_parentFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent'**
+  String get home_parentFallback;
+
+  /// No description provided for @welcome_intro.
+  ///
+  /// In en, this message translates to:
+  /// **'Let\'s get started!\nAlready part of our community? Welcome back.\nNew here? Join us to learn and grow together.'**
+  String get welcome_intro;
+
+  /// No description provided for @common_shareDownloadImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Share / Download image'**
+  String get common_shareDownloadImage;
+
+  /// No description provided for @itemintro_noSegments.
+  ///
+  /// In en, this message translates to:
+  /// **'Error: No segments found for {name}.'**
+  String itemintro_noSegments(String name);
+
+  /// No description provided for @record_streamUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording stream is not supported in this browser.'**
+  String get record_streamUnsupported;
 }
 
 class _AppLocalizationsDelegate

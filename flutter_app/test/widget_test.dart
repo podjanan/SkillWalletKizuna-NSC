@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:skill_wallet_kizuna/l10n/app_localizations.dart';
 import 'package:skill_wallet_kizuna/screens/disclaimer/software_disclaimer_gate.dart';
 
 void main() {
@@ -13,6 +14,9 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('th'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: SoftwareDisclaimerGate(
           preferences: preferences,
           child: const Text('APP CONTENT'),
@@ -49,6 +53,9 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        locale: const Locale('th'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: SoftwareDisclaimerGate(
           preferences: preferences,
           child: const Text('APP CONTENT'),

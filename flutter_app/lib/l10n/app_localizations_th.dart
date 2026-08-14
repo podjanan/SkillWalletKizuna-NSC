@@ -1785,4 +1785,869 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get math_simulation_nextBtn => 'ถัดไป';
+
+  @override
+  String get sing_languageBadge => 'ภาษา';
+
+  @override
+  String get sing_heroTitle => 'ร้องเพลงให้สนุก\nรับดาวไปเลย!';
+
+  @override
+  String get sing_selectOurSongs => 'เลือกเพลงจากเรา';
+
+  @override
+  String get sing_readyToPlay => 'เพลงพร้อมเล่น';
+
+  @override
+  String get sing_createOwnSong => 'สร้างเพลงเอง';
+
+  @override
+  String get sing_wordsOrSentences => 'คำศัพท์ / ประโยค';
+
+  @override
+  String get sing_chooseSong => 'เลือกเพลง';
+
+  @override
+  String sing_singingChildren(int count) {
+    return 'เด็กที่จะร้องเพลงด้วยกัน ($count คน)';
+  }
+
+  @override
+  String get sing_tapAddChild => 'แตะที่นี่เพื่อเลือกเด็กเพิ่ม';
+
+  @override
+  String sing_childrenAdded(int count) {
+    return 'เพิ่มเด็กเรียบร้อยแล้ว $count คน';
+  }
+
+  @override
+  String get sing_startSinging => 'เริ่มร้องเพลง';
+
+  @override
+  String get sing_noSongs => 'ยังไม่มีเพลงจากระบบในขณะนี้';
+
+  @override
+  String get sing_familySongTitle => 'สร้างเพลงฝึกจำของครอบครัว';
+
+  @override
+  String get sing_familySongSubtitle =>
+      'ใส่เนื้อหาที่อยากให้เด็กจดจำ แล้วนำไปแต่งเป็นเพลง';
+
+  @override
+  String get sing_trainingType => 'อยากฝึกแบบไหน?';
+
+  @override
+  String get sing_vocabulary => 'คำศัพท์';
+
+  @override
+  String get sing_sentence => 'รูปประโยค';
+
+  @override
+  String get sing_vocabularyPrompt => 'คำศัพท์ที่อยากให้เด็กฝึกจำ';
+
+  @override
+  String get sing_sentencePrompt => 'รูปประโยคที่อยากให้เด็กฝึกจำ';
+
+  @override
+  String get sing_vocabularyHint => 'เช่น apple, banana, orange, happy';
+
+  @override
+  String get sing_sentenceHint => 'เช่น I brush my teeth every morning.';
+
+  @override
+  String get sing_musicStyle => 'แนวเพลง';
+
+  @override
+  String get sing_styleKids => 'เพลงเด็กสนุกสนาน';
+
+  @override
+  String get sing_styleDance => 'ป๊อปเต้นตามได้';
+
+  @override
+  String get sing_styleWarm => 'เพลงช้าอบอุ่น';
+
+  @override
+  String get sing_styleHipHop => 'ฮิปฮอปสำหรับเด็ก';
+
+  @override
+  String get sing_uiOnlyNotice =>
+      'UI พร้อมแล้ว — ระบบสร้างเพลงจะเชื่อมต่อในขั้นตอนถัดไป';
+
+  @override
+  String get sing_createSongButton => 'สร้างเพลงจากเนื้อหานี้';
+
+  @override
+  String get sing_showChords => 'แสดงคอร์ดกีต้าร์ผู้ปกครอง';
+
+  @override
+  String get sing_hideChords => 'ซ่อนคอร์ดกีต้าร์';
+
+  @override
+  String get sing_chordsShown => 'เปิดโหมดคอร์ดกีต้าร์สำหรับผู้ปกครองแล้ว';
+
+  @override
+  String get sing_chordsHidden => 'ซ่อนคอร์ดกีต้าร์แล้ว';
+
+  @override
+  String get sing_videoSyncHint => 'วิดีโอเต้นจะเล่นพร้อมเพลง';
+
+  @override
+  String get sing_evidenceAttached => 'แนบไฟล์หลักฐานแล้ว';
+
+  @override
+  String get sing_captureEvidence => 'ถ่ายรูปหรืออัดคลิปวิดีโอหลักฐาน';
+
+  @override
+  String get sing_attached => 'แนบแล้ว';
+
+  @override
+  String get sing_recordVideo => 'อัดคลิปวิดีโอ';
+
+  @override
+  String get sing_takePhoto => 'ถ่ายรูปภาพ';
+
+  @override
+  String get sing_openVideo => 'เปิดคลิปวิดีโอ';
+
+  @override
+  String get sing_songVocabulary => 'คำศัพท์น่ารู้ประจำเพลง:';
+
+  @override
+  String sing_pronunciation(String value) {
+    return 'คำอ่าน: $value';
+  }
+
+  @override
+  String sing_translation(String value) {
+    return 'คำแปล: $value';
+  }
+
+  @override
+  String get sing_cameraPreparing => 'กำลังเตรียมกล้องในแอป...';
+
+  @override
+  String get sing_cameraRecording => 'กำลังอัดวิดีโอพร้อมเพลง...';
+
+  @override
+  String get sing_hubSubtitle =>
+      'ฟังเพลงสองภาษา พร้อมโหมดคอร์ดกีต้าร์สำหรับผู้ปกครอง';
+
+  @override
+  String get sing_evaluationTitle => 'ให้คะแนนร้องเพลง Sing Together';
+
+  @override
+  String sing_selectMediaSource(String media) {
+    return 'เลือกแหล่งที่มา: $media';
+  }
+
+  @override
+  String get sing_childFallback => 'น้อง';
+
+  @override
+  String sing_saveScoreError(String error) {
+    return 'เกิดข้อผิดพลาดในการบันทึกคะแนน: $error';
+  }
+
+  @override
+  String sing_scoreChild(String name) {
+    return 'ให้คะแนน $name';
+  }
+
+  @override
+  String get sing_scoreLabel => 'คะแนน (0–100)';
+
+  @override
+  String sing_duration(int minutes, int seconds) {
+    return 'เวลาที่ใช้ร้อง: $minutes นาที $seconds วินาที';
+  }
+
+  @override
+  String get sing_imageVideoEvidence => 'หลักฐานรูปภาพ / วิดีโอ';
+
+  @override
+  String get sing_change => 'เปลี่ยน';
+
+  @override
+  String get sing_watchVideo => 'ดูคลิปวิดีโอ 🎥';
+
+  @override
+  String sing_evaluateChildren(int count) {
+    return 'ประเมินคะแนนเด็ก ($count คน)';
+  }
+
+  @override
+  String get sing_notesTitle => 'บันทึกข้อคิดเห็นเพิ่มเติม';
+
+  @override
+  String get sing_notesHint =>
+      'เช่น ร้องเสียงดังฟังชัด ออกเสียงคำศัพท์ได้ถูกต้อง...';
+
+  @override
+  String get sing_savingScore => 'กำลังบันทึกคะแนน...';
+
+  @override
+  String get sing_saveScore => 'บันทึกคะแนนการร้องเพลง';
+
+  @override
+  String get common_loading => 'กำลังโหลด...';
+
+  @override
+  String get common_pleaseWait => 'กรุณารอสักครู่';
+
+  @override
+  String get common_add => 'เพิ่ม';
+
+  @override
+  String common_attachmentError(String error) {
+    return 'เกิดข้อผิดพลาดในการแนบสื่อ: $error';
+  }
+
+  @override
+  String languageList_loadError(String error) {
+    return 'ไม่สามารถโหลดกิจกรรมได้: $error';
+  }
+
+  @override
+  String get languageList_empty => 'ยังไม่มีกิจกรรมในหมวดนี้';
+
+  @override
+  String get dynamic_listening => 'กำลังฟัง...';
+
+  @override
+  String get dynamic_holdToSpeak => 'กดค้างเพื่อพูด';
+
+  @override
+  String get dynamic_greatJob => 'เก่งมาก!';
+
+  @override
+  String get dynamic_niceTry => 'พยายามอีกนิด!';
+
+  @override
+  String get disclaimer_title => 'ข้อตกลงในการใช้ซอฟต์แวร์';
+
+  @override
+  String get disclaimer_acceptCheck =>
+      'ฉันได้อ่าน เข้าใจ และยอมรับข้อตกลงข้างต้น';
+
+  @override
+  String get disclaimer_acceptButton => 'ยอมรับและดำเนินการต่อ';
+
+  @override
+  String get disclaimer_intro =>
+      'ซอฟต์แวร์ Skill Wallet Kizuna พัฒนาขึ้นภายใต้การแข่งขันพัฒนาโปรแกรมคอมพิวเตอร์แห่งประเทศไทย ครั้งที่ 28 (NSC 2026) เพื่อส่งเสริมการเรียนรู้และทักษะของเด็กผ่านกิจกรรมในครอบครัว';
+
+  @override
+  String get disclaimer_developers => 'ผู้พัฒนา';
+
+  @override
+  String get disclaimer_advisor => 'อาจารย์ที่ปรึกษา';
+
+  @override
+  String get disclaimer_terms => 'ข้อตกลงการใช้งาน';
+
+  @override
+  String get disclaimer_license =>
+      'ทรัพย์สินทางปัญญาของซอฟต์แวร์นี้เป็นของผู้พัฒนา และอนุญาตให้ สวทช. เผยแพร่ซอฟต์แวร์ในลักษณะตามสภาพ เพื่อใช้ชั่วคราว แบบไม่ผูกขาด สำหรับการศึกษาหรือการใช้งานส่วนบุคคลที่ไม่ใช่เชิงพาณิชย์โดยไม่มีค่าตอบแทน';
+
+  @override
+  String get disclaimer_liability =>
+      'สวทช. และผู้พัฒนาไม่รับผิดชอบต่อความสูญเสีย ความเสียหาย ข้อผิดพลาด ประสิทธิภาพ หรือผลจากการใช้งาน ผู้ใช้มีหน้าที่ดูแลและจัดการการใช้งานด้วยตนเอง';
+
+  @override
+  String get daily_singTogether => 'Sing Together';
+
+  @override
+  String get createActivity_physicalTitle => 'สร้างกิจกรรมด้านร่างกาย';
+
+  @override
+  String get createActivity_calculateTitle => 'สร้างกิจกรรมด้านคำนวณ';
+
+  @override
+  String get createActivity_mathTitle => 'สร้างกิจกรรมโจทย์คณิตศาสตร์';
+
+  @override
+  String get createActivity_voiceTitle => 'สร้างกิจกรรม Voice Quest';
+
+  @override
+  String get createActivity_spaceTitle => 'สร้างกิจกรรม Space Adventure';
+
+  @override
+  String get createActivity_maxScoreRequired => 'กรุณากรอกคะแนนเต็ม';
+
+  @override
+  String get createActivity_timeRequired => 'กรุณากรอกระยะเวลาที่กำหนด';
+
+  @override
+  String get createActivity_itemScoreRequired => 'กรุณากรอกคะแนนต่อชิ้น';
+
+  @override
+  String get createActivity_wordCategory => 'หมวดหมู่คำศัพท์';
+
+  @override
+  String get createActivity_timeLimit => 'ระยะเวลาที่กำหนด (วินาที)';
+
+  @override
+  String get createActivity_scorePerItem => 'คะแนนต่อวัตถุที่สแกนเจอ';
+
+  @override
+  String get wordCategory_animals => '🦁 สัตว์';
+
+  @override
+  String get wordCategory_food => '🍎 อาหาร';
+
+  @override
+  String get wordCategory_vehicles => '🚀 ยานพาหนะ';
+
+  @override
+  String get wordCategory_nature => '🌈 ธรรมชาติ';
+
+  @override
+  String get wordCategory_bedroom => '🛏️ ห้องนอน';
+
+  @override
+  String get wordCategory_school => '🎒 โรงเรียน';
+
+  @override
+  String get disclaimer_developer1 => 'นายกนก กลิ่นสุวรรณ์';
+
+  @override
+  String get disclaimer_developer2 => 'นายพจนัณท์ โอสถานันท์';
+
+  @override
+  String get disclaimer_developer3 => 'นายนวพล กิตินันท์ประกร';
+
+  @override
+  String get disclaimer_advisorName =>
+      'ผู้ช่วยศาสตราจารย์ ดร.สุวัจชัย กมลสันติโรจน์';
+
+  @override
+  String math_scanCorrect(int index, String text) {
+    return 'ตรวจข้อ $index: อ่านได้ “$text” (ถูกต้อง ✓)';
+  }
+
+  @override
+  String math_scanIncorrect(int index, String text) {
+    return 'ตรวจข้อ $index: อ่านได้ “$text” (ไม่ตรงกับเฉลย)';
+  }
+
+  @override
+  String get math_noRecognition => 'ไม่พบผลการอ่านจากภาพ';
+
+  @override
+  String math_scanQuestionError(int index, String error) {
+    return 'เกิดข้อผิดพลาดในการสแกนข้อ $index: $error';
+  }
+
+  @override
+  String get math_noAnswerFound => 'ไม่พบคำตอบ';
+
+  @override
+  String get math_invalidServerResponse =>
+      'เซิร์ฟเวอร์ส่งข้อมูลกลับในรูปแบบที่ไม่ถูกต้อง';
+
+  @override
+  String math_scanError(String error) {
+    return 'เกิดข้อผิดพลาดในการสแกน: $error';
+  }
+
+  @override
+  String math_submitError(String error) {
+    return 'ส่งคำตอบล้มเหลว: $error';
+  }
+
+  @override
+  String get math_scanResultTitle => 'ผลการสแกนการตรวจคำตอบ';
+
+  @override
+  String get math_activityTitle => 'กิจกรรมคณิตศาสตร์ตามสถานการณ์จำลอง';
+
+  @override
+  String get math_exitTvMode => 'ออกจากโหมด Smart TV';
+
+  @override
+  String math_questionImage(int index) {
+    return 'ภาพข้อที่ $index';
+  }
+
+  @override
+  String get math_swipeNextImage => 'เลื่อนไปดูรูปข้อถัดไป';
+
+  @override
+  String get math_end => 'จบ';
+
+  @override
+  String get math_noImage => 'ยังไม่มีรูปสำหรับข้อนี้';
+
+  @override
+  String get math_activityDetails => 'รายละเอียดกิจกรรม';
+
+  @override
+  String get math_defaultDescription =>
+      'ฝึกคิดวิเคราะห์และแก้โจทย์คณิตศาสตร์ผ่านภาพสถานการณ์จริง บันทึกคำตอบลงในกระดาษก่อนกดสแกน';
+
+  @override
+  String get math_paperInstruction =>
+      'เตรียมกระดาษและดินสอเขียนคำตอบ ตัวเลขคำตอบควรเขียนให้ชัดเพื่อสแกนตรวจ';
+
+  @override
+  String math_questionProgress(int current, int total) {
+    return 'ข้อที่ $current จาก $total';
+  }
+
+  @override
+  String get math_proposition => 'สถานการณ์ปัญหาวิเคราะห์';
+
+  @override
+  String get math_reviewAll => 'ตรวจสรุปผลทั้งหมด';
+
+  @override
+  String math_cameraCheck(int index) {
+    return 'ตรวจคำตอบด้วยกล้อง (ข้อที่ $index)';
+  }
+
+  @override
+  String get math_readingHandwriting => 'กำลังอ่านลายมือจากภาพถ่าย...';
+
+  @override
+  String math_readCorrect(String text) {
+    return 'อ่านได้ “$text” (ถูกต้อง ✓)';
+  }
+
+  @override
+  String math_readIncorrect(String text) {
+    return 'อ่านได้ “$text” (ไม่ตรงเฉลย)';
+  }
+
+  @override
+  String get math_takePhotoHint => 'ถ่ายรูปลายมือเฉพาะข้อนี้เพื่อตรวจทันที';
+
+  @override
+  String get math_thisQuestionImage => 'ภาพข้อนี้';
+
+  @override
+  String get math_readingAi => 'กำลังอ่านลายมือด้วย AI...';
+
+  @override
+  String get math_retakeQuestion => 'ถ่ายรูปตรวจข้อนี้ใหม่';
+
+  @override
+  String get math_scanQuestion => 'ถ่ายรูป / สแกนตรวจข้อนี้';
+
+  @override
+  String get math_editNumber => 'แก้ไขตัวเลข';
+
+  @override
+  String get math_readingAll => 'กำลังอ่านคำตอบจากภาพ';
+
+  @override
+  String get math_waitFindingNumbers =>
+      'กรุณารอสักครู่ ระบบกำลังค้นหาตัวเลขทั้งหมด';
+
+  @override
+  String get math_checkAll => 'ตรวจคำตอบทั้งหมด';
+
+  @override
+  String get math_reviewBeforeFinish => 'ตรวจสอบและแก้ไขผลก่อนกดเสร็จสิ้น';
+
+  @override
+  String get math_answerList => 'รายการคำตอบ';
+
+  @override
+  String math_solutionValue(String value) {
+    return 'เฉลย: $value';
+  }
+
+  @override
+  String get math_noAnswerDetected => 'ยังไม่พบคำตอบ';
+
+  @override
+  String get math_rescan => 'สแกนใหม่';
+
+  @override
+  String get math_wellDone => 'เก่งมากเลย!';
+
+  @override
+  String get math_rewardSaved => 'บันทึกคะแนนและแต้มรางวัลเรียบร้อยแล้ว';
+
+  @override
+  String history_redeemed(String name) {
+    return 'แลก $name';
+  }
+
+  @override
+  String get history_rewardFallback => 'ของรางวัล';
+
+  @override
+  String spaceScan_pickerError(String error) {
+    return 'เปิดตัวเลือกรูปภาพไม่ได้: $error';
+  }
+
+  @override
+  String get spaceScan_failed => 'สแกนไม่สำเร็จ';
+
+  @override
+  String spaceScan_reason(String reason) {
+    return 'สาเหตุ: $reason';
+  }
+
+  @override
+  String get spaceScan_selectSource => 'เลือกแหล่งรูปภาพ';
+
+  @override
+  String get spaceScan_scanFirst =>
+      'กรุณาสแกนห้องเพื่อค้นหาสิ่งของก่อนเริ่มผจญภัย';
+
+  @override
+  String get spaceScan_deleteItem => 'ลบสิ่งของหรือไม่?';
+
+  @override
+  String spaceScan_deleteConfirm(String item) {
+    return 'ต้องการนำ “$item” ออกจากภารกิจนี้หรือไม่?';
+  }
+
+  @override
+  String get spaceScan_delete => 'ลบ';
+
+  @override
+  String get spaceScan_noTargets => 'พื้นที่นี้ยังไม่มีสิ่งของเป้าหมาย';
+
+  @override
+  String get spaceScan_choosePreset => 'เลือกพื้นที่สำเร็จรูป';
+
+  @override
+  String get spaceScan_presetDescription =>
+      'ใช้รายการสิ่งของที่จัดการไว้ใน Space Adventure CMS';
+
+  @override
+  String get spaceScan_noPresets =>
+      'ยังไม่มีพื้นที่สำเร็จรูป\nกรุณาเพิ่มพื้นที่ใน Space Adventure CMS';
+
+  @override
+  String get spaceScan_phase => 'ขั้นที่ 1: สแกนห้อง';
+
+  @override
+  String get spaceScan_intro => 'ถ่ายรูปห้องเพื่อค้นหาสิ่งของสำหรับภารกิจ';
+
+  @override
+  String get spaceScan_usePreset => 'ใช้รายการพร้อมเล่น';
+
+  @override
+  String get spaceScan_cmsItems => 'รายการจาก CMS';
+
+  @override
+  String get spaceScan_scanRoom => 'สแกนห้อง';
+
+  @override
+  String get spaceScan_findItems => 'ค้นหาของในรูป';
+
+  @override
+  String get spaceScan_tapPhoto => 'แตะปุ่มด้านล่างเพื่อถ่ายรูป';
+
+  @override
+  String get spaceScan_scanning => 'กำลังค้นหาสิ่งของ...';
+
+  @override
+  String get spaceScan_itemsDetected => 'สิ่งของที่พบ:';
+
+  @override
+  String get spaceScan_startQuest => 'เริ่มภารกิจ';
+
+  @override
+  String get spaceScan_rescan => 'สแกนใหม่';
+
+  @override
+  String get dynamic_languageTitle => 'ภาษา';
+
+  @override
+  String get dynamic_tagline => 'พูดคำศัพท์\nคว้าดาวให้ได้!';
+
+  @override
+  String get dynamic_chooseCategory => 'เลือกหมวดคำศัพท์';
+
+  @override
+  String get dynamic_todayGoal => 'เป้าหมายวันนี้';
+
+  @override
+  String get dynamic_startQuest => 'เริ่มภารกิจ';
+
+  @override
+  String get dynamic_exitTvMode => 'ออกจากโหมดทีวี';
+
+  @override
+  String get dynamic_tvMode => 'โหมดทีวี';
+
+  @override
+  String get dynamic_listen => 'ฟังเสียง';
+
+  @override
+  String dynamic_progress(int current, int total) {
+    return 'คำที่ $current จาก $total';
+  }
+
+  @override
+  String get dynamic_sayWord => 'พูดคำนี้:';
+
+  @override
+  String dynamic_meaning(String meaning) {
+    return 'ความหมาย: $meaning';
+  }
+
+  @override
+  String dynamic_listenWord(String word) {
+    return 'ฟังเสียง: $word';
+  }
+
+  @override
+  String get dynamic_evaluating => 'กำลังประเมินเสียงของคุณ...';
+
+  @override
+  String get dynamic_speakInstruction =>
+      'กดค้างไว้ขณะพูด และปล่อยเมื่อพูดเสร็จ';
+
+  @override
+  String get dynamic_youSaid => 'คุณพูดว่า:';
+
+  @override
+  String dynamic_targetWord(String word) {
+    return 'คำเป้าหมาย: $word';
+  }
+
+  @override
+  String get dynamic_listenVoice => 'ฟังเสียงของคุณ';
+
+  @override
+  String get dynamic_speakAgain => 'พูดอีกครั้ง';
+
+  @override
+  String get dynamic_questComplete => 'ทำภารกิจสำเร็จ!';
+
+  @override
+  String get dynamic_totalScore => 'คะแนนรวม';
+
+  @override
+  String get dynamic_playRecordingError => 'เล่นเสียงที่บันทึกไว้ไม่ได้';
+
+  @override
+  String get dynamic_micPermission =>
+      'ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน กรุณาเปิดสิทธิ์ไมโครโฟน';
+
+  @override
+  String get dynamic_noSpeech =>
+      'ไม่ได้ยินเสียงพูด กรุณากดไมค์ค้างไว้และพูดให้ชัดเจน';
+
+  @override
+  String get spaceQuest_timeout => 'หมดเวลาภารกิจอวกาศแล้ว!';
+
+  @override
+  String get spaceQuest_verifyError => 'ตรวจสอบไม่สำเร็จ กรุณาลองอีกครั้ง';
+
+  @override
+  String get spaceQuest_objectHunter => 'นักล่าสิ่งของ';
+
+  @override
+  String spaceQuest_score(int score) {
+    return 'คะแนน: $score';
+  }
+
+  @override
+  String spaceQuest_mission(int current, int total) {
+    return 'ภารกิจอวกาศ $current/$total';
+  }
+
+  @override
+  String get spaceQuest_capture => 'ถ่ายรูปสิ่งของ';
+
+  @override
+  String get spaceQuest_findTake => 'ค้นหาและถ่ายรูปสิ่งของเป้าหมาย';
+
+  @override
+  String get spaceQuest_verify => 'ตรวจสอบรูป';
+
+  @override
+  String get spaceQuest_selectChild => 'กรุณาเลือกโปรไฟล์เด็กก่อนบันทึกคะแนน';
+
+  @override
+  String get spaceQuest_shareWeb =>
+      'การแชร์รองรับบนมือถือ ส่วนเว็บไซต์ให้คลิกขวาที่รูปเพื่อบันทึก';
+
+  @override
+  String get spaceQuest_sharePhoto => 'แชร์รูป';
+
+  @override
+  String get spaceQuest_recapture => 'ถ่ายใหม่';
+
+  @override
+  String get spaceQuest_complete => 'ทำภารกิจสำเร็จ!';
+
+  @override
+  String get spaceQuest_totalScore => 'คะแนนรวม';
+
+  @override
+  String get addChild_title => 'เพิ่มนักผจญภัยตัวน้อย';
+
+  @override
+  String get addChild_subtitle =>
+      'เพิ่มข้อมูลเด็กและเริ่มสร้างนิสัยที่ดีไปด้วยกัน';
+
+  @override
+  String get addChild_name => 'ชื่อเด็ก';
+
+  @override
+  String get addChild_nameHint => 'เช่น ปกป้อง';
+
+  @override
+  String get addChild_birthDate => 'วันเกิด';
+
+  @override
+  String get addChild_relationship => 'ความสัมพันธ์';
+
+  @override
+  String get addChild_mother => 'แม่';
+
+  @override
+  String get addChild_button => 'เพิ่มเด็ก';
+
+  @override
+  String get home_welcomeBack => 'ยินดีต้อนรับกลับ';
+
+  @override
+  String get home_whosHere => 'วันนี้ใครอยู่ด้วย?';
+
+  @override
+  String get home_add => 'เพิ่ม';
+
+  @override
+  String get home_rewardPoints => 'แต้มรางวัล';
+
+  @override
+  String get home_redeem => 'แลกรางวัล';
+
+  @override
+  String get home_activities => 'กิจกรรม';
+
+  @override
+  String get home_newBadge => 'ใหม่';
+
+  @override
+  String get home_spaceDescription => 'สแกนห้องและค้นหาสิ่งของที่ซ่อนอยู่!';
+
+  @override
+  String get common_continueGoogle => 'ดำเนินการต่อด้วย Google';
+
+  @override
+  String get common_continueFacebook => 'ดำเนินการต่อด้วย Facebook';
+
+  @override
+  String get common_home => 'หน้าหลัก';
+
+  @override
+  String get common_disclaimer => 'ข้อกำหนดการใช้งาน';
+
+  @override
+  String get common_login => 'เข้าสู่ระบบ';
+
+  @override
+  String get common_copiedShareText => 'คัดลอกข้อความสำหรับแชร์แล้ว';
+
+  @override
+  String get common_copyShareText => 'คัดลอกข้อความสำหรับแชร์';
+
+  @override
+  String get createActivity_choosePrompt => 'เลือกกิจกรรมที่ต้องการสร้าง';
+
+  @override
+  String get sing_difficultyEasy => 'ง่าย';
+
+  @override
+  String get sing_highScore => 'คะแนนสูงสุด: 100';
+
+  @override
+  String get sing_durationMinutes => '10 นาที';
+
+  @override
+  String get dynamic_todayCategory => 'หมวดคำศัพท์วันนี้';
+
+  @override
+  String get dynamic_speaking => 'กำลังพูด';
+
+  @override
+  String get dynamic_silence => '(ไม่มีเสียง)';
+
+  @override
+  String dynamic_scoreEarned(int score) {
+    return '+$score คะแนน';
+  }
+
+  @override
+  String get dynamic_perfect => 'ยอดเยี่ยม! 🏆';
+
+  @override
+  String dynamic_voiceMatch(int percent) {
+    return 'เสียงตรงกัน $percent% 🎙';
+  }
+
+  @override
+  String get dynamic_nextWord => 'คำถัดไป';
+
+  @override
+  String spaceQuest_findItem(String item) {
+    return 'ค้นหา: $item';
+  }
+
+  @override
+  String get spaceQuest_timeoutReason => 'หมดเวลาก่อนตรวจสอบรูป';
+
+  @override
+  String get spaceQuest_scanResults => 'ผลการสแกน';
+
+  @override
+  String get spaceQuest_correctMatch => 'รูปตรงกับเป้าหมาย';
+
+  @override
+  String get spaceQuest_mismatch => 'รูปยังไม่ตรงกับเป้าหมาย';
+
+  @override
+  String spaceQuest_verifiedTarget(String item) {
+    return 'Vision AI ตรวจพบเป้าหมาย: $item';
+  }
+
+  @override
+  String spaceQuest_notMatched(String item) {
+    return 'รูปนี้ยังไม่ตรงกับ $item กรุณาลองอีกครั้ง';
+  }
+
+  @override
+  String spaceQuest_scored(int points, int total) {
+    return 'ได้เพิ่ม $points คะแนน คะแนนรวมปัจจุบัน $total';
+  }
+
+  @override
+  String spaceQuest_currentTotal(int total) {
+    return 'คะแนนรวมปัจจุบัน $total คะแนน';
+  }
+
+  @override
+  String get spaceQuest_saving => 'กำลังบันทึกคะแนน...';
+
+  @override
+  String get spaceQuest_next => 'ภารกิจถัดไป';
+
+  @override
+  String get home_parentFallback => 'ผู้ปกครอง';
+
+  @override
+  String get welcome_intro =>
+      'มาเริ่มกันเลย!\nถ้าเคยใช้งานแล้ว ยินดีต้อนรับกลับ\nหากเพิ่งมาใหม่ มาร่วมเรียนรู้และเติบโตไปด้วยกัน';
+
+  @override
+  String get common_shareDownloadImage => 'แชร์ / ดาวน์โหลดรูป';
+
+  @override
+  String itemintro_noSegments(String name) {
+    return 'ข้อผิดพลาด: ไม่พบช่วงกิจกรรมสำหรับ $name';
+  }
+
+  @override
+  String get record_streamUnsupported =>
+      'เบราว์เซอร์นี้ไม่รองรับการบันทึกเสียงแบบสตรีม';
 }

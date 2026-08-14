@@ -26,7 +26,6 @@ class _AddChildScreenState extends State<AddChildScreen> {
   String? _selectedRelation;
   bool _isLoading = false;
 
-
   List<String> _relationOptions(AppLocalizations l10n) => [
         l10n.relation_parent,
         l10n.relation_grandparentPaternal,
@@ -81,47 +80,46 @@ class _AddChildScreenState extends State<AddChildScreen> {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.black26,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.black26,
+                borderRadius: BorderRadius.circular(2),
               ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                child: Text(
-                  l10n.relation_label,
-                  style: AppTextStyles.heading(18, color: Palette.terracotta),
-                ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              child: Text(
+                l10n.relation_label,
+                style: AppTextStyles.heading(18, color: Palette.terracotta),
               ),
-              ...options.map((option) => ListTile(
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
-                    title: Text(
-                      option,
-                      style: AppTextStyles.body(16, color: Colors.black87),
-                    ),
-                    trailing: _selectedRelation == option
-                        ? const Icon(Icons.check, color: Palette.terracotta)
-                        : null,
-                    onTap: () {
-                      setState(() {
-                        _selectedRelation = option;
-                        _relationController.text = option;
-                      });
-                      Navigator.pop(ctx);
-                    },
-                  )),
-              const SizedBox(height: 8),
-            ],
-          ),
+            ),
+            ...options.map((option) => ListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
+                  title: Text(
+                    option,
+                    style: AppTextStyles.body(16, color: Colors.black87),
+                  ),
+                  trailing: _selectedRelation == option
+                      ? const Icon(Icons.check, color: Palette.terracotta)
+                      : null,
+                  onTap: () {
+                    setState(() {
+                      _selectedRelation = option;
+                      _relationController.text = option;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                )),
+            const SizedBox(height: 8),
+          ],
         ),
+      ),
     );
   }
 
@@ -132,8 +130,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           l10n.addchild_logoutTitle,
           style: AppTextStyles.heading(18),
@@ -258,7 +255,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Add Your Little Adventurer!',
+                    l10n.addChild_title,
                     style: AppTextStyles.heading(
                       27,
                       color: Palette.terracotta,
@@ -266,14 +263,14 @@ class _AddChildScreenState extends State<AddChildScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Add your child and start building healthy habits together.',
+                    l10n.addChild_subtitle,
                     style: AppTextStyles.body(14, color: Palette.authGrey),
                   ),
                   const SizedBox(height: 28),
 
                   // ── Name ─────────────────────────────────────────────────────
                   Text(
-                    'Your Child Name',
+                    l10n.addChild_name,
                     style: AppTextStyles.body(14, color: Palette.authGrey),
                   ),
                   const SizedBox(height: 8),
@@ -283,7 +280,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                       style: AppTextStyles.body(15, color: Colors.black87),
                       textAlignVertical: TextAlignVertical.center,
                       decoration: _childInputDecoration(
-                        hintText: 'Ex. Pokpong',
+                        hintText: l10n.addChild_nameHint,
                         prefixIcon: const Icon(
                           Icons.person_outline,
                           color: Palette.terracotta,
@@ -296,7 +293,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
                   // ── Birthday ──────────────────────────────────────────────────
                   Text(
-                    'Date of Birth',
+                    l10n.addChild_birthDate,
                     style: AppTextStyles.body(14, color: Palette.authGrey),
                   ),
                   const SizedBox(height: 8),
@@ -324,7 +321,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
 
                   // ── Relationship ──────────────────────────────────────────────
                   Text(
-                    'Relationship',
+                    l10n.addChild_relationship,
                     style: AppTextStyles.body(14, color: Palette.authGrey),
                   ),
                   const SizedBox(height: 8),
@@ -337,7 +334,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                           style: AppTextStyles.body(15, color: Colors.black87),
                           textAlignVertical: TextAlignVertical.center,
                           decoration: _childInputDecoration(
-                            hintText: 'Mother',
+                            hintText: l10n.addChild_mother,
                             suffixIcon: const Icon(
                               Icons.keyboard_arrow_down,
                               color: Palette.terracotta,
@@ -398,7 +395,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
                               ),
                             )
                           : Text(
-                              'Add Child',
+                              l10n.addChild_button,
                               style: AppTextStyles.heading(
                                 18,
                                 color: Colors.white,

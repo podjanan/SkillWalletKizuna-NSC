@@ -73,7 +73,8 @@ class _LanguageListScreenState extends State<LanguageListScreen> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'ไม่สามารถโหลดข้อมูลได้: $e';
+        _errorMessage =
+            AppLocalizations.of(context)!.languageList_loadError('$e');
       });
       debugPrint('❌ Error loading activities: $e');
     }
@@ -138,7 +139,7 @@ class _LanguageListScreenState extends State<LanguageListScreen> {
               const Icon(Icons.inbox_outlined, size: 48, color: Colors.grey),
               const SizedBox(height: 16),
               Text(
-                'ยังไม่มีกิจกรรมในหมวดนี้',
+                AppLocalizations.of(context)!.languageList_empty,
                 style: AppTextStyles.body(16, color: Colors.grey),
               ),
             ],

@@ -146,7 +146,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
     if (_isPhysical) {
       if (_maxScoreCtrl.text.trim().isEmpty) {
-        _showSnack('กรุณากรอกคะแนนเต็ม');
+        _showSnack(l.createActivity_maxScoreRequired);
         return;
       }
       if (_contentCtrl.text.trim().isEmpty) {
@@ -160,20 +160,20 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
       }
     } else if (_isVoiceQuest) {
       if (_maxScoreCtrl.text.trim().isEmpty) {
-        _showSnack('กรุณากรอกคะแนนเต็ม');
+        _showSnack(l.createActivity_maxScoreRequired);
         return;
       }
       if (_timeLimitCtrl.text.trim().isEmpty) {
-        _showSnack('กรุณากรอกระยะเวลาที่กำหนด');
+        _showSnack(l.createActivity_timeRequired);
         return;
       }
     } else if (_isSpaceAdventure) {
       if (_scorePerItemCtrl.text.trim().isEmpty) {
-        _showSnack('กรุณากรอกคะแนนต่อชิ้น');
+        _showSnack(l.createActivity_itemScoreRequired);
         return;
       }
       if (_timeLimitCtrl.text.trim().isEmpty) {
-        _showSnack('กรุณากรอกระยะเวลาที่กำหนด');
+        _showSnack(l.createActivity_timeRequired);
         return;
       }
     }
@@ -325,14 +325,14 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                           _selectedActivityType == null
                               ? l.createActivity_title
                               : (_isPhysical
-                                  ? 'สร้างกิจกรรม ด้านร่างกาย'
+                                  ? l.createActivity_physicalTitle
                                   : (_isCalculate
-                                      ? 'สร้างกิจกรรม ด้านคำนวณ'
+                                      ? l.createActivity_calculateTitle
                                       : (_isMathProblems
-                                          ? 'สร้างกิจกรรม Math Problems'
+                                          ? l.createActivity_mathTitle
                                           : (_isVoiceQuest
-                                              ? 'สร้างกิจกรรม Voice Quest'
-                                              : 'สร้างกิจกรรม Space Adventure')))),
+                                              ? l.createActivity_voiceTitle
+                                              : l.createActivity_spaceTitle)))),
                           style: AppTextStyles.heading(
                             19,
                             color: Palette.terracotta,
@@ -383,7 +383,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Choose the activity you want to create',
+              AppLocalizations.of(context)!.createActivity_choosePrompt,
               textAlign: TextAlign.center,
               style: AppTextStyles.body(14, color: Palette.authGrey),
             ),
@@ -549,7 +549,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
                 // Category selector for Space Adventure
                 if (_isSpaceAdventure) ...[
-                  _label('หมวดหมู่กิจกรรม / Category'),
+                  _label(l.common_categoryLabel),
                   DropdownButtonFormField<String>(
                     initialValue: _selectedCategory,
                     decoration: InputDecoration(
@@ -566,18 +566,18 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         borderSide: const BorderSide(color: Palette.divider),
                       ),
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: 'ด้านภาษา',
-                        child: Text('ด้านภาษา (Language)'),
+                        child: Text(l.common_categoryLanguage),
                       ),
                       DropdownMenuItem(
                         value: 'ด้านร่างกาย',
-                        child: Text('ด้านร่างกาย (Physical)'),
+                        child: Text(l.common_categoryPhysical),
                       ),
                       DropdownMenuItem(
                         value: 'ด้านคำนวณ',
-                        child: Text('ด้านคำนวณ (Calculate)'),
+                        child: Text(l.common_categoryCalculate),
                       ),
                     ],
                     onChanged: (val) => setState(() => _selectedCategory = val),
@@ -587,7 +587,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
                 // Word Category selector for Voice Quest
                 if (_isVoiceQuest) ...[
-                  _label('หมวดหมู่คำศัพท์ / Word Category'),
+                  _label(l.createActivity_wordCategory),
                   DropdownButtonFormField<String>(
                     initialValue: _selectedWordCategory,
                     decoration: InputDecoration(
@@ -604,30 +604,30 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                         borderSide: const BorderSide(color: Palette.divider),
                       ),
                     ),
-                    items: const [
+                    items: [
                       DropdownMenuItem(
                         value: 'animals',
-                        child: Text('🦁 สัตว์ (Animals)'),
+                        child: Text(l.wordCategory_animals),
                       ),
                       DropdownMenuItem(
                         value: 'food',
-                        child: Text('🍎 อาหาร (Food)'),
+                        child: Text(l.wordCategory_food),
                       ),
                       DropdownMenuItem(
                         value: 'vehicles',
-                        child: Text('🚀 ยานพาหนะ (Vehicles)'),
+                        child: Text(l.wordCategory_vehicles),
                       ),
                       DropdownMenuItem(
                         value: 'nature',
-                        child: Text('🌈 ธรรมชาติ (Nature)'),
+                        child: Text(l.wordCategory_nature),
                       ),
                       DropdownMenuItem(
                         value: 'bedroom',
-                        child: Text('🛏️ ห้องนอน (Bedroom)'),
+                        child: Text(l.wordCategory_bedroom),
                       ),
                       DropdownMenuItem(
                         value: 'school',
-                        child: Text('🎒 โรงเรียน (School)'),
+                        child: Text(l.wordCategory_school),
                       ),
                     ],
                     onChanged: (val) => setState(
@@ -638,20 +638,20 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
 
                 // Settings for Voice Quest & Space Adventure
                 if (_isVoiceQuest || _isSpaceAdventure) ...[
-                  _label('ระยะเวลาที่กำหนด (วินาที) / Time Limit (Seconds)'),
+                  _label(l.createActivity_timeLimit),
                   _textField(_timeLimitCtrl,
                       keyboardType: TextInputType.number),
                   const SizedBox(height: 12),
                 ],
 
                 if (_isVoiceQuest) ...[
-                  _label('คะแนนเต็ม / Max Score'),
+                  _label(l.createActivity_maxScore),
                   _textField(_maxScoreCtrl, keyboardType: TextInputType.number),
                   const SizedBox(height: 12),
                 ],
 
                 if (_isSpaceAdventure) ...[
-                  _label('คะแนนต่อวัตถุที่สแกนเจอ / Score Per Item'),
+                  _label(l.createActivity_scorePerItem),
                   _textField(_scorePerItemCtrl,
                       keyboardType: TextInputType.number),
                   const SizedBox(height: 12),

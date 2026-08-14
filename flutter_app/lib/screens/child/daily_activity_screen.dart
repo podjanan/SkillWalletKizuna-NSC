@@ -51,8 +51,7 @@ class DailyActivityScreen extends StatelessWidget {
           children: [
             // Header
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Row(
                 children: [
                   GestureDetector(
@@ -65,8 +64,7 @@ class DailyActivityScreen extends StatelessWidget {
                     child: Text(
                       date,
                       style: AppTextStyles.body(24,
-                          color: Palette.blueChip,
-                          weight: FontWeight.bold),
+                          color: Palette.blueChip, weight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -88,8 +86,7 @@ class DailyActivityScreen extends StatelessWidget {
                       ),
                     )
                   : ListView.builder(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 24),
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
                       itemCount: sortedRecords.length,
                       itemBuilder: (context, index) {
                         final record = sortedRecords[index];
@@ -100,20 +97,27 @@ class DailyActivityScreen extends StatelessWidget {
                         } else if (pointRaw is double) {
                           score = pointRaw.toInt();
                         } else if (pointRaw != null) {
-                          score =
-                              int.tryParse(pointRaw.toString()) ?? 0;
+                          score = int.tryParse(pointRaw.toString()) ?? 0;
                         }
                         final createdAt = record['created_at'] as String?;
-                        final evidence = record['evidence'] is Map ? record['evidence'] as Map<String, dynamic> : null;
-                        final activityName = record['activity']?['name_activity'] as String? ??
+                        final evidence = record['evidence'] is Map
+                            ? record['evidence'] as Map<String, dynamic>
+                            : null;
+                        final activityName = record['activity']
+                                ?['name_activity'] as String? ??
                             (evidence?['songTitle'] != null
                                 ? 'Sing Together: ${evidence!['songTitle']}'
                                 : (evidence?['activityKey'] == 'bilingual-songs'
-                                    ? 'Sing Together (เพลงสองภาษา)'
-                                    : AppLocalizations.of(context)!.dailyactivity_activity));
+                                    ? AppLocalizations.of(context)!
+                                        .daily_singTogether
+                                    : AppLocalizations.of(context)!
+                                        .dailyactivity_activity));
 
-                        final category = (record['activity']?['category'] as String?) ??
-                            (evidence?['activityKey'] == 'bilingual-songs' ? 'ด้านภาษา' : null);
+                        final category =
+                            (record['activity']?['category'] as String?) ??
+                                (evidence?['activityKey'] == 'bilingual-songs'
+                                    ? 'ด้านภาษา'
+                                    : null);
                         final accent = _categoryAccent(category);
 
                         return GestureDetector(
@@ -121,8 +125,7 @@ class DailyActivityScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    PlayingResultDetailScreen(
+                                builder: (context) => PlayingResultDetailScreen(
                                   record: record,
                                   sessionNumber: index + 1,
                                 ),
@@ -139,8 +142,7 @@ class DailyActivityScreen extends StatelessWidget {
                             clipBehavior: Clip.hardEdge,
                             child: IntrinsicHeight(
                               child: Row(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.stretch,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   // Left accent strip
                                   Container(width: 4, color: accent),
@@ -153,8 +155,7 @@ class DailyActivityScreen extends StatelessWidget {
                                       width: 40,
                                       height: 40,
                                       decoration: BoxDecoration(
-                                        color: accent
-                                            .withValues(alpha: 0.12),
+                                        color: accent.withValues(alpha: 0.12),
                                         shape: BoxShape.circle,
                                       ),
                                       alignment: Alignment.center,
@@ -182,8 +183,7 @@ class DailyActivityScreen extends StatelessWidget {
                                             style: AppTextStyles.label(15,
                                                 color: Palette.text),
                                             maxLines: 1,
-                                            overflow:
-                                                TextOverflow.ellipsis,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                           const SizedBox(height: 4),
                                           Row(
@@ -194,10 +194,8 @@ class DailyActivityScreen extends StatelessWidget {
                                               const SizedBox(width: 4),
                                               Text(
                                                 _formatTime(createdAt),
-                                                style: AppTextStyles.body(
-                                                    13,
-                                                    color:
-                                                        Palette.labelGrey),
+                                                style: AppTextStyles.body(13,
+                                                    color: Palette.labelGrey),
                                               ),
                                             ],
                                           ),

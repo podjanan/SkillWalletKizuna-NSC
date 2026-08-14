@@ -28,7 +28,7 @@ Future<bool> showKizunaTermsDialog(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Disclaimer',
+              l10n.common_disclaimer,
               style: AppTextStyles.heading(22, color: Palette.terracotta),
             ),
             const SizedBox(height: 14),

@@ -293,14 +293,14 @@ class ChildService {
         'newWallet': newWallet is int
             ? newWallet
             : int.tryParse(newWallet.toString()) ?? 0,
-        'message': result['message'] ?? 'แลกของรางวัลสำเร็จ!',
+        'message': result['message'],
         'redemptionId': result['redemptionId'] as String?,
       };
     } catch (e) {
       debugPrint('redeemMedal error: $e');
       return {
         'success': false,
-        'error': 'เกิดข้อผิดพลาด: $e',
+        'error': e.toString(),
       };
     }
   }
@@ -407,7 +407,8 @@ class ChildService {
 
         history.add({
           'type': 'earn',
-          'action': activity['activity']?['name_activity'] ?? 'กิจกรรม',
+          'actionType': 'activity',
+          'actionName': activity['activity']?['name_activity'] ?? '',
           'point': '+$pointValue',
           'isGain': true,
           'date': activity['created_at'] ?? '',
@@ -425,10 +426,11 @@ class ChildService {
           costValue = int.tryParse(cost.toString()) ?? 0;
         }
 
-        final medalName = redemption['medals']?['name_medals'] ?? 'ของรางวัล';
+        final medalName = redemption['medals']?['name_medals'] ?? '';
         history.add({
           'type': 'spend',
-          'action': 'แลก $medalName',
+          'actionType': 'redeem',
+          'actionName': medalName,
           'point': '-$costValue',
           'isGain': false,
           'date': redemption['created_at'] ?? '',

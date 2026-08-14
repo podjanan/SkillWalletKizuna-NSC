@@ -39,7 +39,8 @@ class SpaceAdventureQuestScreen extends StatefulWidget {
   });
 
   @override
-  State<SpaceAdventureQuestScreen> createState() => _SpaceAdventureQuestScreenState();
+  State<SpaceAdventureQuestScreen> createState() =>
+      _SpaceAdventureQuestScreenState();
 }
 
 class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
@@ -70,13 +71,14 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
   }
 
   void _handleTimeout() {
+    final l = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Space time warp! Time ran out!"),
+      SnackBar(
+        content: Text(l.spaceQuest_timeout),
         backgroundColor: Colors.redAccent,
       ),
     );
-    _navigateToResult(false, "Time ran out before verification!", 0);
+    _navigateToResult(false, l.spaceQuest_timeoutReason, 0);
   }
 
   @override
@@ -113,16 +115,20 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
     try {
       final base64String = base64Encode(_capturedImageBytes!);
 
-      final result = await _spaceService.verifyObject(base64String, widget.targetObject);
+      final result =
+          await _spaceService.verifyObject(base64String, widget.targetObject);
       final bool isMatch = result['match'] ?? false;
-      final String reason = result['reason'] ?? (isMatch ? 'Match!' : 'Not a match.');
+      final String reason =
+          result['reason'] ?? (isMatch ? 'Match!' : 'Not a match.');
       final int points = isMatch ? widget.scorePerItem : 0;
 
       _navigateToResult(isMatch, reason, points);
     } catch (e) {
       print('Verification error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Verification error, please try again!')),
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.spaceQuest_verifyError),
+        ),
       );
       _startTimer(); // Restart timer
       setState(() {
@@ -133,7 +139,7 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
 
   void _navigateToResult(bool isMatch, String reason, int pointsEarned) {
     if (!mounted) return;
-    
+
     final currentItemResult = {
       'id': 'space_adventure_${widget.currentIndex}',
       'text': widget.targetObject,
@@ -143,8 +149,9 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
       'match': isMatch,
       'reason': reason,
     };
-    final updatedHistory = List<Map<String, dynamic>>.from(widget.completedItemsHistory)
-      ..add(currentItemResult);
+    final updatedHistory =
+        List<Map<String, dynamic>>.from(widget.completedItemsHistory)
+          ..add(currentItemResult);
 
     Navigator.pushReplacement(
       context,
@@ -172,14 +179,15 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
     final childId = context.read<UserProvider>().currentChildId;
     if (childId == null) return;
 
-    final activityJson = widget.activity?.toJson() ?? Activity(
-      id: 'space-adventure',
-      name: 'Space Adventure',
-      category: 'ด้านร่างกาย',
-      difficulty: 'easy',
-      maxScore: widget.totalItems * widget.scorePerItem,
-      content: 'Space Adventure',
-    ).toJson();
+    final activityJson = widget.activity?.toJson() ??
+        Activity(
+          id: 'space-adventure',
+          name: 'Space Adventure',
+          category: 'ด้านร่างกาย',
+          difficulty: 'easy',
+          maxScore: widget.totalItems * widget.scorePerItem,
+          content: 'Space Adventure',
+        ).toJson();
 
     await DraftService.saveDraft(
       childId: childId,
@@ -214,7 +222,8 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(l.draft_leaveBtn, style: const TextStyle(color: Palette.sky)),
+            child: Text(l.draft_leaveBtn,
+                style: const TextStyle(color: Palette.sky)),
           ),
         ],
       ),
@@ -234,8 +243,10 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final double progress = _timeLeft / widget.timerLimit;
-    final Color timerColor = _timeLeft < 15 ? Palette.errorStrong : Palette.warning;
+    final Color timerColor =
+        _timeLeft < 15 ? Palette.errorStrong : Palette.warning;
 
     return PopScope(
       canPop: false,
@@ -253,7 +264,7 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
             onPressed: _handleBackPressed,
           ),
           title: Text(
-            'Object Hunter',
+            l.spaceQuest_objectHunter,
             style: AppTextStyles.heading(20, color: Colors.black87),
           ),
           centerTitle: true,
@@ -262,14 +273,15 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
               padding: const EdgeInsets.only(right: 16.0),
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Palette.sky.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Palette.sky.withOpacity(0.3)),
                   ),
                   child: Text(
-                    'Score: ${widget.currentScore}',
+                    l.spaceQuest_score(widget.currentScore),
                     style: AppTextStyles.label(13, color: Palette.skyDark),
                   ),
                 ),
@@ -301,7 +313,8 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                           const SizedBox(width: 8),
                           Text(
                             '00:${_timeLeft.toString().padLeft(2, '0')}',
-                            style: AppTextStyles.heading(28, color: Colors.black87),
+                            style: AppTextStyles.heading(28,
+                                color: Colors.black87),
                           ),
                         ],
                       ),
@@ -317,28 +330,25 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'SPACE MISSION QUEST ${widget.currentIndex}/${widget.totalItems}',
+                        l.spaceQuest_mission(
+                          widget.currentIndex,
+                          widget.totalItems,
+                        ),
                         style: AppTextStyles.label(13, color: Palette.sky),
                       ),
                       const SizedBox(height: 6),
-                      RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
-                          style: AppTextStyles.body(16, color: Colors.black54),
-                          children: [
-                            const TextSpan(text: 'FIND ITEM: '),
-                            TextSpan(
-                              text: widget.targetObject.toUpperCase(),
-                              style: AppTextStyles.heading(20, color: Colors.black87),
-                            ),
-                          ],
+                      Text(
+                        l.spaceQuest_findItem(
+                          widget.targetObject.toUpperCase(),
                         ),
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.heading(20, color: Colors.black87),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 24),
-  
+
                 // Target item viewfinder
                 Expanded(
                   child: Container(
@@ -346,7 +356,9 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
-                        color: _capturedImageBytes != null ? Palette.success : Palette.divider,
+                        color: _capturedImageBytes != null
+                            ? Palette.success
+                            : Palette.divider,
                         width: 3,
                       ),
                       boxShadow: Palette.cardShadow,
@@ -365,7 +377,8 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                                 decoration: BoxDecoration(
                                   color: Palette.sky.withOpacity(0.1),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Palette.sky, width: 2),
+                                  border:
+                                      Border.all(color: Palette.sky, width: 2),
                                 ),
                                 child: const Icon(
                                   Icons.camera_alt_outlined,
@@ -375,13 +388,15 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                               ),
                               const SizedBox(height: 20),
                               Text(
-                                'Capture the item',
-                                style: AppTextStyles.heading(18, color: Colors.black87),
+                                l.spaceQuest_capture,
+                                style: AppTextStyles.heading(18,
+                                    color: Colors.black87),
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Find and take a photo of the item',
-                                style: AppTextStyles.body(13, color: Colors.black54),
+                                l.spaceQuest_findTake,
+                                style: AppTextStyles.body(13,
+                                    color: Colors.black54),
                               ),
                             ],
                           ),
@@ -408,13 +423,15 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-  
+
                 // Action buttons
                 Row(
                   children: [
                     Expanded(
                       child: GradientButton.primary(
-                        label: _capturedImageBytes == null ? 'Capture item' : 'Re-capture',
+                        label: _capturedImageBytes == null
+                            ? l.spaceQuest_capture
+                            : l.spaceQuest_recapture,
                         onTap: _isEvaluating ? null : _captureItem,
                         fontSize: 14,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -424,7 +441,7 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: GradientButton.success(
-                          label: 'Verify match',
+                          label: l.spaceQuest_verify,
                           onTap: _isEvaluating ? null : _verifyMatch,
                           fontSize: 14,
                           padding: const EdgeInsets.symmetric(vertical: 14),

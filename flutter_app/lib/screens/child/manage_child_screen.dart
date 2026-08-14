@@ -171,7 +171,7 @@ class _ManageChildScreenState extends State<ManageChildScreen> {
             ),
             icon: const Icon(Icons.home_rounded),
             label: Text(
-              'Home',
+              AppLocalizations.of(context)!.common_home,
               style: AppTextStyles.heading(16, color: Colors.white),
             ),
           ),

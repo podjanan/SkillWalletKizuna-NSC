@@ -221,7 +221,11 @@ class _DynamicVocabularyGameScreenState
       debugPrint('Recorded audio playback error: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot play this recording.')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.dynamic_playRecordingError,
+          ),
+        ),
       );
     }
   }
@@ -485,9 +489,11 @@ class _DynamicVocabularyGameScreenState
     if (!mounted) return;
     if (!hasPermission) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-                Text('Microphone permission denied. Please allow mic access!')),
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)!.dynamic_micPermission,
+          ),
+        ),
       );
       return;
     }
@@ -560,9 +566,9 @@ class _DynamicVocabularyGameScreenState
           setState(() => _isEvaluating = false);
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content:
-                    Text('No speech heard. Hold the mic and speak clearly!')),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.dynamic_noSpeech),
+            ),
           );
           return;
         }
@@ -579,9 +585,9 @@ class _DynamicVocabularyGameScreenState
           setState(() => _isEvaluating = false);
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content:
-                    Text('No speech heard. Hold the mic and speak clearly!')),
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.dynamic_noSpeech),
+            ),
           );
           return;
         }
@@ -1112,6 +1118,7 @@ class _DynamicVocabularyGameScreenState
   // Screen 1: Start Screen
   // ----------------------------------------------------
   Widget _buildStartScreen() {
+    final l = AppLocalizations.of(context)!;
     if (_isLoadingCategories) {
       return const Center(child: CircularProgressIndicator(color: Palette.sky));
     }
@@ -1191,7 +1198,7 @@ class _DynamicVocabularyGameScreenState
                               color: Colors.white, size: 14),
                           const SizedBox(width: 4),
                           Text(
-                            'Language',
+                            l.dynamic_languageTitle,
                             style: AppTextStyles.label(11, color: Colors.white),
                           ),
                         ],
@@ -1199,7 +1206,7 @@ class _DynamicVocabularyGameScreenState
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Say the word,\nwin the stars!',
+                      l.dynamic_tagline,
                       textAlign: TextAlign.center,
                       style: AppTextStyles.heading(24, color: Palette.text),
                     ),
@@ -1211,7 +1218,7 @@ class _DynamicVocabularyGameScreenState
                 DropdownButtonFormField<String>(
                   initialValue: _selectedCategory ?? _categories.first.id,
                   decoration: InputDecoration(
-                    labelText: 'Choose Category',
+                    labelText: l.dynamic_chooseCategory,
                     labelStyle:
                         AppTextStyles.label(14, color: Palette.deepGrey),
                     border: OutlineInputBorder(
@@ -1242,7 +1249,8 @@ class _DynamicVocabularyGameScreenState
                 DropdownButtonFormField<String>(
                   initialValue: _difficulty,
                   decoration: InputDecoration(
-                    labelText: 'Choose Difficulty',
+                    labelText:
+                        AppLocalizations.of(context)!.createActivity_difficulty,
                     labelStyle:
                         AppTextStyles.label(14, color: Palette.deepGrey),
                     border: OutlineInputBorder(
@@ -1259,13 +1267,19 @@ class _DynamicVocabularyGameScreenState
                           const BorderSide(color: Palette.sky, width: 2),
                     ),
                   ),
-                  items: const [
+                  items: [
                     DropdownMenuItem(
-                        value: 'easy', child: Text('🟩 Easy (ง่าย)')),
+                        value: 'easy',
+                        child: Text(
+                            '🟩 ${AppLocalizations.of(context)!.common_difficultyEasy}')),
                     DropdownMenuItem(
-                        value: 'medium', child: Text('🟨 Medium (ปานกลาง)')),
+                        value: 'medium',
+                        child: Text(
+                            '🟨 ${AppLocalizations.of(context)!.common_difficultyMedium}')),
                     DropdownMenuItem(
-                        value: 'hard', child: Text('🟥 Hard (ยาก)')),
+                        value: 'hard',
+                        child: Text(
+                            '🟥 ${AppLocalizations.of(context)!.common_difficultyHard}')),
                   ],
                   onChanged: (value) {
                     setState(() => _difficulty = value ?? 'easy');
@@ -1290,9 +1304,9 @@ class _DynamicVocabularyGameScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'TODAY\'S CATEGORY',
-                            style: TextStyle(
+                          Text(
+                            l.dynamic_todayCategory,
+                            style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
                               color: Colors.white70,
@@ -1355,7 +1369,7 @@ class _DynamicVocabularyGameScreenState
                 child: CircularProgressIndicator(color: Palette.sky),
               )
             : GradientButton.success(
-                label: 'Start Quest',
+                label: l.dynamic_startQuest,
                 icon: const Icon(Icons.play_arrow_rounded,
                     color: Colors.white, size: 24),
                 onTap: _startGame,
@@ -1394,6 +1408,7 @@ class _DynamicVocabularyGameScreenState
   // Screen 2: Gameplay Screen
   // ----------------------------------------------------
   Widget _buildTvGameplayScreen() {
+    final l = AppLocalizations.of(context)!;
     if (_words.isEmpty) return const SizedBox.shrink();
     final item = _words[_currentIndex];
     final progress = (_currentIndex + 1) / _words.length;
@@ -1412,7 +1427,7 @@ class _DynamicVocabularyGameScreenState
                   color: Colors.white.withValues(alpha: 0.10),
                   shape: const CircleBorder(),
                   child: IconButton(
-                    tooltip: 'Exit TV Mode',
+                    tooltip: l.dynamic_exitTvMode,
                     onPressed: _toggleTvMode,
                     icon: const Icon(Icons.close_rounded,
                         color: Colors.white, size: 30),
@@ -1426,13 +1441,13 @@ class _DynamicVocabularyGameScreenState
                     color: const Color(0xFF4F3027),
                     borderRadius: BorderRadius.circular(22),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
-                      Icon(Icons.tv_rounded,
+                      const Icon(Icons.tv_rounded,
                           color: Color(0xFFF3A071), size: 21),
-                      SizedBox(width: 7),
-                      Text('TV Mode',
-                          style: TextStyle(
+                      const SizedBox(width: 7),
+                      Text(l.dynamic_tvMode,
+                          style: const TextStyle(
                               color: Color(0xFFF3A071), fontSize: 16)),
                     ],
                   ),
@@ -1514,7 +1529,7 @@ class _DynamicVocabularyGameScreenState
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton.filledTonal(
-                  tooltip: 'Listen',
+                  tooltip: l.dynamic_listen,
                   onPressed: () => _speakWord(item.word),
                   icon: const Icon(Icons.volume_up_rounded),
                   style: IconButton.styleFrom(
@@ -1562,7 +1577,9 @@ class _DynamicVocabularyGameScreenState
             ),
             const SizedBox(height: 5),
             Text(
-              _isListening ? 'กำลังฟัง...' : 'กดค้างเพื่อพูด',
+              _isListening
+                  ? AppLocalizations.of(context)!.dynamic_listening
+                  : AppLocalizations.of(context)!.dynamic_holdToSpeak,
               style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.48), fontSize: 13),
             ),
@@ -1573,6 +1590,7 @@ class _DynamicVocabularyGameScreenState
   }
 
   Widget _buildGameplayScreen() {
+    final l = AppLocalizations.of(context)!;
     if (_words.isEmpty) return const SizedBox.shrink();
     final item = _words[_currentIndex];
     final progress = (_currentIndex + 1) / _words.length;
@@ -1596,7 +1614,7 @@ class _DynamicVocabularyGameScreenState
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
-                  'Word ${_currentIndex + 1} of ${_words.length}',
+                  l.dynamic_progress(_currentIndex + 1, _words.length),
                   style: AppTextStyles.label(12, color: _languageAccent),
                 ),
               ),
@@ -1689,7 +1707,7 @@ class _DynamicVocabularyGameScreenState
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    'Say the word:',
+                    l.dynamic_sayWord,
                     style: AppTextStyles.label(13, color: Palette.sky),
                   ),
                   const SizedBox(height: 6),
@@ -1699,7 +1717,7 @@ class _DynamicVocabularyGameScreenState
                   ),
                   if (item.thaiMeaning != null)
                     Text(
-                      'Meaning: ${item.thaiMeaning}',
+                      l.dynamic_meaning(item.thaiMeaning!),
                       style: AppTextStyles.body(18, color: Palette.deepGrey),
                     ),
                   if (item.phonetic != null)
@@ -1723,7 +1741,7 @@ class _DynamicVocabularyGameScreenState
                     ),
                     icon: const Icon(Icons.volume_up_rounded, size: 22),
                     label: Text(
-                      'Listen: ${item.word}',
+                      l.dynamic_listenWord(item.word),
                       style: AppTextStyles.label(14, color: Palette.sky),
                     ),
                   ),
@@ -1736,9 +1754,9 @@ class _DynamicVocabularyGameScreenState
           // Hold to Speak mic button with pulse animations
           Center(
             child: _isEvaluating
-                ? const Column(
+                ? Column(
                     children: [
-                      SizedBox(
+                      const SizedBox(
                         width: 28,
                         height: 28,
                         child: CircularProgressIndicator(
@@ -1746,8 +1764,8 @@ class _DynamicVocabularyGameScreenState
                           strokeWidth: 2.5,
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text('Evaluating your voice...'),
+                      const SizedBox(height: 8),
+                      Text(l.dynamic_evaluating),
                     ],
                   )
                 : Column(
@@ -1793,7 +1811,9 @@ class _DynamicVocabularyGameScreenState
                                     color: Colors.white, size: 38),
                                 const SizedBox(height: 4),
                                 Text(
-                                  _isListening ? 'Speaking' : 'Hold to speak',
+                                  _isListening
+                                      ? l.dynamic_speaking
+                                      : l.dynamic_holdToSpeak,
                                   textAlign: TextAlign.center,
                                   style: AppTextStyles.label(9,
                                       color: Colors.white),
@@ -1805,7 +1825,7 @@ class _DynamicVocabularyGameScreenState
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Press and hold while speaking. Release when done.',
+                        l.dynamic_speakInstruction,
                         style: AppTextStyles.body(11, color: Palette.deepGrey),
                       ),
                     ],
@@ -1836,6 +1856,7 @@ class _DynamicVocabularyGameScreenState
   // Screen 3: Result Screen
   // ----------------------------------------------------
   Widget _buildResultScreen() {
+    final l = AppLocalizations.of(context)!;
     if (_words.isEmpty) return const SizedBox.shrink();
     final item = _words[_currentIndex];
     final cleanSpoken = _spokenText
@@ -1881,7 +1902,9 @@ class _DynamicVocabularyGameScreenState
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  isCorrect ? 'Great Job! เก่งมาก!' : 'Nice Try! พยายามอีกนิด!',
+                  isCorrect
+                      ? AppLocalizations.of(context)!.dynamic_greatJob
+                      : AppLocalizations.of(context)!.dynamic_niceTry,
                   style: AppTextStyles.heading(26, color: Colors.white),
                 ),
               ],
@@ -1898,12 +1921,12 @@ class _DynamicVocabularyGameScreenState
             child: Column(
               children: [
                 Text(
-                  'YOU SAID:',
+                  l.dynamic_youSaid,
                   style: AppTextStyles.label(13, color: Palette.deepGrey),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _spokenText.isNotEmpty ? '"$_spokenText"' : '(Silence)',
+                  _spokenText.isNotEmpty ? '"$_spokenText"' : l.dynamic_silence,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 32,
@@ -1912,16 +1935,9 @@ class _DynamicVocabularyGameScreenState
                   ),
                 ),
                 const Divider(height: 24, color: Palette.divider),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Target word: ',
-                        style: AppTextStyles.body(14, color: Palette.deepGrey)),
-                    Text(
-                      item.word.toUpperCase(),
-                      style: AppTextStyles.label(16, color: Palette.text),
-                    ),
-                  ],
+                Text(
+                  l.dynamic_targetWord(item.word.toUpperCase()),
+                  style: AppTextStyles.body(14, color: Palette.deepGrey),
                 ),
                 const SizedBox(height: 20),
 
@@ -1932,13 +1948,13 @@ class _DynamicVocabularyGameScreenState
                   alignment: WrapAlignment.center,
                   children: [
                     _rewardBadge(
-                      isCorrect ? '+$_currentWordScore Score' : '+0 Score',
+                      l.dynamic_scoreEarned(isCorrect ? _currentWordScore : 0),
                       isCorrect,
                     ),
                     if (isPerfect)
-                      _rewardBadge('Perfect! 🏆', true, isGold: true),
+                      _rewardBadge(l.dynamic_perfect, true, isGold: true),
                     _rewardBadge(
-                        '${(_confidence * 100).round()}% Voice Match 🎙',
+                        l.dynamic_voiceMatch((_confidence * 100).round()),
                         isCorrect),
                   ],
                 ),
@@ -1951,7 +1967,7 @@ class _DynamicVocabularyGameScreenState
                         : () => _playRecordedAudio(currentResult),
                     icon: const Icon(Icons.play_circle_outline_rounded),
                     label: Text(
-                      'Listen to your voice',
+                      l.dynamic_listenVoice,
                       style: AppTextStyles.label(13, color: Palette.sky),
                     ),
                     style: OutlinedButton.styleFrom(
@@ -1984,7 +2000,7 @@ class _DynamicVocabularyGameScreenState
               onPressed: _retryWord,
               icon: const Icon(Icons.refresh_rounded, size: 22),
               label: Text(
-                'Speak Again',
+                l.dynamic_speakAgain,
                 style: AppTextStyles.heading(16, color: Palette.sky),
               ),
               style: OutlinedButton.styleFrom(
@@ -2000,7 +2016,9 @@ class _DynamicVocabularyGameScreenState
 
           // Next / Finish Button
           GradientButton.success(
-            label: _currentIndex + 1 >= _words.length ? 'Finish' : 'Next word',
+            label: _currentIndex + 1 >= _words.length
+                ? l.common_finish
+                : l.dynamic_nextWord,
             onTap: _nextWord,
             padding: const EdgeInsets.symmetric(vertical: 16),
             radius: 20,
@@ -2043,13 +2061,13 @@ class _DynamicVocabularyGameScreenState
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Quest Complete!',
+                  l.dynamic_questComplete,
                   textAlign: TextAlign.center,
                   style: AppTextStyles.heading(28, color: Palette.text),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Total Score',
+                  l.dynamic_totalScore,
                   style: AppTextStyles.label(13, color: Palette.deepGrey),
                 ),
                 FittedBox(
@@ -2176,7 +2194,7 @@ class _DynamicVocabularyGameScreenState
           // Action Buttons
           if (!_scoreSaved) ...[
             GradientButton.success(
-              label: 'Done',
+              label: l.common_done,
               onTap: _finishQuest,
               isLoading: _isSavingScore,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -2409,7 +2427,7 @@ class _DynamicVocabularyGameScreenState
                       else
                         const Center(
                           child: Icon(Icons.check_circle_outline,
-                              color: Colors.green, size: 36),
+                              color: Palette.success, size: 36),
                         ),
                       Positioned(
                         top: 4,
@@ -2495,7 +2513,10 @@ class _DynamicVocabularyGameScreenState
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('เกิดข้อผิดพลาดในการแนบสื่อ: $e')),
+        SnackBar(
+          content:
+              Text(AppLocalizations.of(context)!.common_attachmentError('$e')),
+        ),
       );
     }
   }

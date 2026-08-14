@@ -17,10 +17,11 @@ import 'screens/auth/welcome_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/disclaimer/software_disclaimer_gate.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Non-blocking asynchronous initialization of MediaKit in background
   unawaited(Future(() {
     try {
@@ -32,6 +33,8 @@ Future<void> main() async {
 
   await dotenv.load(fileName: ".env");
   await StorageService().init();
+  final preferences = await SharedPreferences.getInstance();
+  final savedLanguageCode = preferences.getString('app_locale') ?? 'en';
 
   print('API_BASE_URL: ${ApiConfig.baseUrl}');
 
@@ -42,13 +45,15 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
-      child: const SWKApp(),
+      child: SWKApp(initialLocale: Locale(savedLanguageCode)),
     ),
   );
 }
 
 class SWKApp extends StatefulWidget {
-  const SWKApp({super.key});
+  const SWKApp({super.key, this.initialLocale = const Locale('en')});
+
+  final Locale initialLocale;
 
   @override
   State<SWKApp> createState() => _SWKAppState();
@@ -58,12 +63,13 @@ class SWKApp extends StatefulWidget {
 }
 
 class _SWKAppState extends State<SWKApp> {
-  Locale _locale = const Locale('en');
+  late Locale _locale;
   final DeepLinkService _deepLinkService = DeepLinkService();
 
   @override
   void initState() {
     super.initState();
+    _locale = widget.initialLocale;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeApp();
     });
@@ -120,6 +126,9 @@ class _SWKAppState extends State<SWKApp> {
 
   void setLocale(Locale value) {
     setState(() => _locale = value);
+    SharedPreferences.getInstance().then(
+      (preferences) => preferences.setString('app_locale', value.languageCode),
+    );
   }
 
   @override
@@ -188,9 +197,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
     // Allow enough time for the session cookie to be verified after sign-in.
     bool authenticated = false;
     final session = await AuthService().getSession().timeout(
-      const Duration(seconds: 8),
-      onTimeout: () => null,
-    );
+          const Duration(seconds: 8),
+          onTimeout: () => null,
+        );
     if (session != null) {
       authenticated = true;
       debugPrint('✅ Found valid Better Auth session');

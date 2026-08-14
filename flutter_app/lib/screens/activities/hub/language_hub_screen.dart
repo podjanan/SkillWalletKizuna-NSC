@@ -74,8 +74,8 @@ class LanguageHubScreen extends StatelessWidget {
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
+                          children: [
+                            const Text(
                               'Sing Together',
                               style: TextStyle(
                                 color: Colors.white,
@@ -83,10 +83,10 @@ class LanguageHubScreen extends StatelessWidget {
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
-                              'ฟังเพลงสองภาษา + โหมดคอร์ดกีต้าร์สำหรับผู้ปกครอง',
-                              style: TextStyle(
+                              AppLocalizations.of(context)!.sing_hubSubtitle,
+                              style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 12,
                               ),
