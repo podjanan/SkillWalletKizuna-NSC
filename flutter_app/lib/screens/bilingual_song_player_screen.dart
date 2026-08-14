@@ -4,8 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:media_kit/media_kit.dart' hide PlayerState;
-import 'package:media_kit_video/media_kit_video.dart';
+import 'package:video_player/video_player.dart';
 import '../l10n/app_localizations.dart';
 import '../models/bilingual_song_model.dart';
 import '../services/api_config.dart';
@@ -34,18 +33,26 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
     with WidgetsBindingObserver {
   late AudioPlayer _audioPlayer;
   late Future<void> _audioInitFuture;
+  late final StreamSubscription<PlayerState> _audioStateSubscription;
+  late final StreamSubscription<Duration> _audioDurationSubscription;
+  late final StreamSubscription<Duration> _audioPositionSubscription;
+  late final StreamSubscription<void> _audioCompleteSubscription;
   bool _isPlaying = false;
   bool _isPlaybackBusy = false;
-  bool _hasStartedAudio = false;
+  bool _isCompletingPlayback = false;
+  bool _hasCompletedPlayback = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
   Duration _lastRenderedPosition = Duration.zero;
-  Player? _dancePlayer;
-  VideoController? _danceVideoController;
+  final ValueNotifier<Duration> _positionNotifier =
+      ValueNotifier<Duration>(Duration.zero);
+  VideoPlayerController? _danceVideoController;
   bool _danceVideoReady = false;
   bool _danceVideoFailed = false;
+  Future<void>? _danceInitialization;
+  Future<void>? _danceRelease;
+  int _dancePlayerGeneration = 0;
   bool _showDanceVideo = true;
-  Timer? _syncTimer;
 
   // Media Evidence Capture State
   String? _videoPath;
@@ -64,46 +71,35 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
     _startTime = DateTime.now();
     _audioPlayer = AudioPlayer();
 
-    _audioPlayer.onPlayerStateChanged.listen((state) {
+    _audioStateSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) {
         setState(() => _isPlaying = state == PlayerState.playing);
       }
-      if (state != PlayerState.playing) {
-        _dancePlayer?.pause();
-      }
     });
 
-    _audioPlayer.onDurationChanged.listen((newDuration) {
+    _audioDurationSubscription =
+        _audioPlayer.onDurationChanged.listen((newDuration) {
       if (mounted) {
         setState(() => _duration = newDuration);
       }
     });
 
-    _audioPlayer.onPositionChanged.listen((newPosition) {
+    _audioPositionSubscription =
+        _audioPlayer.onPositionChanged.listen((newPosition) {
       final shouldRender =
           (newPosition - _lastRenderedPosition).inMilliseconds.abs() >= 250;
-      if (mounted && shouldRender) {
-        setState(() {
-          _position = newPosition;
-          _lastRenderedPosition = newPosition;
-        });
-      } else {
-        _position = newPosition;
+      _position = newPosition;
+      if (shouldRender) {
+        _lastRenderedPosition = newPosition;
+        _positionNotifier.value = newPosition;
       }
     });
 
-    _audioPlayer.onPlayerComplete.listen((_) async {
-      _hasStartedAudio = false;
-      await _dancePlayer?.pause();
-      await _dancePlayer?.seek(Duration.zero);
-    });
+    _audioCompleteSubscription =
+        _audioPlayer.onPlayerComplete.listen((_) => _handlePlaybackComplete());
 
     _audioInitFuture = _initAudio();
     _initDanceVideo();
-    _syncTimer = Timer.periodic(
-      const Duration(seconds: 2),
-      (_) => _correctDanceVideoDrift(),
-    );
   }
 
   @override
@@ -120,7 +116,9 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
       if (isVideo) {
         // Open In-App Studio Camera Screen with Live Audio Playback & Karaoke Overlay
         await _audioPlayer.pause();
-        await _dancePlayer?.pause();
+        // Free the decoder before the camera asks Android for its encoder and
+        // preview surface. This is especially important on low-memory devices.
+        await _releaseDanceVideo();
         if (!mounted) return;
         final String? videoPath = await Navigator.push<String>(
           context,
@@ -150,12 +148,16 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
       }
     } catch (e) {
       debugPrint('Media selection error: $e');
+    } finally {
+      if (isVideo && mounted && _showDanceVideo) {
+        await _initDanceVideo();
+      }
     }
   }
 
   void _handleFinish() {
     _audioPlayer.pause();
-    _dancePlayer?.pause();
+    _danceVideoController?.pause();
     final timeSpent = _startTime != null
         ? DateTime.now().difference(_startTime!).inSeconds
         : 0;
@@ -185,6 +187,10 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
     final playUrl = _resolvePlayableUrl(widget.song.audioUrl);
     if (playUrl.isEmpty) return;
     try {
+      // Keep the prepared source after completion. Releasing it here forces a
+      // second network load on every replay and can leave Android's media
+      // decoder in a transient state while the dance video is also seeking.
+      await _audioPlayer.setReleaseMode(ReleaseMode.stop);
       await _audioPlayer.setSourceUrl(playUrl);
     } catch (e) {
       debugPrint('Audio load error: $e');
@@ -192,35 +198,179 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
   }
 
   Future<void> _initDanceVideo() async {
+    final pendingRelease = _danceRelease;
+    if (pendingRelease != null) await pendingRelease;
+    if (!mounted || !_showDanceVideo) return;
+
     final videoUrl = _resolvePlayableUrl(widget.song.danceVideoUrl);
-    if (videoUrl.isEmpty) return;
+    if (videoUrl.isEmpty || _danceVideoController != null) return;
+    final pendingInitialization = _danceInitialization;
+    if (pendingInitialization != null) return pendingInitialization;
+
+    final generation = _dancePlayerGeneration;
+    late final Future<void> initialization;
+    initialization = _createDanceVideo(videoUrl, generation).whenComplete(() {
+      if (identical(_danceInitialization, initialization)) {
+        _danceInitialization = null;
+      }
+    });
+    _danceInitialization = initialization;
+    return initialization;
+  }
+
+  Future<void> _createDanceVideo(String videoUrl, int generation) async {
+    final controller = VideoPlayerController.networkUrl(
+      Uri.parse(videoUrl),
+      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+    );
     try {
-      final player = Player();
-      final controller = VideoController(player);
-      _dancePlayer = player;
+      await controller.initialize().timeout(const Duration(seconds: 20));
+      await controller.setVolume(0);
+      await controller.setLooping(true);
+      if (!mounted ||
+          generation != _dancePlayerGeneration ||
+          !_showDanceVideo) {
+        await controller.dispose();
+        return;
+      }
       _danceVideoController = controller;
-      await player.setVolume(0);
-      await player.setPlaylistMode(PlaylistMode.single);
-      await player.open(Media(videoUrl), play: false);
+      controller.addListener(() => _handleDanceVideoError(controller));
       _danceVideoReady = true;
-      await player.seek(_position);
+      _danceVideoFailed = false;
+      await controller.seekTo(_dancePositionForAudio(_position, controller));
       if (_isPlaying) {
-        await player.play();
+        await controller.play();
       }
       if (mounted) setState(() {});
     } catch (e) {
       debugPrint('Dance video load error: $e');
-      _danceVideoFailed = true;
-      if (mounted) setState(() {});
+      if (identical(_danceVideoController, controller)) {
+        _danceVideoController = null;
+        _danceVideoReady = false;
+      }
+      try {
+        await controller.dispose();
+      } catch (_) {}
+      if (mounted && generation == _dancePlayerGeneration) {
+        setState(() => _danceVideoFailed = true);
+      }
+    }
+  }
+
+  void _handleDanceVideoError(VideoPlayerController controller) {
+    if (!mounted ||
+        !identical(_danceVideoController, controller) ||
+        _danceVideoFailed ||
+        !controller.value.hasError) {
+      return;
+    }
+    debugPrint(
+        'Dance video playback error: ${controller.value.errorDescription}');
+    setState(() => _danceVideoFailed = true);
+  }
+
+  Future<void> _releaseDanceVideo() async {
+    final pendingRelease = _danceRelease;
+    if (pendingRelease != null) return pendingRelease;
+
+    late final Future<void> release;
+    release = _performDanceVideoRelease().whenComplete(() {
+      if (identical(_danceRelease, release)) {
+        _danceRelease = null;
+      }
+    });
+    _danceRelease = release;
+    return release;
+  }
+
+  Future<void> _performDanceVideoRelease() async {
+    _dancePlayerGeneration++;
+    final initialization = _danceInitialization;
+    final controller = _danceVideoController;
+    _danceVideoController = null;
+    _danceVideoReady = false;
+    if (mounted) setState(() {});
+    // Let an in-flight open observe the invalidated generation and clean up
+    // its own player before a replacement player is created.
+    if (initialization != null) {
+      try {
+        await initialization;
+      } catch (_) {}
+    }
+    if (controller != null) {
+      try {
+        await controller.pause();
+      } catch (e) {
+        debugPrint('Dance video pause during release error: $e');
+      }
+      try {
+        await controller.dispose();
+      } catch (e) {
+        debugPrint('Dance video dispose error: $e');
+      }
+    }
+  }
+
+  Future<void> _hideDanceVideo() async {
+    _showDanceVideo = false;
+    await _releaseDanceVideo();
+  }
+
+  Future<void> _showDanceVideoPanel() async {
+    if (!mounted) return;
+    setState(() {
+      _showDanceVideo = true;
+      _danceVideoFailed = false;
+    });
+    await _initDanceVideo();
+  }
+
+  Future<void> _openEvidenceVideo() async {
+    final videoPath = _videoPath;
+    if (videoPath == null || videoPath.isEmpty || _isPlaybackBusy) return;
+    _isPlaybackBusy = true;
+    try {
+      await _pausePlayback();
+      // Android devices commonly expose only one reliable hardware decoder.
+      // Release the dance video before opening the recorded evidence player.
+      await _releaseDanceVideo();
+      if (!mounted) return;
+      final evidenceRelease = Completer<void>();
+      await showDialog<void>(
+        context: context,
+        builder: (_) => BilingualVideoPlayerDialog(
+          videoPath: videoPath,
+          releaseCompleter: evidenceRelease,
+        ),
+      );
+      // Do not allocate the dance-video decoder until the evidence video's
+      // native surface has been released completely.
+      try {
+        await evidenceRelease.future.timeout(const Duration(seconds: 22));
+      } catch (e) {
+        debugPrint('Evidence video release timeout: $e');
+      }
+    } finally {
+      _isPlaybackBusy = false;
+      if (mounted && _showDanceVideo) {
+        await _initDanceVideo();
+      }
     }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _syncTimer?.cancel();
+    _audioStateSubscription.cancel();
+    _audioDurationSubscription.cancel();
+    _audioPositionSubscription.cancel();
+    _audioCompleteSubscription.cancel();
+    _positionNotifier.dispose();
     _audioPlayer.dispose();
-    _dancePlayer?.dispose();
+    _dancePlayerGeneration++;
+    final danceVideoController = _danceVideoController;
+    _danceVideoController = null;
+    unawaited(danceVideoController?.dispose());
     super.dispose();
   }
 
@@ -228,7 +378,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
     try {
       await Future.wait<void>([
         _audioPlayer.pause(),
-        if (_dancePlayer != null) _dancePlayer!.pause(),
+        if (_danceVideoController != null) _danceVideoController!.pause(),
       ]);
     } catch (e) {
       debugPrint('Pause playback error: $e');
@@ -243,29 +393,59 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
         : (_duration > Duration.zero && position > _duration
             ? _duration
             : position);
-    if (mounted) setState(() => _position = safePosition);
+    _position = safePosition;
+    _lastRenderedPosition = safePosition;
+    _positionNotifier.value = safePosition;
     await Future.wait<void>([
       _audioPlayer.seek(safePosition),
-      if (_danceVideoReady && _dancePlayer != null)
-        _dancePlayer!.seek(safePosition),
+      if (_danceVideoReady && _danceVideoController != null)
+        _danceVideoController!.seekTo(_dancePositionForAudio(
+          safePosition,
+          _danceVideoController!,
+        )),
     ]);
   }
 
-  Future<void> _correctDanceVideoDrift() async {
-    final player = _dancePlayer;
-    if (!_isPlaying || !_danceVideoReady || player == null) return;
-    final drift = (player.state.position - _position).inMilliseconds.abs();
-    // Small clock differences are normal. Seeking for every tiny difference
-    // causes visible jumps, so only correct a clearly noticeable desync.
-    if (drift > 900) {
-      await player.seek(_position);
+  Duration _dancePositionForAudio(
+    Duration audioPosition,
+    VideoPlayerController controller,
+  ) {
+    final videoDuration = controller.value.duration;
+    if (videoDuration <= Duration.zero) return Duration.zero;
+    return Duration(
+      microseconds: audioPosition.inMicroseconds % videoDuration.inMicroseconds,
+    );
+  }
+
+  Future<void> _handlePlaybackComplete() async {
+    if (_isCompletingPlayback) return;
+    _isCompletingPlayback = true;
+    try {
+      final controller = _danceVideoController;
+      if (controller != null) {
+        await controller.pause();
+        await controller.seekTo(Duration.zero);
+      }
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _hasCompletedPlayback = true;
+          _position = Duration.zero;
+          _lastRenderedPosition = Duration.zero;
+        });
+        _positionNotifier.value = Duration.zero;
+      }
+    } catch (e) {
+      debugPrint('Playback completion reset error: $e');
+    } finally {
+      _isCompletingPlayback = false;
     }
   }
 
   Future<void> _togglePlayPause() async {
     final playUrl = _resolvePlayableUrl(widget.song.audioUrl);
     debugPrint('Toggling audio play/pause for URL: $playUrl');
-    if (playUrl.isEmpty || _isPlaybackBusy) return;
+    if (playUrl.isEmpty || _isPlaybackBusy || _isCompletingPlayback) return;
 
     _isPlaybackBusy = true;
     try {
@@ -275,25 +455,21 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
       } else {
         final isAtEnd = _duration > Duration.zero &&
             _position >= _duration - const Duration(milliseconds: 500);
-        final resumePosition = isAtEnd ? Duration.zero : _position;
-        await _seekPlayback(resumePosition);
+        if (_hasCompletedPlayback || isAtEnd) {
+          await _seekPlayback(Duration.zero);
+          _hasCompletedPlayback = false;
+        }
         if (mounted) setState(() => _isPlaying = true);
 
         await Future.wait<void>([
-          if (_hasStartedAudio)
-            _audioPlayer.resume()
-          else
-            _audioPlayer.play(
-              UrlSource(playUrl),
-              position: resumePosition,
-            ),
-          if (_danceVideoReady && _dancePlayer != null) _dancePlayer!.play(),
+          _audioPlayer.resume(),
+          if (_danceVideoReady && _danceVideoController != null)
+            _danceVideoController!.play(),
         ]);
-        _hasStartedAudio = true;
       }
     } catch (e) {
       debugPrint('Audio play exception: $e');
-      await _dancePlayer?.pause();
+      await _danceVideoController?.pause();
       if (mounted) setState(() => _isPlaying = false);
     } finally {
       _isPlaybackBusy = false;
@@ -301,76 +477,82 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
   }
 
   Widget _buildAudioControls() {
-    return Column(
-      children: [
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            activeTrackColor: Palette.sky,
-            inactiveTrackColor: Colors.grey.shade200,
-            thumbColor: Colors.amber,
-            trackHeight: 6,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
-          ),
-          child: Slider(
-            min: 0,
-            max: _duration.inSeconds.toDouble() > 0
-                ? _duration.inSeconds.toDouble()
-                : 100,
-            value: _position.inSeconds.toDouble().clamp(
-                  0,
-                  _duration.inSeconds.toDouble() > 0
-                      ? _duration.inSeconds.toDouble()
-                      : 100,
-                ),
-            onChanged: (value) async {
-              await _seekPlayback(Duration(seconds: value.toInt()));
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _formatDuration(_position),
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                ),
-              ),
-              GestureDetector(
-                onTap: _togglePlayPause,
-                child: Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.amber,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.amber.withValues(alpha: 0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
+    return ValueListenableBuilder<Duration>(
+      valueListenable: _positionNotifier,
+      builder: (context, renderedPosition, _) => Column(
+        children: [
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: Palette.sky,
+              inactiveTrackColor: Colors.grey.shade200,
+              thumbColor: Colors.amber,
+              trackHeight: 6,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+            ),
+            child: Slider(
+              min: 0,
+              max: _duration.inSeconds.toDouble() > 0
+                  ? _duration.inSeconds.toDouble()
+                  : 100,
+              value: renderedPosition.inSeconds.toDouble().clamp(
+                    0,
+                    _duration.inSeconds.toDouble() > 0
+                        ? _duration.inSeconds.toDouble()
+                        : 100,
                   ),
-                  child: Icon(
-                    _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                    color: Colors.white,
-                    size: 34,
+              // Position seeking is intentionally disabled on this screen.
+              // Keeping playback linear avoids overlapping native seek
+              // commands while the short dance clip is looping on Android.
+              onChanged: null,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _formatDuration(renderedPosition),
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                   ),
                 ),
-              ),
-              Expanded(
-                child: Text(
-                  _formatDuration(_duration),
-                  textAlign: TextAlign.right,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                GestureDetector(
+                  onTap: _togglePlayPause,
+                  child: Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.amber,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.amber.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      _isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 34,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: Text(
+                    _formatDuration(_duration),
+                    textAlign: TextAlign.right,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -386,15 +568,9 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
                   child: IconButton(
                     tooltip: l.sing_retryVideo,
                     onPressed: () async {
-                      setState(() {
-                        _danceVideoFailed = false;
-                        _danceVideoController = null;
-                      });
-                      await _dancePlayer?.dispose();
-                      if (!mounted) return;
-                      _dancePlayer = null;
-                      _danceVideoReady = false;
-                      _initDanceVideo();
+                      setState(() => _danceVideoFailed = false);
+                      await _releaseDanceVideo();
+                      await _initDanceVideo();
                     },
                     icon: const Icon(Icons.refresh_rounded,
                         color: Colors.white, size: 32),
@@ -408,10 +584,9 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
                       fit: StackFit.expand,
                       children: [
                         RepaintBoundary(
-                          child: Video(
+                          child: VideoPlayer(
+                            _danceVideoController!,
                             key: const ValueKey('sing-dance-video'),
-                            controller: _danceVideoController!,
-                            controls: NoVideoControls,
                           ),
                         ),
                         Positioned(
@@ -420,8 +595,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
                           child: IconButton.filledTonal(
                             tooltip: l.sing_hideVideo,
                             visualDensity: VisualDensity.compact,
-                            onPressed: () =>
-                                setState(() => _showDanceVideo = false),
+                            onPressed: _hideDanceVideo,
                             icon: const Icon(Icons.visibility_off_rounded,
                                 size: 18),
                           ),
@@ -532,24 +706,14 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
               child: Column(
                 children: [
                   if (widget.song.danceVideoUrl?.trim().isNotEmpty == true) ...[
-                    // Collapse the panel without removing Video from the tree.
-                    // This keeps the native texture alive and avoids a jump
-                    // when the user shows it again.
-                    ClipRect(
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        heightFactor: _showDanceVideo ? 1 : 0,
-                        child: _buildDanceVideoPanel(l),
-                      ),
-                    ),
+                    if (_showDanceVideo) _buildDanceVideoPanel(l),
                     if (_showDanceVideo)
                       const SizedBox(height: 10)
                     else
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton.icon(
-                          onPressed: () =>
-                              setState(() => _showDanceVideo = true),
+                          onPressed: _showDanceVideoPanel,
                           icon: const Icon(Icons.visibility_rounded, size: 18),
                           label: Text(l.sing_showVideo),
                         ),
@@ -748,17 +912,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
                                 child: Stack(
                                   children: [
                                     GestureDetector(
-                                      onTap: () async {
-                                        await _audioPlayer.pause();
-                                        if (!context.mounted) return;
-                                        setState(() => _isPlaying = false);
-                                        showDialog(
-                                          context: context,
-                                          builder: (context) =>
-                                              BilingualVideoPlayerDialog(
-                                                  videoPath: _videoPath!),
-                                        );
-                                      },
+                                      onTap: _openEvidenceVideo,
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(15),
                                         child: Container(
@@ -1108,7 +1262,13 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
 
 class BilingualVideoPlayerDialog extends StatefulWidget {
   final String videoPath;
-  const BilingualVideoPlayerDialog({super.key, required this.videoPath});
+  final Completer<void>? releaseCompleter;
+
+  const BilingualVideoPlayerDialog({
+    super.key,
+    required this.videoPath,
+    this.releaseCompleter,
+  });
 
   @override
   State<BilingualVideoPlayerDialog> createState() =>
@@ -1117,24 +1277,61 @@ class BilingualVideoPlayerDialog extends StatefulWidget {
 
 class _BilingualVideoPlayerDialogState
     extends State<BilingualVideoPlayerDialog> {
-  late final Player _player;
-  late final VideoController _controller;
+  late final VideoPlayerController _controller;
+  late final Future<void> _openFuture;
 
   @override
   void initState() {
     super.initState();
-    try {
-      MediaKit.ensureInitialized();
-    } catch (_) {}
-    _player = Player();
-    _controller = VideoController(_player);
-    _player.open(Media(widget.videoPath), play: true);
+    _controller = kIsWeb
+        ? VideoPlayerController.networkUrl(Uri.parse(widget.videoPath))
+        : VideoPlayerController.file(File(widget.videoPath));
+    _openFuture = _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    await _controller.initialize().timeout(const Duration(seconds: 20));
+    if (!mounted) return;
+    await _controller.setLooping(false);
+    if (!mounted) return;
+    await _controller.play();
+  }
+
+  Future<void> _toggleVideo() async {
+    if (!_controller.value.isInitialized) return;
+    if (_controller.value.isPlaying) {
+      await _controller.pause();
+      return;
+    }
+    final duration = _controller.value.duration;
+    final position = _controller.value.position;
+    if (duration > Duration.zero &&
+        position >= duration - const Duration(milliseconds: 200)) {
+      await _controller.seekTo(Duration.zero);
+    }
+    await _controller.play();
   }
 
   @override
   void dispose() {
-    _player.dispose();
+    unawaited(_disposeController());
     super.dispose();
+  }
+
+  Future<void> _disposeController() async {
+    try {
+      await _openFuture;
+    } catch (_) {
+      // Initialization errors are rendered by FutureBuilder.
+    }
+    try {
+      await _controller.dispose();
+    } finally {
+      final completer = widget.releaseCompleter;
+      if (completer != null && !completer.isCompleted) {
+        completer.complete();
+      }
+    }
   }
 
   @override
@@ -1149,9 +1346,57 @@ class _BilingualVideoPlayerDialogState
           aspectRatio: 16 / 9,
           child: Stack(
             children: [
-              Video(
-                controller: _controller,
-                controls: MaterialVideoControls,
+              FutureBuilder<void>(
+                future: _openFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return const Center(
+                      child: Icon(Icons.broken_image_rounded,
+                          color: Colors.white70, size: 48),
+                    );
+                  }
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  }
+                  return GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _toggleVideo,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        VideoPlayer(_controller),
+                        ValueListenableBuilder<VideoPlayerValue>(
+                          valueListenable: _controller,
+                          builder: (context, value, _) => Center(
+                            child: AnimatedOpacity(
+                              opacity: value.isPlaying ? 0 : 1,
+                              duration: const Duration(milliseconds: 150),
+                              child: const Icon(
+                                Icons.play_circle_fill_rounded,
+                                color: Colors.white,
+                                size: 58,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: VideoProgressIndicator(
+                            _controller,
+                            allowScrubbing: false,
+                            colors: const VideoProgressColors(
+                              playedColor: Palette.sky,
+                              bufferedColor: Colors.white54,
+                              backgroundColor: Colors.white24,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
               Positioned(
                 top: 10,

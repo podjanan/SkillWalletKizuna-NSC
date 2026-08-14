@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
@@ -22,14 +21,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Non-blocking asynchronous initialization of MediaKit in background
-  unawaited(Future(() {
-    try {
-      MediaKit.ensureInitialized();
-    } catch (e) {
-      debugPrint('MediaKit background init note: $e');
-    }
-  }));
+  // media_kit owns native decoder resources. Initialize it deterministically
+  // before any screen can create a Player.
+  MediaKit.ensureInitialized();
 
   await dotenv.load(fileName: ".env");
   await StorageService().init();
