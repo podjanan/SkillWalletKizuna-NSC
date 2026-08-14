@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'space_adventure_quest_screen.dart';
@@ -86,10 +87,16 @@ class _SpaceAdventureResultScreenState
       final tempFile = File('${tempDir.path}/space_ranger_match.jpg');
       await tempFile.writeAsBytes(widget.imageBytes!);
 
+      final shareText =
+          'ฉันทำภารกิจผจญภัยในอวกาศ และค้นพบ “${widget.targetObject}” '
+          'สำเร็จแล้ว! ตอนนี้ฉันมี ${widget.currentScore} คะแนน '
+          'บนแอปสกิลวอลเล็ตคิซูนะ';
+      await Clipboard.setData(ClipboardData(text: shareText));
+
       await Share.shareXFiles(
         [XFile(tempFile.path)],
-        text:
-            'Look at my Space Adventure scavenger match: ${widget.targetObject}! I scored ${widget.currentScore} points!',
+        text: shareText,
+        subject: 'ผลงานจากภารกิจผจญภัยในอวกาศ',
       );
     } catch (e) {
       print('Share failed: $e');

@@ -33,7 +33,7 @@ class Palette {
 
   // ── Semantic ─────────────────────────────────────────
   // Fresh, saturated greens used by success states, progress and confirm CTAs.
-  static const success = Color(0xFF22C55E);
+  static const success = Color(0xFF16A34A);
   static const successAlt = Color(0xFF16A34A);
   static const successDark = Color(0xFF15803D);
   static const error = Color(0xFFFF8A8A);

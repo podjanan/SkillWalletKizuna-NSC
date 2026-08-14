@@ -9,10 +9,12 @@ class GameActivityCover extends StatelessWidget {
     super.key,
     required this.type,
     this.compact = false,
+    this.fit,
   });
 
   final GameCoverType type;
   final bool compact;
+  final BoxFit? fit;
 
   @override
   Widget build(BuildContext context) {
@@ -44,24 +46,22 @@ class GameActivityCover extends StatelessWidget {
 
     return ColoredBox(
       color: fallbackBg,
-      child: ClipRect(
-        child: Transform.scale(
-          // The supplied Sing Together PNG has a transparent perimeter.
-          // Crop it so the artwork reaches every edge of activity cards.
-          scale: type == GameCoverType.singTogether ? 1.06 : 1,
-          child: Image.asset(
-            imagePath,
-            width: double.infinity,
-            height: double.infinity,
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            errorBuilder: (_, __, ___) => Center(
-              child: Icon(
-                fallbackIcon,
-                color: fallbackIconColor,
-                size: compact ? 30.0 : 42.0,
-              ),
-            ),
+      child: Image.asset(
+        imagePath,
+        width: double.infinity,
+        height: double.infinity,
+        // The Sing Together artwork contains important text near its edges.
+        // Keep the whole composition visible instead of zoom-cropping it.
+        fit: fit ??
+            (type == GameCoverType.singTogether
+                ? BoxFit.contain
+                : BoxFit.cover),
+        alignment: Alignment.center,
+        errorBuilder: (_, __, ___) => Center(
+          child: Icon(
+            fallbackIcon,
+            color: fallbackIconColor,
+            size: compact ? 30.0 : 42.0,
           ),
         ),
       ),

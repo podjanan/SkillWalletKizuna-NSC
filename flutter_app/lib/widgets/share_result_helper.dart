@@ -102,9 +102,15 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
 
   String _buildShareText() {
     final d = widget.data;
-    final l = widget.l;
-    final emoji = d.isPassed ? '🎉' : '💪';
-    return '$emoji ${l.share_textTemplate(d.activityName, d.score, d.maxScore)}';
+    if (d.isPassed) {
+      return 'ภูมิใจมาก! ฉันทำกิจกรรม “${d.activityName}” ได้ '
+          '${d.score}/${d.maxScore} คะแนน บนแอปสกิลวอลเล็ตคิซูนะ '
+          'มาเรียนรู้และพัฒนาทักษะไปด้วยกันนะ';
+    }
+
+    return 'วันนี้ฉันทำกิจกรรม “${d.activityName}” ได้ '
+        '${d.score}/${d.maxScore} คะแนน บนแอปสกิลวอลเล็ตคิซูนะ '
+        'ทุกความพยายามคือก้าวสำคัญ ครั้งหน้าฉันจะทำให้ดีขึ้น';
   }
 
   Future<void> _share() async {
@@ -115,6 +121,7 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
       final d = widget.data;
       final origin = _getSharePositionOrigin();
       final text = _buildShareText();
+      await Clipboard.setData(ClipboardData(text: text));
 
       if (d.hasEvidenceImage) {
         if (!mounted) return;
@@ -122,6 +129,7 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
         await Share.shareXFiles(
           [XFile(d.evidenceImagePath!)],
           text: text,
+          subject: 'ผลลัพธ์การเรียนรู้ของฉัน',
           sharePositionOrigin: origin,
         );
       } else {
@@ -141,6 +149,7 @@ class _ShareBottomSheetState extends State<_ShareBottomSheet> {
         await Share.shareXFiles(
           [XFile.fromData(pngBytes, mimeType: 'image/png', name: 'result.png')],
           text: text,
+          subject: 'ผลลัพธ์การเรียนรู้ของฉัน',
           sharePositionOrigin: origin,
         );
       }

@@ -1892,6 +1892,15 @@ class AppLocalizationsTh extends AppLocalizations {
   String get sing_videoSyncHint => 'วิดีโอเต้นจะเล่นพร้อมเพลง';
 
   @override
+  String get sing_hideVideo => 'ซ่อนวิดีโอเต้น';
+
+  @override
+  String get sing_showVideo => 'แสดงวิดีโอเต้น';
+
+  @override
+  String get sing_retryVideo => 'ลองโหลดวิดีโออีกครั้ง';
+
+  @override
   String get sing_evidenceAttached => 'แนบไฟล์หลักฐานแล้ว';
 
   @override

@@ -1896,6 +1896,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sing_videoSyncHint => 'The dance video plays with the song';
 
   @override
+  String get sing_hideVideo => 'Hide dance video';
+
+  @override
+  String get sing_showVideo => 'Show dance video';
+
+  @override
+  String get sing_retryVideo => 'Retry video';
+
+  @override
   String get sing_evidenceAttached => 'Evidence attached';
 
   @override

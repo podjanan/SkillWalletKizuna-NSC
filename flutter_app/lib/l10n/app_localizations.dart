@@ -3626,6 +3626,24 @@ abstract class AppLocalizations {
   /// **'The dance video plays with the song'**
   String get sing_videoSyncHint;
 
+  /// No description provided for @sing_hideVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide dance video'**
+  String get sing_hideVideo;
+
+  /// No description provided for @sing_showVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Show dance video'**
+  String get sing_showVideo;
+
+  /// No description provided for @sing_retryVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry video'**
+  String get sing_retryVideo;
+
   /// No description provided for @sing_evidenceAttached.
   ///
   /// In en, this message translates to:

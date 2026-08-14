@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -29,13 +30,22 @@ class BilingualSongPlayerScreen extends StatefulWidget {
       _BilingualSongPlayerScreenState();
 }
 
-class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
+class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
+    with WidgetsBindingObserver {
   late AudioPlayer _audioPlayer;
+  late Future<void> _audioInitFuture;
   bool _isPlaying = false;
+  bool _isPlaybackBusy = false;
+  bool _hasStartedAudio = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+  Duration _lastRenderedPosition = Duration.zero;
   Player? _dancePlayer;
   VideoController? _danceVideoController;
+  bool _danceVideoReady = false;
+  bool _danceVideoFailed = false;
+  bool _showDanceVideo = true;
+  Timer? _syncTimer;
 
   // Media Evidence Capture State
   String? _videoPath;
@@ -50,12 +60,16 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _startTime = DateTime.now();
     _audioPlayer = AudioPlayer();
 
     _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) {
         setState(() => _isPlaying = state == PlayerState.playing);
+      }
+      if (state != PlayerState.playing) {
+        _dancePlayer?.pause();
       }
     });
 
@@ -66,18 +80,39 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
     });
 
     _audioPlayer.onPositionChanged.listen((newPosition) {
-      if (mounted) {
-        setState(() => _position = newPosition);
+      final shouldRender =
+          (newPosition - _lastRenderedPosition).inMilliseconds.abs() >= 250;
+      if (mounted && shouldRender) {
+        setState(() {
+          _position = newPosition;
+          _lastRenderedPosition = newPosition;
+        });
+      } else {
+        _position = newPosition;
       }
     });
 
     _audioPlayer.onPlayerComplete.listen((_) async {
+      _hasStartedAudio = false;
       await _dancePlayer?.pause();
       await _dancePlayer?.seek(Duration.zero);
     });
 
-    _initAudio();
+    _audioInitFuture = _initAudio();
     _initDanceVideo();
+    _syncTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => _correctDanceVideoDrift(),
+    );
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _pausePlayback();
+    }
   }
 
   Future<void> _handleMediaSelection({required bool isVideo}) async {
@@ -86,6 +121,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
         // Open In-App Studio Camera Screen with Live Audio Playback & Karaoke Overlay
         await _audioPlayer.pause();
         await _dancePlayer?.pause();
+        if (!mounted) return;
         final String? videoPath = await Navigator.push<String>(
           context,
           MaterialPageRoute(
@@ -166,42 +202,255 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
       await player.setVolume(0);
       await player.setPlaylistMode(PlaylistMode.single);
       await player.open(Media(videoUrl), play: false);
-      if (_isPlaying) await player.play();
+      _danceVideoReady = true;
+      await player.seek(_position);
+      if (_isPlaying) {
+        await player.play();
+      }
       if (mounted) setState(() {});
     } catch (e) {
       debugPrint('Dance video load error: $e');
+      _danceVideoFailed = true;
+      if (mounted) setState(() {});
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _syncTimer?.cancel();
     _audioPlayer.dispose();
     _dancePlayer?.dispose();
     super.dispose();
   }
 
-  void _togglePlayPause() async {
+  Future<void> _pausePlayback() async {
+    try {
+      await Future.wait<void>([
+        _audioPlayer.pause(),
+        if (_dancePlayer != null) _dancePlayer!.pause(),
+      ]);
+    } catch (e) {
+      debugPrint('Pause playback error: $e');
+    } finally {
+      if (mounted) setState(() => _isPlaying = false);
+    }
+  }
+
+  Future<void> _seekPlayback(Duration position) async {
+    final safePosition = position < Duration.zero
+        ? Duration.zero
+        : (_duration > Duration.zero && position > _duration
+            ? _duration
+            : position);
+    if (mounted) setState(() => _position = safePosition);
+    await Future.wait<void>([
+      _audioPlayer.seek(safePosition),
+      if (_danceVideoReady && _dancePlayer != null)
+        _dancePlayer!.seek(safePosition),
+    ]);
+  }
+
+  Future<void> _correctDanceVideoDrift() async {
+    final player = _dancePlayer;
+    if (!_isPlaying || !_danceVideoReady || player == null) return;
+    final drift = (player.state.position - _position).inMilliseconds.abs();
+    // Small clock differences are normal. Seeking for every tiny difference
+    // causes visible jumps, so only correct a clearly noticeable desync.
+    if (drift > 900) {
+      await player.seek(_position);
+    }
+  }
+
+  Future<void> _togglePlayPause() async {
     final playUrl = _resolvePlayableUrl(widget.song.audioUrl);
     debugPrint('Toggling audio play/pause for URL: $playUrl');
-    if (playUrl.isEmpty) return;
+    if (playUrl.isEmpty || _isPlaybackBusy) return;
 
+    _isPlaybackBusy = true;
     try {
+      await _audioInitFuture;
       if (_isPlaying) {
-        await _audioPlayer.pause();
-        await _dancePlayer?.pause();
-        if (mounted) setState(() => _isPlaying = false);
+        await _pausePlayback();
       } else {
+        final isAtEnd = _duration > Duration.zero &&
+            _position >= _duration - const Duration(milliseconds: 500);
+        final resumePosition = isAtEnd ? Duration.zero : _position;
+        await _seekPlayback(resumePosition);
         if (mounted) setState(() => _isPlaying = true);
-        await _dancePlayer?.seek(Duration.zero);
-        await _dancePlayer?.play();
-        await _audioPlayer.play(UrlSource(playUrl));
+
+        await Future.wait<void>([
+          if (_hasStartedAudio)
+            _audioPlayer.resume()
+          else
+            _audioPlayer.play(
+              UrlSource(playUrl),
+              position: resumePosition,
+            ),
+          if (_danceVideoReady && _dancePlayer != null) _dancePlayer!.play(),
+        ]);
+        _hasStartedAudio = true;
       }
     } catch (e) {
       debugPrint('Audio play exception: $e');
       await _dancePlayer?.pause();
-      await _dancePlayer?.seek(Duration.zero);
       if (mounted) setState(() => _isPlaying = false);
+    } finally {
+      _isPlaybackBusy = false;
     }
+  }
+
+  Widget _buildAudioControls() {
+    return Column(
+      children: [
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: Palette.sky,
+            inactiveTrackColor: Colors.grey.shade200,
+            thumbColor: Colors.amber,
+            trackHeight: 6,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+          ),
+          child: Slider(
+            min: 0,
+            max: _duration.inSeconds.toDouble() > 0
+                ? _duration.inSeconds.toDouble()
+                : 100,
+            value: _position.inSeconds.toDouble().clamp(
+                  0,
+                  _duration.inSeconds.toDouble() > 0
+                      ? _duration.inSeconds.toDouble()
+                      : 100,
+                ),
+            onChanged: (value) async {
+              await _seekPlayback(Duration(seconds: value.toInt()));
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _formatDuration(_position),
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ),
+              ),
+              GestureDetector(
+                onTap: _togglePlayPause,
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.amber,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.amber.withValues(alpha: 0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 34,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  _formatDuration(_duration),
+                  textAlign: TextAlign.right,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDanceVideoPanel(AppLocalizations l) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: ColoredBox(
+          color: Colors.black,
+          child: _danceVideoFailed
+              ? Center(
+                  child: IconButton(
+                    tooltip: l.sing_retryVideo,
+                    onPressed: () async {
+                      setState(() {
+                        _danceVideoFailed = false;
+                        _danceVideoController = null;
+                      });
+                      await _dancePlayer?.dispose();
+                      if (!mounted) return;
+                      _dancePlayer = null;
+                      _danceVideoReady = false;
+                      _initDanceVideo();
+                    },
+                    icon: const Icon(Icons.refresh_rounded,
+                        color: Colors.white, size: 32),
+                  ),
+                )
+              : _danceVideoController == null
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    )
+                  : Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        RepaintBoundary(
+                          child: Video(
+                            key: const ValueKey('sing-dance-video'),
+                            controller: _danceVideoController!,
+                            controls: NoVideoControls,
+                          ),
+                        ),
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: IconButton.filledTonal(
+                            tooltip: l.sing_hideVideo,
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () =>
+                                setState(() => _showDanceVideo = false),
+                            icon: const Icon(Icons.visibility_off_rounded,
+                                size: 18),
+                          ),
+                        ),
+                        Positioned(
+                          left: 10,
+                          bottom: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 9, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: const Color(0x99000000),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              l.sing_videoSyncHint,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -282,131 +531,34 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
               ),
               child: Column(
                 children: [
-                  // Audio Playback Slider
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: Palette.sky,
-                      inactiveTrackColor: Colors.grey.shade200,
-                      thumbColor: Colors.amber,
-                      trackHeight: 6,
-                      thumbShape:
-                          const RoundSliderThumbShape(enabledThumbRadius: 10),
-                    ),
-                    child: Slider(
-                      min: 0,
-                      max: _duration.inSeconds.toDouble() > 0
-                          ? _duration.inSeconds.toDouble()
-                          : 100,
-                      value: _position.inSeconds.toDouble().clamp(
-                            0,
-                            _duration.inSeconds.toDouble() > 0
-                                ? _duration.inSeconds.toDouble()
-                                : 100,
-                          ),
-                      onChanged: (value) async {
-                        final position = Duration(seconds: value.toInt());
-                        await _audioPlayer.seek(position);
-                      },
-                    ),
-                  ),
-
-                  // Duration Labels
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _formatDuration(_position),
-                          style: TextStyle(
-                              color: Colors.grey.shade600, fontSize: 12),
-                        ),
-                        Text(
-                          _formatDuration(_duration),
-                          style: TextStyle(
-                              color: Colors.grey.shade600, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Play / Pause Button
-                  GestureDetector(
-                    onTap: _togglePlayPause,
-                    child: Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: Colors.amber,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.amber.withValues(alpha: 0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          )
-                        ],
-                      ),
-                      child: Icon(
-                        _isPlaying
-                            ? Icons.pause_rounded
-                            : Icons.play_arrow_rounded,
-                        color: Colors.white,
-                        size: 38,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
                   if (widget.song.danceVideoUrl?.trim().isNotEmpty == true) ...[
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: AspectRatio(
-                        aspectRatio: 16 / 9,
-                        child: ColoredBox(
-                          color: Colors.black,
-                          child: _danceVideoController == null
-                              ? const Center(
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    Video(
-                                      controller: _danceVideoController!,
-                                      controls: NoVideoControls,
-                                    ),
-                                    Positioned(
-                                      left: 10,
-                                      bottom: 8,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 9, vertical: 5),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0x99000000),
-                                          borderRadius:
-                                              BorderRadius.circular(12),
-                                        ),
-                                        child: Text(
-                                          l.sing_videoSyncHint,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                        ),
+                    // Collapse the panel without removing Video from the tree.
+                    // This keeps the native texture alive and avoids a jump
+                    // when the user shows it again.
+                    ClipRect(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        heightFactor: _showDanceVideo ? 1 : 0,
+                        child: _buildDanceVideoPanel(l),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    if (_showDanceVideo)
+                      const SizedBox(height: 10)
+                    else
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: () =>
+                              setState(() => _showDanceVideo = true),
+                          icon: const Icon(Icons.visibility_rounded, size: 18),
+                          label: Text(l.sing_showVideo),
+                        ),
+                      ),
                   ],
+
+                  // Song controls sit below the dance video.
+                  _buildAudioControls(),
+                  const SizedBox(height: 10),
 
                   // Toggle Bar for Media Options (Collapsible to maximize Lyrics View)
                   GestureDetector(
@@ -598,16 +750,14 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                     GestureDetector(
                                       onTap: () async {
                                         await _audioPlayer.pause();
-                                        if (mounted)
-                                          setState(() => _isPlaying = false);
-                                        if (mounted) {
-                                          showDialog(
-                                            context: context,
-                                            builder: (context) =>
-                                                BilingualVideoPlayerDialog(
-                                                    videoPath: _videoPath!),
-                                          );
-                                        }
+                                        if (!context.mounted) return;
+                                        setState(() => _isPlaying = false);
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) =>
+                                              BilingualVideoPlayerDialog(
+                                                  videoPath: _videoPath!),
+                                        );
                                       },
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(15),

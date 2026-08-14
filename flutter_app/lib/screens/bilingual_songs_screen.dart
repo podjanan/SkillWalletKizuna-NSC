@@ -335,11 +335,14 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                           // Large Banner Cover
                           ClipRRect(
                             borderRadius: BorderRadius.circular(24),
-                            child: const SizedBox(
-                              height: 200,
-                              width: double.infinity,
+                            child: const AspectRatio(
+                              // The supplied cover is square. Matching its
+                              // ratio shows the full artwork without overflow
+                              // or cropping at the card edges.
+                              aspectRatio: 1,
                               child: GameActivityCover(
                                 type: GameCoverType.singTogether,
+                                fit: BoxFit.cover,
                               ),
                             ),
                           ),
@@ -383,30 +386,33 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                           const SizedBox(height: 20),
 
                           // Song source selector
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildSongSourceCard(
-                                  title: l.sing_selectOurSongs,
-                                  subtitle: l.sing_readyToPlay,
-                                  icon: Icons.library_music_rounded,
-                                  selected: !_isCreatingOwnSong,
-                                  onTap: () => setState(
-                                      () => _isCreatingOwnSong = false),
+                          IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Expanded(
+                                  child: _buildSongSourceCard(
+                                    title: l.sing_selectOurSongs,
+                                    subtitle: l.sing_readyToPlay,
+                                    icon: Icons.library_music_rounded,
+                                    selected: !_isCreatingOwnSong,
+                                    onTap: () => setState(
+                                        () => _isCreatingOwnSong = false),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _buildSongSourceCard(
-                                  title: l.sing_createOwnSong,
-                                  subtitle: l.sing_wordsOrSentences,
-                                  icon: Icons.auto_awesome_rounded,
-                                  selected: _isCreatingOwnSong,
-                                  onTap: () =>
-                                      setState(() => _isCreatingOwnSong = true),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _buildSongSourceCard(
+                                    title: l.sing_createOwnSong,
+                                    subtitle: l.sing_wordsOrSentences,
+                                    icon: Icons.auto_awesome_rounded,
+                                    selected: _isCreatingOwnSong,
+                                    onTap: () => setState(
+                                        () => _isCreatingOwnSong = true),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 18),
 
@@ -565,42 +571,12 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
     required bool selected,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return BilingualSongSourceCard(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      selected: selected,
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        decoration: BoxDecoration(
-          color: selected
-              ? Palette.sky.withValues(alpha: 0.12)
-              : const Color(0xFFF9FAFB),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: selected ? Palette.sky : Colors.grey.shade300,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 28, color: selected ? Palette.sky : Colors.grey),
-            const SizedBox(height: 7),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.label(
-                13,
-                color: selected ? Palette.sky : Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: AppTextStyles.body(10, color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -823,6 +799,71 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
           ),
           child,
         ],
+      ),
+    );
+  }
+}
+
+class BilingualSongSourceCard extends StatelessWidget {
+  const BilingualSongSourceCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        constraints: const BoxConstraints(minHeight: 128),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? Palette.sky.withValues(alpha: 0.12)
+              : const Color(0xFFF9FAFB),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: selected ? Palette.sky : Colors.grey.shade300,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 28, color: selected ? Palette.sky : Colors.grey),
+            const SizedBox(height: 7),
+            Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.label(
+                13,
+                color: selected ? Palette.sky : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body(10, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
       ),
     );
   }
