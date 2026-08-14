@@ -12,7 +12,11 @@ import {
 } from '@/lib/bilingual-songs';
 import { prisma } from '@/lib/prisma';
 
-import { uploadToMinio } from '@/lib/minio';
+import { createPresignedMinioUpload, uploadToMinio } from '@/lib/minio';
+
+const MAX_VIDEO_SIZE = 200 * 1024 * 1024;
+const MAX_AUDIO_SIZE = 30 * 1024 * 1024;
+const MAX_UPLOAD_REQUEST_SIZE = 201 * 1024 * 1024;
 
 export async function GET(request: NextRequest) {
   try {
@@ -38,26 +42,80 @@ export async function POST(request: NextRequest) {
   try {
     await ensureBilingualSongTable();
 
-    // Handle MP3 File Upload from computer
+    // Handle audio/video file upload from computer
     const contentType = request.headers.get('content-type') || '';
     if (contentType.includes('multipart/form-data')) {
-      const formData = await request.formData();
+      const requestSize = Number(request.headers.get('content-length') || 0);
+      if (requestSize > MAX_UPLOAD_REQUEST_SIZE) {
+        return NextResponse.json(
+          { error: 'ไฟล์วิดีโอต้องมีขนาดไม่เกิน 200 MB' },
+          { status: 413 }
+        );
+      }
+
+      let formData: FormData;
+      try {
+        formData = await request.formData();
+      } catch (error) {
+        console.error('Failed to parse bilingual song upload:', error);
+        return NextResponse.json(
+          { error: 'อ่านไฟล์อัปโหลดไม่สำเร็จ กรุณาตรวจสอบขนาดไฟล์แล้วลองใหม่' },
+          { status: 400 }
+        );
+      }
       const file = formData.get('file') as File | null;
+      const mediaType = String(formData.get('mediaType') || 'audio');
       if (!file) {
-        return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
+        return NextResponse.json({ error: 'No media file provided' }, { status: 400 });
+      }
+
+      const isVideo = mediaType === 'video';
+      const maxFileSize = isVideo ? MAX_VIDEO_SIZE : MAX_AUDIO_SIZE;
+      if (file.size > maxFileSize) {
+        return NextResponse.json(
+          { error: isVideo ? 'ไฟล์วิดีโอต้องมีขนาดไม่เกิน 200 MB' : 'ไฟล์เสียงต้องมีขนาดไม่เกิน 30 MB' },
+          { status: 413 }
+        );
+      }
+      const expectedPrefix = isVideo ? 'video/' : 'audio/';
+      if (!file.type.startsWith(expectedPrefix)) {
+        return NextResponse.json(
+          { error: isVideo ? 'Please upload a video file' : 'Please upload an audio file' },
+          { status: 400 }
+        );
       }
 
       const arrayBuffer = await file.arrayBuffer();
       const buffer = new Uint8Array(arrayBuffer);
       const cleanName = file.name.toLowerCase().replace(/[^a-z0-9_.-]/g, '_');
-      const key = `bilingual-songs/upload-${Date.now()}-${cleanName}`;
-      const minioUrl = await uploadToMinio(key, buffer, file.type || 'audio/mpeg');
+      const key = `bilingual-songs/${isVideo ? 'dance-videos' : 'audio'}/upload-${Date.now()}-${cleanName}`;
+      const minioUrl = await uploadToMinio(
+        key,
+        buffer,
+        file.type || (isVideo ? 'video/mp4' : 'audio/mpeg')
+      );
       const publicUrl = resolveMediaUrl(minioUrl);
-      return NextResponse.json({ audioUrl: publicUrl });
+      return NextResponse.json(isVideo ? { videoUrl: publicUrl } : { audioUrl: publicUrl });
     }
 
     const body = await request.json();
     const action = body.action as string;
+
+    if (action === 'createVideoUpload') {
+      const fileName = String(body.fileName || 'dance-video.mp4');
+      const contentType = String(body.contentType || '');
+      const fileSize = Number(body.fileSize || 0);
+      if (!contentType.startsWith('video/')) {
+        return NextResponse.json({ error: 'Please upload a video file' }, { status: 400 });
+      }
+      if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > MAX_VIDEO_SIZE) {
+        return NextResponse.json({ error: 'ไฟล์วิดีโอต้องมีขนาดไม่เกิน 200 MB' }, { status: 413 });
+      }
+
+      const cleanName = fileName.toLowerCase().replace(/[^a-z0-9_.-]/g, '_').slice(-120);
+      const key = `bilingual-songs/dance-videos/upload-${Date.now()}-${cleanName || 'video.mp4'}`;
+      return NextResponse.json(await createPresignedMinioUpload(key, contentType));
+    }
 
     if (action === 'generateLyrics') {
       const phrases = Array.isArray(body.phrases)
@@ -178,7 +236,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'saveSong') {
-      const { id, titleEn, titleTh, genre, targetWords, lyrics, audioUrl, coverUrl, isPublished } = body;
+      const { id, titleEn, titleTh, genre, targetWords, lyrics, audioUrl, danceVideoUrl, coverUrl, isPublished } = body;
       const cleanTitleEn = String(titleEn || '').trim();
       const cleanTitleTh = String(titleTh || '').trim();
 
@@ -199,6 +257,7 @@ export async function POST(request: NextRequest) {
               target_words = ${JSON.stringify(targetWords || [])}::jsonb,
               lyrics = ${JSON.stringify(lyrics || [])}::jsonb,
               audio_url = ${processedAudioUrl},
+              dance_video_url = ${danceVideoUrl ? String(danceVideoUrl) : null},
               cover_url = ${coverUrl ? String(coverUrl) : null},
               is_published = ${typeof isPublished === 'boolean' ? isPublished : true},
               updated_at = CURRENT_TIMESTAMP
@@ -209,7 +268,7 @@ export async function POST(request: NextRequest) {
         // Create new song
         const newId = crypto.randomUUID();
         await prisma.$executeRaw`
-          INSERT INTO bilingual_song (id, title_en, title_th, genre, target_words, lyrics, audio_url, cover_url, is_published, created_at, updated_at)
+          INSERT INTO bilingual_song (id, title_en, title_th, genre, target_words, lyrics, audio_url, dance_video_url, cover_url, is_published, created_at, updated_at)
           VALUES (
             ${newId}::uuid,
             ${cleanTitleEn},
@@ -218,6 +277,7 @@ export async function POST(request: NextRequest) {
             ${JSON.stringify(targetWords || [])}::jsonb,
             ${JSON.stringify(lyrics || [])}::jsonb,
             ${processedAudioUrl},
+            ${danceVideoUrl ? String(danceVideoUrl) : null},
             ${coverUrl ? String(coverUrl) : null},
             ${typeof isPublished === 'boolean' ? isPublished : true},
             CURRENT_TIMESTAMP,

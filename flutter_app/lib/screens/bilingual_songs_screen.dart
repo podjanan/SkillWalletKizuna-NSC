@@ -7,7 +7,6 @@ import '../services/bilingual_song_service.dart';
 import '../theme/app_text_styles.dart';
 import '../theme/palette.dart';
 import '../widgets/game_activity_cover.dart';
-import '../widgets/child_avatar.dart';
 import 'bilingual_song_player_screen.dart';
 
 class BilingualSongsScreen extends StatefulWidget {
@@ -24,11 +23,22 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
   BilingualSongModel? _selectedSong;
   bool _isLoading = true;
   List<String> _extraChildIds = [];
+  bool _isCreatingOwnSong = false;
+  String _customInputType = 'vocabulary';
+  String _customMusicStyle = 'เพลงเด็กสนุกสนาน';
+  final TextEditingController _customSongPromptController =
+      TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadSongs();
+  }
+
+  @override
+  void dispose() {
+    _customSongPromptController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSongs() async {
@@ -209,7 +219,8 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                 child: CircularProgressIndicator(color: Palette.sky),
               )
             : SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 child: Column(
                   children: [
                     // Top Bar (Back Button + Title)
@@ -327,7 +338,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                               height: 200,
                               width: double.infinity,
                               child: GameActivityCover(
-                                type: GameCoverType.voiceQuest,
+                                type: GameCoverType.singTogether,
                               ),
                             ),
                           ),
@@ -370,8 +381,36 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                           ),
                           const SizedBox(height: 20),
 
+                          // Song source selector
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildSongSourceCard(
+                                  title: 'เลือกเพลงจากเรา',
+                                  subtitle: 'เพลงพร้อมเล่น',
+                                  icon: Icons.library_music_rounded,
+                                  selected: !_isCreatingOwnSong,
+                                  onTap: () => setState(
+                                      () => _isCreatingOwnSong = false),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: _buildSongSourceCard(
+                                  title: 'สร้างเพลงเอง',
+                                  subtitle: 'คำศัพท์ / ประโยค',
+                                  icon: Icons.auto_awesome_rounded,
+                                  selected: _isCreatingOwnSong,
+                                  onTap: () =>
+                                      setState(() => _isCreatingOwnSong = true),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+
                           // Song Selector Dropdown
-                          if (_songs.isNotEmpty) ...[
+                          if (!_isCreatingOwnSong && _songs.isNotEmpty) ...[
                             _buildLabelInput(
                               label: 'Choose Song',
                               child: DropdownButtonHideUnderline(
@@ -409,14 +448,17 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF9FAFB),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Palette.sky.withValues(alpha: 0.4)),
+                                  border: Border.all(
+                                      color:
+                                          Palette.sky.withValues(alpha: 0.4)),
                                 ),
                                 child: Row(
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: Palette.sky.withValues(alpha: 0.1),
+                                        color:
+                                            Palette.sky.withValues(alpha: 0.1),
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Icon(Icons.group_add_rounded,
@@ -425,11 +467,13 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             'เด็กที่จะร้องเพลงด้วยกัน (${_extraChildIds.length + 1} คน)',
-                                            style: AppTextStyles.label(13, color: Palette.text),
+                                            style: AppTextStyles.label(13,
+                                                color: Palette.text),
                                           ),
                                           const SizedBox(height: 2),
                                           Text(
@@ -485,12 +529,274 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                               ),
                             ),
                           ],
+                          if (!_isCreatingOwnSong && _songs.isEmpty)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: const Text(
+                                'ยังไม่มีเพลงจากระบบในขณะนี้',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          if (_isCreatingOwnSong) _buildCustomSongComposer(),
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildSongSourceCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: selected
+              ? Palette.sky.withValues(alpha: 0.12)
+              : const Color(0xFFF9FAFB),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: selected ? Palette.sky : Colors.grey.shade300,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 28, color: selected ? Palette.sky : Colors.grey),
+            const SizedBox(height: 7),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.label(
+                13,
+                color: selected ? Palette.sky : Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body(10, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCustomSongComposer() {
+    final isVocabulary = _customInputType == 'vocabulary';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBF0),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.amber.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.auto_awesome_rounded,
+                    color: Colors.orange, size: 22),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'สร้างเพลงฝึกจำของครอบครัว',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      'ใส่เนื้อหาที่อยากให้เด็กจดจำ แล้วนำไปแต่งเป็นเพลง',
+                      style: TextStyle(fontSize: 11, color: Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'อยากฝึกแบบไหน?',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: ChoiceChip(
+                  selected: isVocabulary,
+                  showCheckmark: false,
+                  avatar: Icon(Icons.abc_rounded,
+                      size: 20,
+                      color: isVocabulary ? Colors.white : Palette.sky),
+                  label: const Text('คำศัพท์'),
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: isVocabulary ? Colors.white : Colors.black87,
+                  ),
+                  selectedColor: Palette.sky,
+                  backgroundColor: Colors.white,
+                  side: BorderSide(
+                      color: isVocabulary ? Palette.sky : Colors.grey.shade300),
+                  onSelected: (_) =>
+                      setState(() => _customInputType = 'vocabulary'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ChoiceChip(
+                  selected: !isVocabulary,
+                  showCheckmark: false,
+                  avatar: Icon(Icons.short_text_rounded,
+                      size: 20,
+                      color: !isVocabulary ? Colors.white : Palette.sky),
+                  label: const Text('รูปประโยค'),
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: !isVocabulary ? Colors.white : Colors.black87,
+                  ),
+                  selectedColor: Palette.sky,
+                  backgroundColor: Colors.white,
+                  side: BorderSide(
+                      color:
+                          !isVocabulary ? Palette.sky : Colors.grey.shade300),
+                  onSelected: (_) =>
+                      setState(() => _customInputType = 'sentence'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            isVocabulary
+                ? 'คำศัพท์ที่อยากให้เด็กฝึกจำ'
+                : 'รูปประโยคที่อยากให้เด็กฝึกจำ',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _customSongPromptController,
+            minLines: 3,
+            maxLines: 5,
+            textInputAction: TextInputAction.newline,
+            decoration: InputDecoration(
+              hintText: isVocabulary
+                  ? 'เช่น apple, banana, orange, happy'
+                  : 'เช่น I brush my teeth every morning.\nฉันแปรงฟันทุกเช้า',
+              hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.all(14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Palette.sky, width: 2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          _buildLabelInput(
+            label: 'แนวเพลง',
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _customMusicStyle,
+                isExpanded: true,
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                items: const [
+                  'เพลงเด็กสนุกสนาน',
+                  'ป๊อปเต้นตามได้',
+                  'เพลงช้าอบอุ่น',
+                  'ฮิปฮอปสำหรับเด็ก',
+                ]
+                    .map((style) => DropdownMenuItem(
+                          value: style,
+                          child: Text(style),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _customMusicStyle = value);
+                  }
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                        'UI พร้อมแล้ว — ระบบสร้างเพลงจะเชื่อมต่อในขั้นตอนถัดไป'),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+              label: Text(
+                'สร้างเพลงจากเนื้อหานี้',
+                style: AppTextStyles.label(15, color: Colors.white),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -55,8 +55,12 @@ android {
     buildTypes {
         release {
             val releaseConfig = signingConfigs.getByName("release")
-            if (releaseConfig.storeFile != null) {
-                signingConfig = releaseConfig
+            // Keep local release APKs installable when a production keystore
+            // has not been configured yet. A real key.properties still wins.
+            signingConfig = if (releaseConfig.storeFile != null) {
+                releaseConfig
+            } else {
+                signingConfigs.getByName("debug")
             }
         }
     }

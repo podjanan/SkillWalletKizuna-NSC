@@ -827,7 +827,11 @@ class _PhysicalDetailScreenState extends State<PhysicalDetailScreen> {
                         decoration: InputDecoration(
                             hintText: AppLocalizations.of(context)!
                                 .physical_diaryHint,
+                            filled: false,
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            disabledBorder: InputBorder.none,
                             contentPadding: const EdgeInsets.all(12)),
                         maxLines: null,
                         expands: true,

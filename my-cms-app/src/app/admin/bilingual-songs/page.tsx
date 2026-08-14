@@ -19,6 +19,7 @@ import {
   Search,
   Upload,
   Download,
+  Video,
 } from 'lucide-react';
 import UserProfile from '@/components/UserProfile';
 
@@ -42,6 +43,7 @@ type Song = {
   targetWords: TargetWord[];
   lyrics: LyricLine[];
   audioUrl: string | null;
+  danceVideoUrl: string | null;
   coverUrl: string | null;
   isPublished: boolean;
   createdAt: string;
@@ -63,12 +65,15 @@ export default function BilingualSongsAdminPage() {
   const [generatedWords, setGeneratedWords] = useState<TargetWord[]>([]);
   const [generatedLyrics, setGeneratedLyrics] = useState<LyricLine[]>([]);
   const [generatedAudioUrl, setGeneratedAudioUrl] = useState('');
+  const [danceVideoUrl, setDanceVideoUrl] = useState('');
   const [sunoTracks, setSunoTracks] = useState<string[]>([]);
 
   // UI state
   const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0);
   const [isFetchingTaskTracks, setIsFetchingTaskTracks] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingSongId, setEditingSongId] = useState<string | null>(null);
@@ -250,6 +255,63 @@ export default function BilingualSongsAdminPage() {
     }
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 200 * 1024 * 1024) {
+      alert('ไฟล์วิดีโอต้องมีขนาดไม่เกิน 200 MB');
+      e.target.value = '';
+      return;
+    }
+
+    setIsUploadingVideo(true);
+    setVideoUploadProgress(0);
+    try {
+      const res = await fetch('/api/admin/bilingual-songs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'createVideoUpload',
+          fileName: file.name,
+          contentType: file.type,
+          fileSize: file.size,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.uploadUrl || !data.publicUrl) {
+        throw new Error(data.error || 'ไม่สามารถเตรียมการอัปโหลดวิดีโอได้');
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', data.uploadUrl);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.timeout = 30 * 60 * 1000;
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            setVideoUploadProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) resolve();
+          else reject(new Error(`MinIO upload failed (${xhr.status})`));
+        };
+        xhr.onerror = () => reject(new Error('การเชื่อมต่อ MinIO ถูกตัดระหว่างอัปโหลด'));
+        xhr.ontimeout = () => reject(new Error('อัปโหลดนานเกิน 30 นาที กรุณาลองใหม่'));
+        xhr.send(file);
+      });
+
+      setVideoUploadProgress(100);
+      setDanceVideoUrl(data.publicUrl);
+    } catch (err) {
+      console.error('Video upload error:', err);
+      alert(err instanceof Error ? err.message : 'เกิดข้อผิดพลาดในการอัปโหลดวิดีโอ');
+    } finally {
+      setIsUploadingVideo(false);
+      e.target.value = '';
+    }
+  };
+
   const handleSaveSong = async () => {
     if (!generatedTitleEn || generatedLyrics.length === 0) return;
     setIsSaving(true);
@@ -266,6 +328,7 @@ export default function BilingualSongsAdminPage() {
           targetWords: generatedWords,
           lyrics: generatedLyrics,
           audioUrl: generatedAudioUrl,
+          danceVideoUrl,
           isPublished: true,
         }),
       });
@@ -290,6 +353,7 @@ export default function BilingualSongsAdminPage() {
     setGeneratedWords(song.targetWords || []);
     setGeneratedLyrics(song.lyrics || []);
     setGeneratedAudioUrl(song.audioUrl || '');
+    setDanceVideoUrl(song.danceVideoUrl || '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -317,6 +381,7 @@ export default function BilingualSongsAdminPage() {
     setGeneratedWords([]);
     setGeneratedLyrics([]);
     setGeneratedAudioUrl('');
+    setDanceVideoUrl('');
     setSunoTracks([]);
   };
 
@@ -474,7 +539,7 @@ export default function BilingualSongsAdminPage() {
             </div>
             <div>
               <h1 className="text-3xl font-extrabold text-dark tracking-tight">
-                Sing Together & AI Guitar
+                Sing Together
               </h1>
               <p className="text-sm text-secondary--text mt-1">
                 สร้างและจัดการเพลงสองภาษา (ไทย-อังกฤษ) สำหรับเด็ก และคอร์ดกีต้าร์สำหรับผู้ปกครองด้วย AI
@@ -997,6 +1062,77 @@ export default function BilingualSongsAdminPage() {
                 )}
               </div>
 
+              {/* Step 3: Dance demonstration video */}
+              <div className="border-t border-gray4 pt-4 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-md font-bold text-dark flex items-center gap-2">
+                      <Video className="w-5 h-5 text-purple" /> 3. วิดีโอเต้นตัวอย่าง
+                    </h3>
+                    <p className="text-xs text-secondary--text mt-1">
+                      เพิ่มคลิปสาธิตท่าเต้นเพื่อให้เด็กเปิดดูก่อนหรือระหว่างทำกิจกรรม
+                    </p>
+                  </div>
+                  <label className="flex items-center gap-2 bg-purple hover:bg-purple--light6 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer shadow-sm transition">
+                    <Upload className="w-4 h-4" />
+                    {isUploadingVideo ? `กำลังอัปโหลด ${videoUploadProgress}%` : danceVideoUrl ? 'เปลี่ยนวิดีโอ' : 'เลือกไฟล์วิดีโอ'}
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={handleVideoUpload}
+                      disabled={isUploadingVideo}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {isUploadingVideo && (
+                  <div className="space-y-1.5">
+                    <div className="h-2 overflow-hidden rounded-full bg-purple--light4">
+                      <div
+                        className="h-full rounded-full bg-purple transition-all duration-200"
+                        style={{ width: `${videoUploadProgress}%` }}
+                      />
+                    </div>
+                    <p className="text-right text-xs font-semibold text-purple">{videoUploadProgress}%</p>
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-secondary--text">
+                    หรือวางลิงก์วิดีโอโดยตรง:
+                  </label>
+                  <input
+                    type="url"
+                    value={danceVideoUrl}
+                    onChange={(e) => setDanceVideoUrl(e.target.value)}
+                    placeholder="https://example.com/dance-example.mp4"
+                    className="w-full p-2.5 rounded-xl border border-gray4 bg-white text-dark focus:ring-2 focus:ring-purple focus:outline-none text-xs font-mono"
+                  />
+                </div>
+
+                {danceVideoUrl && (
+                  <div className="rounded-2xl border border-purple--light3 bg-purple--light5 p-3 space-y-2">
+                    <video
+                      src={danceVideoUrl}
+                      controls
+                      preload="metadata"
+                      className="w-full max-h-80 rounded-xl bg-black"
+                    />
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs text-secondary--text truncate">{danceVideoUrl}</p>
+                      <button
+                        type="button"
+                        onClick={() => setDanceVideoUrl('')}
+                        className="shrink-0 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition"
+                      >
+                        ลบวิดีโอ
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Action Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-gray4">
                 <button
@@ -1076,16 +1212,28 @@ export default function BilingualSongsAdminPage() {
                 </div>
 
                 <div className="flex justify-between items-center pt-2 border-t border-gray4">
-                  {song.audioUrl ? (
-                    <button
-                      onClick={() => togglePlayAudio(song.audioUrl!)}
-                      className="flex items-center gap-1.5 text-xs text-purple font-bold hover:underline"
-                    >
-                      <Play className="w-3.5 h-3.5" /> ลองฟังเพลง
-                    </button>
-                  ) : (
-                    <span className="text-[10px] text-secondary--text">ไม่มีไฟล์เสียง</span>
-                  )}
+                  <div className="flex flex-wrap items-center gap-3">
+                    {song.audioUrl ? (
+                      <button
+                        onClick={() => togglePlayAudio(song.audioUrl!)}
+                        className="flex items-center gap-1.5 text-xs text-purple font-bold hover:underline"
+                      >
+                        <Play className="w-3.5 h-3.5" /> ลองฟังเพลง
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-secondary--text">ไม่มีไฟล์เสียง</span>
+                    )}
+                    {song.danceVideoUrl && (
+                      <a
+                        href={song.danceVideoUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1.5 text-xs text-indigo-600 font-bold hover:underline"
+                      >
+                        <Video className="w-3.5 h-3.5" /> ดูท่าเต้น
+                      </a>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-1">
                     {song.audioUrl && (

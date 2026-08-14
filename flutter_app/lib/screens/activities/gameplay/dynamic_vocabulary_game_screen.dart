@@ -2268,7 +2268,11 @@ class _DynamicVocabularyGameScreenState
             enabled: !_isSavingScore && !_scoreSaved,
             maxLines: null,
             decoration: InputDecoration(
+              filled: false,
               border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
               hintText: l.calculate_writeNotes,
             ),

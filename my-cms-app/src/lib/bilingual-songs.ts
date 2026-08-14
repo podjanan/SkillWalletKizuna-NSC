@@ -22,6 +22,7 @@ export type BilingualSong = {
   targetWords: TargetWord[];
   lyrics: LyricLine[];
   audioUrl: string | null;
+  danceVideoUrl: string | null;
   coverUrl: string | null;
   isPublished: boolean;
   createdAt: string;
@@ -52,11 +53,16 @@ export async function ensureBilingualSongTable() {
       target_words JSONB NOT NULL DEFAULT '[]'::jsonb,
       lyrics JSONB NOT NULL DEFAULT '[]'::jsonb,
       audio_url TEXT,
+      dance_video_url TEXT,
       cover_url TEXT,
       is_published BOOLEAN NOT NULL DEFAULT true,
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
+  `;
+  await prisma.$executeRaw`
+    ALTER TABLE bilingual_song
+    ADD COLUMN IF NOT EXISTS dance_video_url TEXT
   `;
 }
 
@@ -645,6 +651,7 @@ export async function getAllBilingualSongs(publishedOnly = false): Promise<Bilin
         target_words: unknown;
         lyrics: unknown;
         audio_url: string | null;
+        dance_video_url: string | null;
         cover_url: string | null;
         is_published: boolean;
         created_at: Date;
@@ -662,6 +669,7 @@ export async function getAllBilingualSongs(publishedOnly = false): Promise<Bilin
         target_words: unknown;
         lyrics: unknown;
         audio_url: string | null;
+        dance_video_url: string | null;
         cover_url: string | null;
         is_published: boolean;
         created_at: Date;
@@ -679,6 +687,7 @@ export async function getAllBilingualSongs(publishedOnly = false): Promise<Bilin
     targetWords: (Array.isArray(r.target_words) ? r.target_words : []) as TargetWord[],
     lyrics: (Array.isArray(r.lyrics) ? r.lyrics : []) as LyricLine[],
     audioUrl: r.audio_url,
+    danceVideoUrl: r.dance_video_url ? resolveMediaUrl(r.dance_video_url) : null,
     coverUrl: r.cover_url || 'asset:assets/images/song_cover_default.png',
     isPublished: r.is_published,
     createdAt: r.created_at.toISOString(),
@@ -696,6 +705,7 @@ export async function getBilingualSongById(id: string): Promise<BilingualSong | 
     target_words: unknown;
     lyrics: unknown;
     audio_url: string | null;
+    dance_video_url: string | null;
     cover_url: string | null;
     is_published: boolean;
     created_at: Date;
@@ -713,6 +723,7 @@ export async function getBilingualSongById(id: string): Promise<BilingualSong | 
     targetWords: (Array.isArray(r.target_words) ? r.target_words : []) as TargetWord[],
     lyrics: (Array.isArray(r.lyrics) ? r.lyrics : []) as LyricLine[],
     audioUrl: r.audio_url,
+    danceVideoUrl: r.dance_video_url ? resolveMediaUrl(r.dance_video_url) : null,
     coverUrl: r.cover_url,
     isPublished: r.is_published,
     createdAt: r.created_at.toISOString(),

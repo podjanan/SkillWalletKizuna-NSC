@@ -2,8 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiConfig {
+  static const String _definedBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+  );
+
   static String get baseUrl => _normalizeLocalhostForPlatform(
-        dotenv.env['API_BASE_URL'] ?? 'http://127.0.0.1:3000/api',
+        _definedBaseUrl.trim().isNotEmpty
+            ? _definedBaseUrl.trim()
+            : (dotenv.env['API_BASE_URL'] ?? 'http://127.0.0.1:3000/api'),
       );
 
   static String get authBaseUrl {

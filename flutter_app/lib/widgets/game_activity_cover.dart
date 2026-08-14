@@ -35,25 +35,33 @@ class GameActivityCover extends StatelessWidget {
         fallbackIconColor = Colors.white;
         break;
       case GameCoverType.singTogether:
-        imagePath = 'assets/images/voice_quest_cover.png';
+        imagePath = 'assets/images/sing_together_cover.png';
         fallbackBg = Palette.surfaceWarm;
         fallbackIcon = Icons.music_note_rounded;
         fallbackIconColor = Palette.terracotta;
         break;
     }
 
-    return Image.asset(
-      imagePath,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      alignment: Alignment.center,
-      errorBuilder: (_, __, ___) => ColoredBox(
-        color: fallbackBg,
-        child: Center(
-          child: Icon(
-            fallbackIcon,
-            color: fallbackIconColor,
-            size: compact ? 30.0 : 42.0,
+    return ColoredBox(
+      color: fallbackBg,
+      child: ClipRect(
+        child: Transform.scale(
+          // The supplied Sing Together PNG has a transparent perimeter.
+          // Crop it so the artwork reaches every edge of activity cards.
+          scale: type == GameCoverType.singTogether ? 1.06 : 1,
+          child: Image.asset(
+            imagePath,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            errorBuilder: (_, __, ___) => Center(
+              child: Icon(
+                fallbackIcon,
+                color: fallbackIconColor,
+                size: compact ? 30.0 : 42.0,
+              ),
+            ),
           ),
         ),
       ),

@@ -33,6 +33,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+  Player? _dancePlayer;
+  VideoController? _danceVideoController;
 
   // Media Evidence Capture State
   String? _videoPath;
@@ -68,7 +70,13 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
       }
     });
 
+    _audioPlayer.onPlayerComplete.listen((_) async {
+      await _dancePlayer?.pause();
+      await _dancePlayer?.seek(Duration.zero);
+    });
+
     _initAudio();
+    _initDanceVideo();
   }
 
   Future<void> _handleMediaSelection({required bool isVideo}) async {
@@ -76,6 +84,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
       if (isVideo) {
         // Open In-App Studio Camera Screen with Live Audio Playback & Karaoke Overlay
         await _audioPlayer.pause();
+        await _dancePlayer?.pause();
         final String? videoPath = await Navigator.push<String>(
           context,
           MaterialPageRoute(
@@ -109,6 +118,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
 
   void _handleFinish() {
     _audioPlayer.pause();
+    _dancePlayer?.pause();
     final timeSpent = _startTime != null
         ? DateTime.now().difference(_startTime!).inSeconds
         : 0;
@@ -144,9 +154,28 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
     }
   }
 
+  Future<void> _initDanceVideo() async {
+    final videoUrl = _resolvePlayableUrl(widget.song.danceVideoUrl);
+    if (videoUrl.isEmpty) return;
+    try {
+      final player = Player();
+      final controller = VideoController(player);
+      _dancePlayer = player;
+      _danceVideoController = controller;
+      await player.setVolume(0);
+      await player.setPlaylistMode(PlaylistMode.single);
+      await player.open(Media(videoUrl), play: false);
+      if (_isPlaying) await player.play();
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Dance video load error: $e');
+    }
+  }
+
   @override
   void dispose() {
     _audioPlayer.dispose();
+    _dancePlayer?.dispose();
     super.dispose();
   }
 
@@ -158,13 +187,18 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
     try {
       if (_isPlaying) {
         await _audioPlayer.pause();
+        await _dancePlayer?.pause();
         if (mounted) setState(() => _isPlaying = false);
       } else {
         if (mounted) setState(() => _isPlaying = true);
+        await _dancePlayer?.seek(Duration.zero);
+        await _dancePlayer?.play();
         await _audioPlayer.play(UrlSource(playUrl));
       }
     } catch (e) {
       debugPrint('Audio play exception: $e');
+      await _dancePlayer?.pause();
+      await _dancePlayer?.seek(Duration.zero);
       if (mounted) setState(() => _isPlaying = false);
     }
   }
@@ -330,11 +364,62 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                   ),
                   const SizedBox(height: 16),
 
+                  if (widget.song.danceVideoUrl?.trim().isNotEmpty == true) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: ColoredBox(
+                          color: Colors.black,
+                          child: _danceVideoController == null
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Video(
+                                      controller: _danceVideoController!,
+                                      controls: NoVideoControls,
+                                    ),
+                                    Positioned(
+                                      left: 10,
+                                      bottom: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 9, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0x99000000),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                        ),
+                                        child: const Text(
+                                          'วิดีโอเต้นจะเล่นพร้อมเพลง',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
                   // Toggle Bar for Media Options (Collapsible to maximize Lyrics View)
                   GestureDetector(
-                    onTap: () => setState(() => _showMediaSection = !_showMediaSection),
+                    onTap: () =>
+                        setState(() => _showMediaSection = !_showMediaSection),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
                         color: _showMediaSection
                             ? Palette.sky.withValues(alpha: 0.12)
@@ -354,7 +439,9 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                               Icon(
                                 Icons.photo_camera_rounded,
                                 size: 18,
-                                color: _showMediaSection ? Palette.sky : Colors.purple,
+                                color: _showMediaSection
+                                    ? Palette.sky
+                                    : Colors.purple,
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -362,12 +449,15 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                     ? 'แนบไฟล์หลักฐานแล้ว'
                                     : 'ถ่ายรูป / อัดคลิปวิดีโอหลักฐาน',
                                 style: AppTextStyles.label(13,
-                                    color: _showMediaSection ? Palette.sky : Colors.purple.shade800),
+                                    color: _showMediaSection
+                                        ? Palette.sky
+                                        : Colors.purple.shade800),
                               ),
                               if (_imagePath != null || _videoPath != null) ...[
                                 const SizedBox(width: 6),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: Palette.success,
                                     borderRadius: BorderRadius.circular(10),
@@ -386,7 +476,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                 ? Icons.keyboard_arrow_up_rounded
                                 : Icons.keyboard_arrow_down_rounded,
                             size: 22,
-                            color: _showMediaSection ? Palette.sky : Colors.purple,
+                            color:
+                                _showMediaSection ? Palette.sky : Colors.purple,
                           ),
                         ],
                       ),
@@ -400,26 +491,42 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => _handleMediaSelection(isVideo: true),
-                            icon: const Icon(Icons.videocam_rounded, size: 18, color: Palette.sky),
-                            label: const Text('อัดคลิปวิดีโอ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Palette.sky)),
+                            onPressed: () =>
+                                _handleMediaSelection(isVideo: true),
+                            icon: const Icon(Icons.videocam_rounded,
+                                size: 18, color: Palette.sky),
+                            label: const Text('อัดคลิปวิดีโอ',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Palette.sky)),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: Palette.sky.withValues(alpha: 0.5)),
+                              side: BorderSide(
+                                  color: Palette.sky.withValues(alpha: 0.5)),
                               padding: const EdgeInsets.symmetric(vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
                             ),
                           ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () => _handleMediaSelection(isVideo: false),
-                            icon: const Icon(Icons.camera_alt_rounded, size: 18, color: Colors.amber),
-                            label: const Text('ถ่ายรูปภาพ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.amber)),
+                            onPressed: () =>
+                                _handleMediaSelection(isVideo: false),
+                            icon: const Icon(Icons.camera_alt_rounded,
+                                size: 18, color: Colors.amber),
+                            label: const Text('ถ่ายรูปภาพ',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber)),
                             style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: Colors.amber.withValues(alpha: 0.8)),
+                              side: BorderSide(
+                                  color: Colors.amber.withValues(alpha: 0.8)),
                               padding: const EdgeInsets.symmetric(vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
                             ),
                           ),
                         ),
@@ -432,12 +539,15 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                             Expanded(
                               child: Container(
                                 height: 130,
-                                margin: EdgeInsets.only(top: 10, right: (_videoPath != null) ? 6 : 0),
+                                margin: EdgeInsets.only(
+                                    top: 10,
+                                    right: (_videoPath != null) ? 6 : 0),
                                 decoration: BoxDecoration(
                                   color: Colors.black,
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                      color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
+                                      color: Palette.sky.withValues(alpha: 0.5),
+                                      width: 1.5),
                                   boxShadow: Palette.cardShadow,
                                 ),
                                 child: Stack(
@@ -446,15 +556,18 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                       borderRadius: BorderRadius.circular(15),
                                       child: SizedBox.expand(
                                         child: kIsWeb
-                                            ? Image.network(_imagePath!, fit: BoxFit.cover)
-                                            : Image.file(File(_imagePath!), fit: BoxFit.cover),
+                                            ? Image.network(_imagePath!,
+                                                fit: BoxFit.cover)
+                                            : Image.file(File(_imagePath!),
+                                                fit: BoxFit.cover),
                                       ),
                                     ),
                                     Positioned(
                                       top: 6,
                                       right: 6,
                                       child: GestureDetector(
-                                        onTap: () => setState(() => _imagePath = null),
+                                        onTap: () =>
+                                            setState(() => _imagePath = null),
                                         child: Container(
                                           padding: const EdgeInsets.all(4),
                                           decoration: const BoxDecoration(
@@ -474,12 +587,15 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                             Expanded(
                               child: Container(
                                 height: 130,
-                                margin: EdgeInsets.only(top: 10, left: (_imagePath != null) ? 6 : 0),
+                                margin: EdgeInsets.only(
+                                    top: 10,
+                                    left: (_imagePath != null) ? 6 : 0),
                                 decoration: BoxDecoration(
                                   color: const Color(0xDD000000),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                      color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
+                                      color: Palette.sky.withValues(alpha: 0.5),
+                                      width: 1.5),
                                   boxShadow: Palette.cardShadow,
                                 ),
                                 child: Stack(
@@ -487,11 +603,14 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                     GestureDetector(
                                       onTap: () async {
                                         await _audioPlayer.pause();
-                                        if (mounted) setState(() => _isPlaying = false);
+                                        if (mounted)
+                                          setState(() => _isPlaying = false);
                                         if (mounted) {
                                           showDialog(
                                             context: context,
-                                            builder: (context) => BilingualVideoPlayerDialog(videoPath: _videoPath!),
+                                            builder: (context) =>
+                                                BilingualVideoPlayerDialog(
+                                                    videoPath: _videoPath!),
                                           );
                                         }
                                       },
@@ -501,14 +620,19 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                           color: const Color(0xDD000000),
                                           child: Center(
                                             child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
-                                                const Icon(Icons.play_circle_fill_rounded,
-                                                    size: 40, color: Palette.sky),
+                                                const Icon(
+                                                    Icons
+                                                        .play_circle_fill_rounded,
+                                                    size: 40,
+                                                    color: Palette.sky),
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   'คลิกเปิดคลิป 🎥',
-                                                  style: AppTextStyles.label(12, color: Colors.white),
+                                                  style: AppTextStyles.label(12,
+                                                      color: Colors.white),
                                                 ),
                                               ],
                                             ),
@@ -520,7 +644,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                       top: 6,
                                       right: 6,
                                       child: GestureDetector(
-                                        onTap: () => setState(() => _videoPath = null),
+                                        onTap: () =>
+                                            setState(() => _videoPath = null),
                                         child: Container(
                                           padding: const EdgeInsets.all(4),
                                           decoration: const BoxDecoration(
@@ -558,19 +683,26 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                   if (isSectionTag) {
                     return Container(
                       margin: const EdgeInsets.only(top: 8, bottom: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isKeyTag ? Colors.amber.shade100 : Colors.purple.shade50,
+                        color: isKeyTag
+                            ? Colors.amber.shade100
+                            : Colors.purple.shade50,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: isKeyTag ? Colors.amber.shade400 : Colors.purple.shade200,
+                          color: isKeyTag
+                              ? Colors.amber.shade400
+                              : Colors.purple.shade200,
                         ),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            isKeyTag ? Icons.key_rounded : Icons.library_music_rounded,
+                            isKeyTag
+                                ? Icons.key_rounded
+                                : Icons.library_music_rounded,
                             size: 18,
                             color: isKeyTag ? Colors.brown : Colors.purple,
                           ),
@@ -580,7 +712,9 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                             style: TextStyle(
                               fontSize: isKeyTag ? 15 : 14,
                               fontWeight: FontWeight.w900,
-                              color: isKeyTag ? Colors.brown : Colors.purple.shade800,
+                              color: isKeyTag
+                                  ? Colors.brown
+                                  : Colors.purple.shade800,
                             ),
                           ),
                         ],
@@ -693,12 +827,14 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                             const SizedBox(width: 6),
                             Text(
                               'คำศัพท์น่ารู้ประจำเพลง:',
-                              style: AppTextStyles.label(13, color: Colors.black87),
+                              style: AppTextStyles.label(13,
+                                  color: Colors.black87),
                             ),
                           ],
                         ),
                         GestureDetector(
-                          onTap: () => setState(() => _showVocabularyBar = !_showVocabularyBar),
+                          onTap: () => setState(
+                              () => _showVocabularyBar = !_showVocabularyBar),
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
@@ -737,7 +873,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
                                   color: Palette.sky.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                      color: Palette.sky.withValues(alpha: 0.3)),
+                                      color:
+                                          Palette.sky.withValues(alpha: 0.3)),
                                 ),
                                 child: Row(
                                   children: [
@@ -807,8 +944,8 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('ตกลง',
-                style: TextStyle(
-                    color: Palette.sky, fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: Palette.sky, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -881,7 +1018,8 @@ class _BilingualVideoPlayerDialogState
                       color: Color(0xB3000000),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.close, color: Colors.white, size: 20),
+                    child:
+                        const Icon(Icons.close, color: Colors.white, size: 20),
                   ),
                 ),
               ),

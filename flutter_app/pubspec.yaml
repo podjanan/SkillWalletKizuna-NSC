@@ -80,5 +80,6 @@ flutter:
     - assets/images/calculate_hard.png
     - assets/images/voice_quest_cover.png
     - assets/images/space_adventure_cover.png
+    - assets/images/sing_together_cover.png
     - assets/icons/
     - .env

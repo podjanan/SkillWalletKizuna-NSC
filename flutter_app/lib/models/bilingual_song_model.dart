@@ -62,6 +62,7 @@ class BilingualSongModel {
   final List<TargetWordModel> targetWords;
   final List<LyricLineModel> lyrics;
   final String? audioUrl;
+  final String? danceVideoUrl;
   final String? coverUrl;
   final bool isPublished;
   final String createdAt;
@@ -74,6 +75,7 @@ class BilingualSongModel {
     required this.targetWords,
     required this.lyrics,
     this.audioUrl,
+    this.danceVideoUrl,
     this.coverUrl,
     required this.isPublished,
     required this.createdAt,
@@ -94,6 +96,7 @@ class BilingualSongModel {
               .toList() ??
           [],
       audioUrl: json['audioUrl']?.toString(),
+      danceVideoUrl: json['danceVideoUrl']?.toString(),
       coverUrl: json['coverUrl']?.toString(),
       isPublished: json['isPublished'] as bool? ?? true,
       createdAt: json['createdAt']?.toString() ?? '',
@@ -109,6 +112,7 @@ class BilingualSongModel {
       'targetWords': targetWords.map((w) => w.toJson()).toList(),
       'lyrics': lyrics.map((l) => l.toJson()).toList(),
       'audioUrl': audioUrl,
+      'danceVideoUrl': danceVideoUrl,
       'coverUrl': coverUrl,
       'isPublished': isPublished,
       'createdAt': createdAt,

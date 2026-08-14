@@ -76,28 +76,32 @@ class _BilingualSongEvaluationScreenState
     try {
       final ImagePicker picker = ImagePicker();
       final source = await showDialog<ImageSource>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text('เลือกแหล่งที่มา${isVideo ? "วิดีโอ" : "รูปภาพ"}',
-              style: AppTextStyles.heading(16)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt_rounded, color: Palette.sky),
-                title: const Text('ถ่ายด้วยกล้อง'),
-                onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            context: context,
+            builder: (ctx) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              title: Text('เลือกแหล่งที่มา${isVideo ? "วิดีโอ" : "รูปภาพ"}',
+                  style: AppTextStyles.heading(16)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt_rounded,
+                        color: Palette.sky),
+                    title: const Text('ถ่ายด้วยกล้อง'),
+                    onTap: () => Navigator.pop(ctx, ImageSource.camera),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.photo_library_rounded,
+                        color: Colors.purple),
+                    title: const Text('เลือกจากคลังภาพ'),
+                    onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+                  ),
+                ],
               ),
-              ListTile(
-                leading: const Icon(Icons.photo_library_rounded, color: Colors.purple),
-                title: const Text('เลือกจากคลังภาพ'),
-                onTap: () => Navigator.pop(ctx, ImageSource.gallery),
-              ),
-            ],
-          ),
-        ),
-      ) ?? ImageSource.gallery;
+            ),
+          ) ??
+          ImageSource.gallery;
 
       if (isVideo) {
         final XFile? file = await picker.pickVideo(source: source);
@@ -263,7 +267,8 @@ class _BilingualSongEvaluationScreenState
             Container(width: 5, color: Palette.sky),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                 child: Row(
                   children: [
                     ChildAvatar(
@@ -280,14 +285,17 @@ class _BilingualSongEvaluationScreenState
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(childName,
-                              style: AppTextStyles.label(15, color: Palette.text)),
+                              style:
+                                  AppTextStyles.label(15, color: Palette.text)),
                           const SizedBox(height: 6),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: pct.toDouble(),
-                              backgroundColor: Colors.grey.withValues(alpha: 0.15),
-                              valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                              backgroundColor:
+                                  Colors.grey.withValues(alpha: 0.15),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(barColor),
                               minHeight: 6,
                             ),
                           ),
@@ -336,8 +344,7 @@ class _BilingualSongEvaluationScreenState
                     // Plus button
                     GestureDetector(
                       onTap: () => setState(() {
-                        _childScores[childId] =
-                            (score < 100) ? score + 5 : 100;
+                        _childScores[childId] = (score < 100) ? score + 5 : 100;
                       }),
                       child: Container(
                         width: 34,
@@ -348,8 +355,8 @@ class _BilingualSongEvaluationScreenState
                           border: Border.all(
                               color: Palette.success.withValues(alpha: 0.4)),
                         ),
-                        child: Icon(Icons.add,
-                            color: Palette.success, size: 18),
+                        child:
+                            Icon(Icons.add, color: Palette.success, size: 18),
                       ),
                     ),
                   ],
@@ -376,7 +383,8 @@ class _BilingualSongEvaluationScreenState
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black87),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+              color: Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -444,7 +452,8 @@ class _BilingualSongEvaluationScreenState
                         Expanded(
                           child: Text(
                             'หลักฐานรูปภาพ / วิดีโอ',
-                            style: AppTextStyles.label(14, color: Colors.black87),
+                            style:
+                                AppTextStyles.label(14, color: Colors.black87),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -452,19 +461,23 @@ class _BilingualSongEvaluationScreenState
                         GestureDetector(
                           onTap: () => _pickMedia(isVideo: false),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 5),
                             decoration: BoxDecoration(
                               color: Palette.sky.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Palette.sky.withValues(alpha: 0.3)),
+                              border: Border.all(
+                                  color: Palette.sky.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.add_a_photo_rounded, size: 14, color: Palette.sky),
+                                const Icon(Icons.add_a_photo_rounded,
+                                    size: 14, color: Palette.sky),
                                 const SizedBox(width: 4),
                                 Text(
                                   _imagePath == null ? '+ รูป' : 'เปลี่ยน',
-                                  style: AppTextStyles.label(12, color: Palette.sky),
+                                  style: AppTextStyles.label(12,
+                                      color: Palette.sky),
                                 ),
                               ],
                             ),
@@ -474,19 +487,23 @@ class _BilingualSongEvaluationScreenState
                         GestureDetector(
                           onTap: () => _pickMedia(isVideo: true),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 5),
                             decoration: BoxDecoration(
                               color: Colors.purple.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
+                              border: Border.all(
+                                  color: Colors.purple.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.videocam_rounded, size: 14, color: Colors.purple),
+                                const Icon(Icons.videocam_rounded,
+                                    size: 14, color: Colors.purple),
                                 const SizedBox(width: 4),
                                 Text(
                                   _videoPath == null ? '+ วิดีโอ' : 'เปลี่ยน',
-                                  style: AppTextStyles.label(12, color: Colors.purple),
+                                  style: AppTextStyles.label(12,
+                                      color: Colors.purple),
                                 ),
                               ],
                             ),
@@ -503,11 +520,14 @@ class _BilingualSongEvaluationScreenState
                             Expanded(
                               child: Container(
                                 height: 145,
-                                margin: EdgeInsets.only(right: (_videoPath != null) ? 6 : 0),
+                                margin: EdgeInsets.only(
+                                    right: (_videoPath != null) ? 6 : 0),
                                 decoration: BoxDecoration(
                                   color: Colors.black,
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
+                                  border: Border.all(
+                                      color: Palette.sky.withValues(alpha: 0.5),
+                                      width: 1.5),
                                   boxShadow: Palette.cardShadow,
                                 ),
                                 child: Stack(
@@ -516,22 +536,26 @@ class _BilingualSongEvaluationScreenState
                                       borderRadius: BorderRadius.circular(15),
                                       child: SizedBox.expand(
                                         child: kIsWeb
-                                            ? Image.network(_imagePath!, fit: BoxFit.cover)
-                                            : Image.file(File(_imagePath!), fit: BoxFit.cover),
+                                            ? Image.network(_imagePath!,
+                                                fit: BoxFit.cover)
+                                            : Image.file(File(_imagePath!),
+                                                fit: BoxFit.cover),
                                       ),
                                     ),
                                     Positioned(
                                       top: 6,
                                       right: 6,
                                       child: GestureDetector(
-                                        onTap: () => setState(() => _imagePath = null),
+                                        onTap: () =>
+                                            setState(() => _imagePath = null),
                                         child: Container(
                                           padding: const EdgeInsets.all(4),
                                           decoration: const BoxDecoration(
                                             color: Color(0xB3000000),
                                             shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
+                                          child: const Icon(Icons.close_rounded,
+                                              size: 16, color: Colors.white),
                                         ),
                                       ),
                                     ),
@@ -543,11 +567,14 @@ class _BilingualSongEvaluationScreenState
                             Expanded(
                               child: Container(
                                 height: 145,
-                                margin: EdgeInsets.only(left: (_imagePath != null) ? 6 : 0),
+                                margin: EdgeInsets.only(
+                                    left: (_imagePath != null) ? 6 : 0),
                                 decoration: BoxDecoration(
                                   color: const Color(0xDD000000),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: Palette.sky.withValues(alpha: 0.5), width: 1.5),
+                                  border: Border.all(
+                                      color: Palette.sky.withValues(alpha: 0.5),
+                                      width: 1.5),
                                   boxShadow: Palette.cardShadow,
                                 ),
                                 child: Stack(
@@ -556,7 +583,9 @@ class _BilingualSongEvaluationScreenState
                                       onTap: () {
                                         showDialog(
                                           context: context,
-                                          builder: (context) => BilingualVideoPlayerDialog(videoPath: _videoPath!),
+                                          builder: (context) =>
+                                              BilingualVideoPlayerDialog(
+                                                  videoPath: _videoPath!),
                                         );
                                       },
                                       child: ClipRRect(
@@ -565,13 +594,19 @@ class _BilingualSongEvaluationScreenState
                                           color: const Color(0xDD000000),
                                           child: Center(
                                             child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
-                                                const Icon(Icons.play_circle_fill_rounded, size: 44, color: Palette.sky),
+                                                const Icon(
+                                                    Icons
+                                                        .play_circle_fill_rounded,
+                                                    size: 44,
+                                                    color: Palette.sky),
                                                 const SizedBox(height: 4),
                                                 Text(
                                                   'ดูคลิปวิดีโอ 🎥',
-                                                  style: AppTextStyles.label(12, color: Colors.white),
+                                                  style: AppTextStyles.label(12,
+                                                      color: Colors.white),
                                                 ),
                                               ],
                                             ),
@@ -583,14 +618,16 @@ class _BilingualSongEvaluationScreenState
                                       top: 6,
                                       right: 6,
                                       child: GestureDetector(
-                                        onTap: () => setState(() => _videoPath = null),
+                                        onTap: () =>
+                                            setState(() => _videoPath = null),
                                         child: Container(
                                           padding: const EdgeInsets.all(4),
                                           decoration: const BoxDecoration(
                                             color: Color(0xB3000000),
                                             shape: BoxShape.circle,
                                           ),
-                                          child: const Icon(Icons.close_rounded, size: 16, color: Colors.white),
+                                          child: const Icon(Icons.close_rounded,
+                                              size: 16, color: Colors.white),
                                         ),
                                       ),
                                     ),
@@ -610,7 +647,8 @@ class _BilingualSongEvaluationScreenState
                         const SizedBox(width: 8),
                         Text(
                           'ประเมินคะแนนเด็ก (${allIds.length} คน)',
-                          style: AppTextStyles.heading(16, color: Colors.black87),
+                          style:
+                              AppTextStyles.heading(16, color: Colors.black87),
                         ),
                       ],
                     ),
@@ -641,9 +679,15 @@ class _BilingualSongEvaluationScreenState
                         controller: _notesController,
                         maxLines: 3,
                         decoration: const InputDecoration(
-                          hintText: 'เช่น ร้องเสียงดังฟังชัด, ออกเสียงคำศัพท์ได้ถูกต้อง...',
+                          hintText:
+                              'เช่น ร้องเสียงดังฟังชัด, ออกเสียงคำศัพท์ได้ถูกต้อง...',
+                          filled: false,
                           border: InputBorder.none,
-                          hintStyle: TextStyle(fontSize: 13, color: Colors.grey),
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          hintStyle:
+                              TextStyle(fontSize: 13, color: Colors.grey),
                         ),
                       ),
                     ),
@@ -654,7 +698,9 @@ class _BilingualSongEvaluationScreenState
 
             // Submit Button
             StickyBottomButton(
-              label: _isSubmitting ? 'กำลังบันทึกคะแนน...' : 'บันทึกคะแนนการร้องเพลง',
+              label: _isSubmitting
+                  ? 'กำลังบันทึกคะแนน...'
+                  : 'บันทึกคะแนนการร้องเพลง',
               onPressed: _isSubmitting ? null : _handleSubmit,
               isLoading: _isSubmitting,
               color: Palette.success,

@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 const s3 = new S3Client({
   region: 'us-east-1', // MinIO requires a region value but ignores it
@@ -12,6 +13,16 @@ const s3 = new S3Client({
 
 export const BUCKET = process.env.MINIO_BUCKET ?? 'avatars';
 const PUBLIC_URL = (process.env.MINIO_PUBLIC_URL ?? '').replace(/\/$/, '');
+
+const publicS3 = new S3Client({
+  region: 'us-east-1',
+  endpoint: PUBLIC_URL,
+  forcePathStyle: true,
+  credentials: {
+    accessKeyId: process.env.MINIO_ACCESS_KEY!,
+    secretAccessKey: process.env.MINIO_SECRET_KEY!,
+  },
+});
 
 /**
  * Upload a file to MinIO and return its public URL.
@@ -33,6 +44,25 @@ export async function uploadToMinio(
 
   // URL format: {PUBLIC_URL}/{bucket}/{key}?v={timestamp}
   return `${PUBLIC_URL}/${BUCKET}/${key}?v=${Date.now()}`;
+}
+
+/** Create a short-lived URL so large files can stream straight to MinIO. */
+export async function createPresignedMinioUpload(
+  key: string,
+  contentType: string,
+): Promise<{ uploadUrl: string; publicUrl: string }> {
+  if (!PUBLIC_URL) throw new Error('MINIO_PUBLIC_URL is not configured');
+
+  const uploadUrl = await getSignedUrl(
+    publicS3,
+    new PutObjectCommand({ Bucket: BUCKET, Key: key, ContentType: contentType }),
+    { expiresIn: 15 * 60 },
+  );
+  const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+  return {
+    uploadUrl,
+    publicUrl: `${PUBLIC_URL}/${encodeURIComponent(BUCKET)}/${encodedKey}?v=${Date.now()}`,
+  };
 }
 
 /** Read an object through the server-side MinIO connection. */
