@@ -634,343 +634,367 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFFFFCEB), // Warm Cream Voice Quest Theme
       body: SafeArea(
-        child: Column(
-          children: [
-            // Top App Bar Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back_ios_new_rounded,
-                        size: 24, color: Colors.black87),
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          isThai && widget.song.titleTh.isNotEmpty
-                              ? widget.song.titleTh
-                              : widget.song.titleEn,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.black87,
-                          ),
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Top App Bar Header
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(Icons.arrow_back_ios_new_rounded,
+                          size: 24, color: Colors.black87),
                     ),
-                  ),
-                  // Guitar Chord Toggle Button
-                  IconButton(
-                    icon: Icon(
-                      Icons.music_note_rounded,
-                      color: _showGuitarChords ? Colors.amber : Colors.grey,
-                      size: 24,
-                    ),
-                    tooltip: _showGuitarChords
-                        ? l.sing_hideChords
-                        : l.sing_showChords,
-                    onPressed: () {
-                      setState(() {
-                        _showGuitarChords = !_showGuitarChords;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            _showGuitarChords
-                                ? '🎸 ${l.sing_chordsShown}'
-                                : '🙈 ${l.sing_chordsHidden}',
-                          ),
-                          duration: const Duration(seconds: 1),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // Music Player Control Card Container
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: Palette.cardShadow,
-              ),
-              child: Column(
-                children: [
-                  if (widget.song.danceVideoUrl?.trim().isNotEmpty == true) ...[
-                    if (_showDanceVideo) _buildDanceVideoPanel(l),
-                    if (_showDanceVideo)
-                      const SizedBox(height: 10)
-                    else
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton.icon(
-                          onPressed: _showDanceVideoPanel,
-                          icon: const Icon(Icons.visibility_rounded, size: 18),
-                          label: Text(l.sing_showVideo),
-                        ),
-                      ),
-                  ],
-
-                  // Song controls sit below the dance video.
-                  _buildAudioControls(),
-                  const SizedBox(height: 10),
-
-                  // Toggle Bar for Media Options (Collapsible to maximize Lyrics View)
-                  GestureDetector(
-                    onTap: () =>
-                        setState(() => _showMediaSection = !_showMediaSection),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: _showMediaSection
-                            ? Palette.sky.withValues(alpha: 0.12)
-                            : Colors.purple.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: _showMediaSection
-                              ? Palette.sky.withValues(alpha: 0.4)
-                              : Colors.purple.shade200,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Expanded(
+                      child: Column(
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.photo_camera_rounded,
-                                size: 18,
-                                color: _showMediaSection
-                                    ? Palette.sky
-                                    : Colors.purple,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                (_imagePath != null || _videoPath != null)
-                                    ? l.sing_evidenceAttached
-                                    : l.sing_captureEvidence,
-                                style: AppTextStyles.label(13,
-                                    color: _showMediaSection
-                                        ? Palette.sky
-                                        : Colors.purple.shade800),
-                              ),
-                              if (_imagePath != null || _videoPath != null) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Palette.success,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text('✓ ${l.sing_attached}',
-                                      style: const TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold)),
-                                ),
-                              ],
-                            ],
-                          ),
-                          Icon(
-                            _showMediaSection
-                                ? Icons.keyboard_arrow_up_rounded
-                                : Icons.keyboard_arrow_down_rounded,
-                            size: 22,
-                            color:
-                                _showMediaSection ? Palette.sky : Colors.purple,
+                          Text(
+                            isThai && widget.song.titleTh.isNotEmpty
+                                ? widget.song.titleTh
+                                : widget.song.titleEn,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.black87,
+                            ),
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
-                  ),
-
-                  // Collapsible Media Capture Buttons & Preview Row
-                  if (_showMediaSection) ...[
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () =>
-                                _handleMediaSelection(isVideo: true),
-                            icon: const Icon(Icons.videocam_rounded,
-                                size: 18, color: Palette.sky),
-                            label: Text(l.sing_recordVideo,
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Palette.sky)),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                  color: Palette.sky.withValues(alpha: 0.5)),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14)),
+                    // Guitar Chord Toggle Button
+                    IconButton(
+                      icon: Icon(
+                        Icons.music_note_rounded,
+                        color: _showGuitarChords ? Colors.amber : Colors.grey,
+                        size: 24,
+                      ),
+                      tooltip: _showGuitarChords
+                          ? l.sing_hideChords
+                          : l.sing_showChords,
+                      onPressed: () {
+                        setState(() {
+                          _showGuitarChords = !_showGuitarChords;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _showGuitarChords
+                                  ? '🎸 ${l.sing_chordsShown}'
+                                  : '🙈 ${l.sing_chordsHidden}',
                             ),
+                            duration: const Duration(seconds: 1),
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () =>
-                                _handleMediaSelection(isVideo: false),
-                            icon: const Icon(Icons.camera_alt_rounded,
-                                size: 18, color: Colors.amber),
-                            label: Text(l.sing_takePhoto,
-                                style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.amber)),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                  color: Colors.amber.withValues(alpha: 0.8)),
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14)),
-                            ),
-                          ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
-                    if (_imagePath != null || _videoPath != null)
-                      Row(
-                        children: [
-                          if (_imagePath != null)
+                  ],
+                ),
+              ),
+
+              // Music Player Control Card Container
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: Palette.cardShadow,
+                ),
+                child: Column(
+                  children: [
+                    if (widget.song.danceVideoUrl?.trim().isNotEmpty ==
+                        true) ...[
+                      if (_showDanceVideo) _buildDanceVideoPanel(l),
+                      if (_showDanceVideo)
+                        const SizedBox(height: 10)
+                      else
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: _showDanceVideoPanel,
+                            icon:
+                                const Icon(Icons.visibility_rounded, size: 18),
+                            label: Text(l.sing_showVideo),
+                          ),
+                        ),
+                    ],
+
+                    // Song controls sit below the dance video.
+                    _buildAudioControls(),
+                    const SizedBox(height: 10),
+
+                    // Toggle Bar for Media Options (Collapsible to maximize Lyrics View)
+                    GestureDetector(
+                      onTap: () => setState(
+                          () => _showMediaSection = !_showMediaSection),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: _showMediaSection
+                              ? Palette.sky.withValues(alpha: 0.12)
+                              : Colors.purple.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: _showMediaSection
+                                ? Palette.sky.withValues(alpha: 0.4)
+                                : Colors.purple.shade200,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
                             Expanded(
-                              child: Container(
-                                height: 130,
-                                margin: EdgeInsets.only(
-                                    top: 10,
-                                    right: (_videoPath != null) ? 6 : 0),
-                                decoration: BoxDecoration(
-                                  color: Colors.black,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                      color: Palette.sky.withValues(alpha: 0.5),
-                                      width: 1.5),
-                                  boxShadow: Palette.cardShadow,
-                                ),
-                                child: Stack(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(15),
-                                      child: SizedBox.expand(
-                                        child: kIsWeb
-                                            ? Image.network(_imagePath!,
-                                                fit: BoxFit.cover)
-                                            : Image.file(File(_imagePath!),
-                                                fit: BoxFit.cover),
-                                      ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.photo_camera_rounded,
+                                    size: 18,
+                                    color: _showMediaSection
+                                        ? Palette.sky
+                                        : Colors.purple,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      (_imagePath != null || _videoPath != null)
+                                          ? l.sing_evidenceAttached
+                                          : l.sing_captureEvidence,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.label(13,
+                                          color: _showMediaSection
+                                              ? Palette.sky
+                                              : Colors.purple.shade800),
                                     ),
-                                    Positioned(
-                                      top: 6,
-                                      right: 6,
-                                      child: GestureDetector(
-                                        onTap: () =>
-                                            setState(() => _imagePath = null),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xB3000000),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(Icons.close_rounded,
-                                              size: 16, color: Colors.white),
-                                        ),
+                                  ),
+                                  if (_imagePath != null ||
+                                      _videoPath != null) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Palette.success,
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
+                                      child: Text('✓ ${l.sing_attached}',
+                                          style: const TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold)),
                                     ),
                                   ],
-                                ),
+                                ],
                               ),
                             ),
-                          if (_videoPath != null)
-                            Expanded(
-                              child: Container(
-                                height: 130,
-                                margin: EdgeInsets.only(
-                                    top: 10,
-                                    left: (_imagePath != null) ? 6 : 0),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xDD000000),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                      color: Palette.sky.withValues(alpha: 0.5),
-                                      width: 1.5),
-                                  boxShadow: Palette.cardShadow,
-                                ),
-                                child: Stack(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: _openEvidenceVideo,
-                                      child: ClipRRect(
+                            const SizedBox(width: 6),
+                            Icon(
+                              _showMediaSection
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              size: 22,
+                              color: _showMediaSection
+                                  ? Palette.sky
+                                  : Colors.purple,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Collapsible Media Capture Buttons & Preview Row
+                    if (_showMediaSection) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () =>
+                                  _handleMediaSelection(isVideo: true),
+                              icon: const Icon(Icons.videocam_rounded,
+                                  size: 18, color: Palette.sky),
+                              label: Text(l.sing_recordVideo,
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Palette.sky)),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                    color: Palette.sky.withValues(alpha: 0.5)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () =>
+                                  _handleMediaSelection(isVideo: false),
+                              icon: const Icon(Icons.camera_alt_rounded,
+                                  size: 18, color: Colors.amber),
+                              label: Text(l.sing_takePhoto,
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.amber)),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(
+                                    color: Colors.amber.withValues(alpha: 0.8)),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_imagePath != null || _videoPath != null)
+                        Row(
+                          children: [
+                            if (_imagePath != null)
+                              Expanded(
+                                child: Container(
+                                  height: 130,
+                                  margin: EdgeInsets.only(
+                                      top: 10,
+                                      right: (_videoPath != null) ? 6 : 0),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                        color:
+                                            Palette.sky.withValues(alpha: 0.5),
+                                        width: 1.5),
+                                    boxShadow: Palette.cardShadow,
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      ClipRRect(
                                         borderRadius: BorderRadius.circular(15),
-                                        child: Container(
-                                          color: const Color(0xDD000000),
-                                          child: Center(
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                const Icon(
-                                                    Icons
-                                                        .play_circle_fill_rounded,
-                                                    size: 40,
-                                                    color: Palette.sky),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  l.sing_openVideo,
-                                                  style: AppTextStyles.label(12,
-                                                      color: Colors.white),
-                                                ),
-                                              ],
+                                        child: SizedBox.expand(
+                                          child: kIsWeb
+                                              ? Image.network(_imagePath!,
+                                                  fit: BoxFit.cover)
+                                              : Image.file(File(_imagePath!),
+                                                  fit: BoxFit.cover),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 6,
+                                        right: 6,
+                                        child: GestureDetector(
+                                          onTap: () =>
+                                              setState(() => _imagePath = null),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xB3000000),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                                Icons.close_rounded,
+                                                size: 16,
+                                                color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            if (_videoPath != null)
+                              Expanded(
+                                child: Container(
+                                  height: 130,
+                                  margin: EdgeInsets.only(
+                                      top: 10,
+                                      left: (_imagePath != null) ? 6 : 0),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xDD000000),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                        color:
+                                            Palette.sky.withValues(alpha: 0.5),
+                                        width: 1.5),
+                                    boxShadow: Palette.cardShadow,
+                                  ),
+                                  child: Stack(
+                                    children: [
+                                      GestureDetector(
+                                        onTap: _openEvidenceVideo,
+                                        child: ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(15),
+                                          child: Container(
+                                            color: const Color(0xDD000000),
+                                            child: Center(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  const Icon(
+                                                      Icons
+                                                          .play_circle_fill_rounded,
+                                                      size: 40,
+                                                      color: Palette.sky),
+                                                  const SizedBox(height: 4),
+                                                  Text(
+                                                    l.sing_openVideo,
+                                                    style: AppTextStyles.label(
+                                                        12,
+                                                        color: Colors.white),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    Positioned(
-                                      top: 6,
-                                      right: 6,
-                                      child: GestureDetector(
-                                        onTap: () =>
-                                            setState(() => _videoPath = null),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(4),
-                                          decoration: const BoxDecoration(
-                                            color: Color(0xB3000000),
-                                            shape: BoxShape.circle,
+                                      Positioned(
+                                        top: 6,
+                                        right: 6,
+                                        child: GestureDetector(
+                                          onTap: () =>
+                                              setState(() => _videoPath = null),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xB3000000),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                                Icons.close_rounded,
+                                                size: 16,
+                                                color: Colors.white),
                                           ),
-                                          child: const Icon(Icons.close_rounded,
-                                              size: 16, color: Colors.white),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                        ],
-                      ),
+                          ],
+                        ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-            // Lyrics & Guitar Chords List
-            Expanded(
-              child: ListView.builder(
+              // Lyrics & Guitar Chords List
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 itemCount: widget.song.lyrics.length,
@@ -1092,111 +1116,117 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
                   );
                 },
               ),
-            ),
 
-            // Target Vocabulary Cards Bar (Bottom Sheet style)
-            if (widget.song.targetWords.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 10,
-                      offset: const Offset(0, -4),
+              // Target Vocabulary Cards Bar (Bottom Sheet style)
+              if (widget.song.targetWords.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.lightbulb_rounded,
-                                size: 18, color: Colors.amber),
-                            const SizedBox(width: 6),
-                            Text(
-                              l.sing_songVocabulary,
-                              style: AppTextStyles.label(13,
-                                  color: Colors.black87),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 10,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                                const Icon(Icons.lightbulb_rounded,
+                                    size: 18, color: Colors.amber),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    l.sing_songVocabulary,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.label(13,
+                                        color: Colors.black87),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        GestureDetector(
-                          onTap: () => setState(
-                              () => _showVocabularyBar = !_showVocabularyBar),
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              shape: BoxShape.circle,
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => setState(
+                                () => _showVocabularyBar = !_showVocabularyBar),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _showVocabularyBar
+                                    ? Icons.keyboard_arrow_down_rounded
+                                    : Icons.keyboard_arrow_up_rounded,
+                                size: 18,
+                                color: Colors.grey.shade700,
+                              ),
                             ),
-                            child: Icon(
-                              _showVocabularyBar
-                                  ? Icons.keyboard_arrow_down_rounded
-                                  : Icons.keyboard_arrow_up_rounded,
-                              size: 18,
-                              color: Colors.grey.shade700,
-                            ),
+                          ),
+                        ],
+                      ),
+                      if (_showVocabularyBar) ...[
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 40,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: widget.song.targetWords.length,
+                            itemBuilder: (context, index) {
+                              final word = widget.song.targetWords[index];
+                              return GestureDetector(
+                                onTap: () {
+                                  _showWordDialog(context, word);
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(right: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: Palette.sky.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color:
+                                            Palette.sky.withValues(alpha: 0.3)),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.star_rounded,
+                                          size: 16, color: Palette.sky),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        word.word,
+                                        style: AppTextStyles.label(13,
+                                            color: Palette.sky),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ],
-                    ),
-                    if (_showVocabularyBar) ...[
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 40,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: widget.song.targetWords.length,
-                          itemBuilder: (context, index) {
-                            final word = widget.song.targetWords[index];
-                            return GestureDetector(
-                              onTap: () {
-                                _showWordDialog(context, word);
-                              },
-                              child: Container(
-                                margin: const EdgeInsets.only(right: 10),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: Palette.sky.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color:
-                                          Palette.sky.withValues(alpha: 0.3)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.star_rounded,
-                                        size: 16, color: Palette.sky),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      word.word,
-                                      style: AppTextStyles.label(13,
-                                          color: Palette.sky),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: StickyBottomButton(
