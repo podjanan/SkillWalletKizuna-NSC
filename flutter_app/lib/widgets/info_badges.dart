@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../l10n/app_localizations.dart';
 import '../models/activity.dart';
+import '../theme/app_text_styles.dart';
 import '../theme/palette.dart';
 import '../utils/activity_l10n.dart';
 
@@ -76,20 +76,20 @@ class _Badge extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               label,
-              style: GoogleFonts.openSans(
-                fontSize: 10,
+              style: AppTextStyles.body(
+                10,
                 color: color,
-                fontWeight: FontWeight.w600,
+                weight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 2),
             Text(
               value,
-              style: GoogleFonts.openSans(
-                fontSize: 13,
+              style: AppTextStyles.body(
+                13,
                 color: color,
-                fontWeight: FontWeight.bold,
+                weight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,

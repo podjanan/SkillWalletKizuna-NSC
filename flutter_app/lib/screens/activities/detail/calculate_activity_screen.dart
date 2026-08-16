@@ -472,7 +472,7 @@ class _CalculateActivityScreenState extends State<CalculateActivityScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black, size: 30),
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.black, size: 30),
             onPressed: () async {
               final shouldPop = await _onWillPop();
               if (shouldPop && mounted) Navigator.pop(context);
@@ -1518,7 +1518,7 @@ class _TvModeScreenState extends State<_TvModeScreen> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.arrow_back_ios_new,
+                              const Icon(Icons.arrow_back_rounded,
                                   color: Colors.white, size: 18),
                               const SizedBox(width: 6),
                               Text('$_currentPage',

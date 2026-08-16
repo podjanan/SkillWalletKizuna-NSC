@@ -830,7 +830,7 @@ class _MathSimulationActivityScreenState
                 elevation: 0,
                 leading: IconButton(
                   icon: Icon(
-                      _phase == _Phase.summary ? Icons.close : Icons.arrow_back,
+                      _phase == _Phase.summary ? Icons.close : Icons.arrow_back_rounded,
                       color: Colors.black,
                       size: 28),
                   onPressed: () async {

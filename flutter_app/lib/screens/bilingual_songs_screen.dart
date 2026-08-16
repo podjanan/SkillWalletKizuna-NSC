@@ -229,7 +229,7 @@ class _BilingualSongsScreenState extends State<BilingualSongsScreen> {
                       children: [
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
-                          child: const Icon(Icons.arrow_back_ios_new_rounded,
+                          child: const Icon(Icons.arrow_back_rounded,
                               size: 24, color: Colors.black87),
                         ),
                         const Expanded(

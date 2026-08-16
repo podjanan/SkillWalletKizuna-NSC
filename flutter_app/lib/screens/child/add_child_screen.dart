@@ -240,7 +240,7 @@ class _AddChildScreenState extends State<AddChildScreen> {
           elevation: 0,
           scrolledUnderElevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black, size: 28),
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.black, size: 28),
             onPressed: widget.isRequired
                 ? _showLogoutDialog
                 : () => Navigator.pop(context),

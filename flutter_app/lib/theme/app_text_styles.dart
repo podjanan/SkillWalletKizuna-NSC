@@ -9,10 +9,11 @@ class AppTextStyles {
 
   static final String _thaiFallback = GoogleFonts.itim().fontFamily!;
 
-  /// Blocky display font for the KIZUNA brand mark.
+  /// Brand mark using the same Nunito family as the rest of the app.
   static TextStyle brand(double size, {Color? color}) {
-    return GoogleFonts.luckiestGuy(
+    return GoogleFonts.nunito(
       fontSize: size,
+      fontWeight: FontWeight.w900,
       color: color ?? Palette.terracotta,
     ).copyWith(
       fontFamilyFallback: [_thaiFallback],

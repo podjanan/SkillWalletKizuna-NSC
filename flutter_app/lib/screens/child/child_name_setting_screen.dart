@@ -61,7 +61,7 @@ class _ChildNameSettingScreenState extends State<ChildNameSettingScreen> {
                             alignment: Alignment.centerLeft,
                             child: GestureDetector(
                               onTap: () => Navigator.pop(context),
-                              child: const Icon(Icons.arrow_back,
+                              child: const Icon(Icons.arrow_back_rounded,
                                   size: 30, color: Colors.black87),
                             ),
                           ),

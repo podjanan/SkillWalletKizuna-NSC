@@ -260,7 +260,7 @@ class _SpaceAdventureQuestScreenState extends State<SpaceAdventureQuestScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87),
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.black87),
             onPressed: _handleBackPressed,
           ),
           title: Text(

@@ -69,7 +69,7 @@ class _NameSettingScreenState extends State<NameSettingScreen> {
                         children: [
                           GestureDetector(
                             onTap: () => Navigator.pop(context),
-                            child: const Icon(Icons.arrow_back,
+                            child: const Icon(Icons.arrow_back_rounded,
                                 size: 30, color: Colors.black87),
                           ),
                           const SizedBox(width: 16),

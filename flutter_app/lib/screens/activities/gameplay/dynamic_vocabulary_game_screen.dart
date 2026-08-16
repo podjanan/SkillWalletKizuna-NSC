@@ -1047,7 +1047,7 @@ class _DynamicVocabularyGameScreenState
                 elevation: 0,
                 leading: IconButton(
                   icon: Icon(
-                    isSummary ? Icons.close : Icons.arrow_back_ios_new,
+                    isSummary ? Icons.close : Icons.arrow_back_rounded,
                     color: Colors.black87,
                   ),
                   onPressed: _handleBackPressed,

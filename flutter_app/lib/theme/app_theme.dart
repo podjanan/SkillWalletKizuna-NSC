@@ -9,11 +9,9 @@ class AppTheme {
   static ThemeData light() {
     final base = ThemeData.light();
 
-    // OLD Thai fallback font: GoogleFonts.itim
     final String thaiFallback = GoogleFonts.itim().fontFamily!;
 
-    // OLD base TextTheme: GoogleFonts.luckiestGuyTextTheme
-    // NEW: Nunito for all text — matches AppTextStyles.heading/body/label
+    // Nunito is the single app-wide typeface; Itim supplies missing Thai glyphs.
     TextTheme tt = GoogleFonts.nunitoTextTheme(base.textTheme).apply(
       bodyColor: Palette.text,
       displayColor: Palette.text,
@@ -163,7 +161,6 @@ class AppTheme {
         elevation: 0,
         foregroundColor: Palette.text,
         centerTitle: true,
-        // OLD appBar title: GoogleFonts.luckiestGuy(fontSize: 22, fontWeight: FontWeight.w900)
         titleTextStyle: withThaiFallback(
           GoogleFonts.nunito(
             fontSize: 22,

@@ -645,7 +645,7 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
                   children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded,
+                      child: const Icon(Icons.arrow_back_rounded,
                           size: 24, color: Colors.black87),
                     ),
                     Expanded(
@@ -1078,7 +1078,6 @@ class _BilingualSongPlayerScreenState extends State<BilingualSongPlayerScreen>
                                     fontSize: 13,
                                     fontWeight: FontWeight.w900,
                                     color: Colors.brown,
-                                    fontFamily: 'monospace',
                                   ),
                                 ),
                               ],

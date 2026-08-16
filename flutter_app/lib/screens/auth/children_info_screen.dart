@@ -199,7 +199,7 @@ class _ChildrenInfoScreenState extends State<ChildrenInfoScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons.arrow_back,
+                            Icons.arrow_back_rounded,
                             color: _isLoading ? Colors.grey : Palette.pink,
                             size: 26,
                           ),

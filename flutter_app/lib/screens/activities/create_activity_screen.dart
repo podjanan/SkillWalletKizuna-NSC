@@ -486,7 +486,7 @@ class _CreateActivityScreenState extends State<CreateActivityScreen> {
                   child: Row(
                     children: [
                       const Icon(
-                        Icons.arrow_back_ios_new_rounded,
+                        Icons.arrow_back_rounded,
                         size: 14,
                         color: Palette.terracotta,
                       ),

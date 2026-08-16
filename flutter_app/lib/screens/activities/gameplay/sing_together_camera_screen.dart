@@ -223,7 +223,7 @@ class _SingTogetherCameraScreenState extends State<SingTogetherCameraScreen> {
                         color: Colors.black45,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.arrow_back,
+                      child: const Icon(Icons.arrow_back_rounded,
                           color: Colors.white, size: 20),
                     ),
                   ),

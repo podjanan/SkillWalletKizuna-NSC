@@ -56,7 +56,7 @@ class DailyActivityScreen extends StatelessWidget {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: const Icon(Icons.arrow_back,
+                    child: const Icon(Icons.arrow_back_rounded,
                         size: 35, color: Colors.black87),
                   ),
                   const SizedBox(width: 15),
