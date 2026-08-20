@@ -148,13 +148,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Text('KIZUNA', style: AppTextStyles.brand(44)),
-                            const SizedBox(height: 7),
+                            Text('KIZUNA', style: AppTextStyles.brand(77)),
+                            const SizedBox(height: 10),
                             Text(
                               l10n.welcome_intro,
                               textAlign: TextAlign.center,
                               style: AppTextStyles.body(
-                                13,
+                                18,
                                 color: Palette.authGrey,
                               ).copyWith(height: 1.25),
                             ),
@@ -167,7 +167,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                 children: [
                                   Expanded(
                                     child: SizedBox(
-                                      height: 31,
+                                      height: 46,
                                       child: OutlinedButton(
                                         onPressed: isLoading
                                             ? null
@@ -187,7 +187,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                         child: Text(
                                           l10n.common_disclaimer,
                                           style: AppTextStyles.heading(
-                                            15,
+                                            22,
                                             color: Palette.terracotta,
                                           ),
                                         ),
@@ -197,7 +197,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: SizedBox(
-                                      height: 31,
+                                      height: 46,
                                       child: ElevatedButton(
                                         onPressed: isLoading
                                             ? null
@@ -217,7 +217,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                                         child: Text(
                                           l10n.common_login,
                                           style: AppTextStyles.heading(
-                                            15,
+                                            22,
                                             color: Colors.white,
                                           ),
                                         ),
